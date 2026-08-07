@@ -3,8 +3,7 @@
 import React, { useMemo } from 'react';
 import ChartModalWrapper from './ChartModalWrapper';
 import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, Legend, LabelList
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList, Cell
 } from 'recharts';
 
 interface UnidadRankingChartProps {
@@ -12,22 +11,14 @@ interface UnidadRankingChartProps {
 }
 
 const BLUE_SCALE = [
-  '#00205C', // Darkest
-  '#003385',
-  '#004AAB',
-  '#1A66D6',
-  '#3B82F6',
-  '#60A5FA',
-  '#80BAFA',
-  '#A0CEFA',
-  '#C7DFFF', // Lightest
+  '#00205C', '#1A366E', '#2C4A82', '#405E96', '#5975A8',
+  '#6F8CBA', '#85A0CE', '#9CB6DE', '#B5CEEE', '#CFE4FD'
 ];
 
 export default function UnidadRankingChart({ events }: UnidadRankingChartProps) {
-  const { barData, pieData, totalGastos } = useMemo(() => {
+  const barData = useMemo(() => {
     const unidadEvents = events.filter(ev => ev.type === 'Unidad Móvil');
     
-    // Distribución de Gastos Operativos de la Unidad
     let soporte = 0;
     let chofer = 0;
     let mantenimiento = 0;
@@ -42,7 +33,6 @@ export default function UnidadRankingChart({ events }: UnidadRankingChartProps) 
       const g = ev.gastos;
       if (!g) return;
       const tasa = g.tasaBcv || 1;
-      
       soporte += (g.soporteTecnicoBs || 0) / tasa;
       chofer += (g.conductorAyudanteBs || 0) / tasa;
       mantenimiento += (g.mantenimientoLimpiezaBs || 0) / tasa;
@@ -54,9 +44,7 @@ export default function UnidadRankingChart({ events }: UnidadRankingChartProps) 
       tributos += (g.gastosTributariosBs || 0) / tasa;
     });
 
-    const total = soporte + chofer + mantenimiento + alimentacion + transporte + combustible + hospedaje + banca + tributos;
-    
-    const bData = [
+    return [
       { categoria: 'Soporte TI', Gasto: soporte },
       { categoria: 'Chofer / Ayudante', Gasto: chofer },
       { categoria: 'Mantenimiento / Limpieza', Gasto: mantenimiento },
@@ -67,48 +55,43 @@ export default function UnidadRankingChart({ events }: UnidadRankingChartProps) 
       { categoria: 'Banca Electrónica', Gasto: banca },
       { categoria: 'Tributos', Gasto: tributos },
     ].filter(d => d.Gasto > 0).sort((a, b) => b.Gasto - a.Gasto);
-
-    const pData = bData.map(d => ({ name: d.categoria, value: d.Gasto }));
-
-    return { barData: bData, pieData: pData, totalGastos: total };
   }, [events]);
 
   return (
     <ChartModalWrapper
       title="Detalle de Costos (Unidad Móvil)"
-      subtitle="Gastos operativos desglosados"
+      subtitle="Gastos operativos desglosados por categoría"
     >
-<div className="w-full h-full min-h-[450px]">
-          <h4 className="text-sm font-bold text-gray-700 mb-4 text-center lg:text-left">Detalle de Costos Operativos</h4>
-          {barData.length > 0 ? (
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart layout="vertical" data={barData} margin={{ top: 0, right: 120, left: 60, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#F3F4F6" />
-                <XAxis type="number" tick={{ fontSize: 15, fill: '#6B7280' }} tickFormatter={(val) => `$${val}`} />
-                <YAxis type="category" dataKey="categoria" tick={{ fontSize: 14, fontWeight: 'bold', fill: '#1F2937' }} width={120} />
-                <Tooltip 
-                  formatter={(val: any, name: any) => [`$${Number(val).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 'Gasto']}
-                  contentStyle={{ backgroundColor: '#00205C', borderRadius: '12px', color: '#FFF', border: 'none' }}
+      <div className="w-full h-full min-h-[480px] flex flex-col justify-center py-2">
+        {barData.length > 0 ? (
+          <ResponsiveContainer width="100%" height={460}>
+            <BarChart layout="vertical" data={barData} margin={{ top: 10, right: 120, left: 80, bottom: 15 }}>
+              <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#F3F4F6" />
+              <XAxis type="number" tick={{ fontSize: 13, fill: '#6B7280' }} tickFormatter={(val) => `$${val}`} />
+              <YAxis type="category" dataKey="categoria" tick={{ fontSize: 13, fontWeight: 600, fill: '#1F2937' }} width={140} />
+              <Tooltip 
+                formatter={(val: any) => [`$${Number(val).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 'Gasto']}
+                contentStyle={{ backgroundColor: '#00205C', borderRadius: '12px', color: '#FFF', border: 'none' }}
+              />
+              <Bar dataKey="Gasto" name="Gasto Total" radius={[0, 4, 4, 0]} barSize={22}>
+                {barData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={BLUE_SCALE[index % BLUE_SCALE.length]} />
+                ))}
+                <LabelList 
+                  dataKey="Gasto" 
+                  position="right" 
+                  formatter={(val: any) => `$${Number(val).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`} 
+                  fill="#4B5563" 
+                  fontSize={13} 
+                  fontWeight="bold" 
                 />
-                <Bar dataKey="Gasto" name="Gasto Total" radius={[0, 4, 4, 0]} barSize={24}>
-                  {barData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={BLUE_SCALE[index % BLUE_SCALE.length]} />
-                  ))}
-                  <LabelList 
-                    dataKey="Gasto" 
-                    position="right" 
-                    formatter={(val: any) => `$${Number(val).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`} 
-                    fill="#6B7280" 
-                    fontSize={14} 
-                    fontWeight="bold" 
-                  />
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          ) : (
-            <div className="flex h-full items-center justify-center text-sm text-gray-400">Sin eventos de Unidad Móvil registrados</div>
-          )}
-        </div>
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        ) : (
+          <div className="flex h-64 items-center justify-center text-sm text-gray-400">Sin eventos de Unidad Móvil registrados</div>
+        )}
+      </div>
     </ChartModalWrapper>
   );
 }
