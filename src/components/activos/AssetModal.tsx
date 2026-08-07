@@ -242,7 +242,7 @@ export default function AssetModal({ isOpen, onClose, assetToEdit }: AssetModalP
                   <ComboBox
                     options={[
                       { value: '', label: 'Seleccione...' },
-                      ...employees.map(emp => ({ value: emp.id, label: `${emp.fullName} (${emp.role})` }))
+                      ...employees.map(emp => ({ value: emp.id, label: `${emp.fullName} (${emp.cargo})` }))
                     ]}
                     value={employeeId}
                     onChange={setEmployeeId}
