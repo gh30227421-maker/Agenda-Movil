@@ -136,7 +136,7 @@ export default function EventsImport() {
       }
 
       // Insertar en Supabase
-      const { error } = await supabase.from('events').insert(parsedRecords);
+      const { error } = await supabase.from('events').insert(parsedRecords as any);
 
       if (error) {
         throw new Error(error.message || JSON.stringify(error));

@@ -111,7 +111,7 @@ export default function GastosImport() {
         throw new Error(`No se procesó ningún gasto. Errores: ${errors.join(' | ')}`);
       }
 
-      const { error } = await supabase.from('event_expenses').upsert(parsedRecords, { onConflict: 'event_id' });
+      const { error } = await supabase.from('event_expenses').upsert(parsedRecords as any, { onConflict: 'event_id' });
 
       if (error) {
         throw new Error(error.message || JSON.stringify(error));

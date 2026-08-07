@@ -79,7 +79,7 @@ export default function DesgloseAgenciaMovil({ events }: DesgloseAgenciaMovilPro
                   <LabelList 
                     dataKey="gastoUsd" 
                     position="right" 
-                    formatter={(val: number) => `$${val.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`} 
+                    formatter={(val: any) => `$${Number(val).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`} 
                     fill="#6B7280" 
                     fontSize={10} 
                     fontWeight="bold" 
@@ -107,7 +107,7 @@ export default function DesgloseAgenciaMovil({ events }: DesgloseAgenciaMovilPro
                     outerRadius={80}
                     dataKey="value"
                     stroke="none"
-                    label={({ percent }) => percent > 0.05 ? `${(percent * 100).toFixed(0)}%` : ''}
+                    label={({ percent }) => (percent || 0) > 0.05 ? `${((percent || 0) * 100).toFixed(0)}%` : ''}
                     labelLine={false}
                   >
                     {pieData.map((entry, index) => (

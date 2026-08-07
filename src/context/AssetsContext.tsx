@@ -49,7 +49,7 @@ export function AssetsProvider({ children }: { children: ReactNode }) {
     try {
       const { error } = await supabase
         .from('assets')
-        .insert(asset);
+        .insert(asset as any);
 
       if (error) throw error;
       await fetchAssets();
@@ -64,8 +64,7 @@ export function AssetsProvider({ children }: { children: ReactNode }) {
 
   const updateAsset = async (id: string, updates: Database['public']['Tables']['assets']['Update']) => {
     try {
-      const { error } = await supabase
-        .from('assets')
+      const { error } = await (supabase.from('assets') as any)
         .update(updates)
         .eq('id', id);
 

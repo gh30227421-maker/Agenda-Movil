@@ -105,7 +105,7 @@ export default function CifrasImport() {
       // Upsert requiere un match por llave primaria o unique constraint
       // Revisaremos si el event_metrics tiene id como PK. Si es así, upsert con onConflict 'event_id' requiere que event_id sea UNIQUE en DB.
       // Si falla onConflict, supabase lanzará error. En events_metrics, usualmente event_id es UNIQUE.
-      const { error } = await supabase.from('event_metrics').upsert(parsedRecords, { onConflict: 'event_id' });
+      const { error } = await supabase.from('event_metrics').upsert(parsedRecords as any, { onConflict: 'event_id' });
 
       if (error) {
         throw new Error(error.message || JSON.stringify(error));
