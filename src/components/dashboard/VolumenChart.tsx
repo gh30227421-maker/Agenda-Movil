@@ -12,9 +12,9 @@ interface VolumenChartProps {
 
 export default function VolumenChart({ events }: VolumenChartProps) {
   const canalColors: Record<string, string> = {
-    'Agencia Móvil': '#00205B',  // Azul BNC
-    'Red de Agencias': '#FE5000', // Naranja BNC
-    'Unidad Móvil': '#3B82F6',   // Azul Claro
+    'Agencia Móvil': '#00205C',   // Azul BNC Profundo
+    'Red de Agencias': '#FE5000',  // Naranja BNC Institucional
+    'Unidad Móvil': '#0284C7',    // Azul Zafiro BNC
   };
 
   // Calcular métricas dinámicas para todas las operaciones
@@ -66,7 +66,8 @@ export default function VolumenChart({ events }: VolumenChartProps) {
     },
   ];
 
-  const renderLabel = (props: any, keyName: string) => {
+  // Renderizado Inteligente de Etiquetas de Datos para evitar colisiones y superposiciones
+  const renderSmartLabel = (props: any, keyName: string) => {
     const { x, y, width, height, index } = props;
     const row = data[index];
     if (!row) return null;
@@ -75,20 +76,39 @@ export default function VolumenChart({ events }: VolumenChartProps) {
     const pctKey = `${keyName} Pct` as keyof typeof row;
     const pct = row[pctKey] as number;
 
-    if (!width || width < 25 || !value || value === 0) return null;
-    
-    if (pct === 0) return null;
+    // Si el valor es cero o el segmento es extremadamente estrecho, no renderizar para evitar encimamiento
+    if (!width || width < 30 || !value || value === 0 || pct === 0) return null;
+
+    let textContent = '';
+    let fontSize = 13;
+
+    if (width >= 115) {
+      // Espacio amplio: Valor absoluto + Porcentaje completo
+      textContent = `${value.toLocaleString('en-US')} (${pct}%)`;
+      fontSize = 12.5;
+    } else if (width >= 65) {
+      // Espacio mediano: Texto compacto
+      textContent = `${value.toLocaleString('en-US')} (${pct}%)`;
+      fontSize = 10.5;
+    } else if (width >= 35) {
+      // Espacio estrecho: Únicamente el porcentaje para no desbordar
+      textContent = `${pct}%`;
+      fontSize = 11;
+    } else {
+      return null;
+    }
 
     return (
       <text
         x={x + width / 2}
         y={y + height / 2 + 4}
         fill="#FFFFFF"
-        fontSize={15}
+        fontSize={fontSize}
         fontWeight="bold"
         textAnchor="middle"
+        style={{ pointerEvents: 'none' }}
       >
-        {`${value.toLocaleString('en-US')} (${pct}%)`}
+        {textContent}
       </text>
     );
   };
@@ -96,60 +116,80 @@ export default function VolumenChart({ events }: VolumenChartProps) {
   return (
     <ChartModalWrapper 
       title="Distribución del Volumen Operativo por Canal de Atención"
-      subtitle="Comparativa 100% apilada con etiquetas de valores absolutos y porcentaje"
+      subtitle="Comparativa 100% apilada con etiquetas dinámicas por canal"
     >
-      <div className="flex flex-col h-full space-y-6">
-        <div className="flex items-center justify-end w-full">
-          <div className="flex items-center gap-2">
-            <span className="bg-[#FE5000] text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-sm">
-              Estadísticas
-            </span>
-          </div>
+      <div className="flex flex-col w-full h-[470px] bg-transparent rounded-2xl overflow-hidden justify-between">
+        
+        {/* Cabecera Interna */}
+        <div className="flex items-center justify-between px-1 mb-2 hide-on-download">
+          <span className="text-xs text-gray-500 font-medium">
+            Volumen consolidado y participación porcentual por operativa
+          </span>
+          <span className="bg-[#FE5000] text-white text-xs font-bold px-3 py-1 rounded-full shadow-xs">
+            100% Apilado
+          </span>
         </div>
 
-        {/* Gráfico de Barras Horizontales Apiladas con Etiquetas Internas seguras */}
-        <div className="w-full flex-1 min-h-[300px]">
+        {/* Gráfico de Barras Horizontales Apiladas con Mayor Altura y Espacio */}
+        <div className="w-full flex-1 min-h-[320px]">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               layout="vertical"
               data={data}
               stackOffset="expand"
-              margin={{ top: 10, right: 120, left: 40, bottom: 10 }}
+              margin={{ top: 10, right: 30, left: 10, bottom: 10 }}
             >
-              <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#E5E7EB" />
-              <XAxis type="number" tickFormatter={(val) => `${Math.round(val * 100)}%`} tick={{ fontSize: 15, fill: '#6B7280' }} />
+              <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#F1F5F9" />
+              <XAxis 
+                type="number" 
+                tickFormatter={(val) => `${Math.round(val * 100)}%`} 
+                tick={{ fontSize: 13, fill: '#64748B', fontWeight: 600 }}
+                axisLine={{ stroke: '#CBD5E1' }}
+              />
               <YAxis 
                 type="category" 
                 dataKey="categoria" 
-                tick={{ fontSize: 15, fontWeight: 'bold', fill: '#1F2937' }} 
-                width={160} 
+                tick={{ fontSize: 12, fontWeight: 700, fill: '#00205B' }} 
+                width={175}
+                axisLine={{ stroke: '#CBD5E1' }}
               />
               <Tooltip 
                 formatter={(val: any, name: any, item: any) => {
                   if (!item || !item.payload || val === 0) return [`${val}`, name];
                   const pctKey = `${name} Pct`;
                   const pct = item.payload[pctKey] !== undefined ? item.payload[pctKey] : 0;
-                  return [`${val} (${pct}%)`, name];
+                  return [`${Number(val).toLocaleString('en-US')} (${pct}%)`, name];
                 }}
-                contentStyle={{ backgroundColor: '#00205B', borderRadius: '10px', color: '#FFF', border: 'none' }}
+                contentStyle={{ 
+                  backgroundColor: '#00205C', 
+                  borderRadius: '12px', 
+                  color: '#FFF', 
+                  border: 'none',
+                  boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.3)'
+                }}
               />
-              <Legend verticalAlign="top" align="center" wrapperStyle={{ paddingBottom: '20px', fontSize: '16px', fontWeight: 'bold' }} />
+              <Legend 
+                verticalAlign="top" 
+                align="center" 
+                wrapperStyle={{ paddingBottom: '16px', fontSize: '13px', fontWeight: 700 }} 
+              />
               
-              <Bar dataKey="Agencia Móvil" stackId="a" fill={canalColors['Agencia Móvil']} barSize={36}>
-                <LabelList dataKey="Agencia Móvil" content={(props: any) => renderLabel(props, 'Agencia Móvil')} />
+              <Bar dataKey="Agencia Móvil" stackId="a" fill={canalColors['Agencia Móvil']} barSize={44}>
+                <LabelList dataKey="Agencia Móvil" content={(props: any) => renderSmartLabel(props, 'Agencia Móvil')} />
               </Bar>
-              <Bar dataKey="Red de Agencias" stackId="a" fill={canalColors['Red de Agencias']} barSize={36}>
-                <LabelList dataKey="Red de Agencias" content={(props: any) => renderLabel(props, 'Red de Agencias')} />
+              <Bar dataKey="Red de Agencias" stackId="a" fill={canalColors['Red de Agencias']} barSize={44}>
+                <LabelList dataKey="Red de Agencias" content={(props: any) => renderSmartLabel(props, 'Red de Agencias')} />
               </Bar>
-              <Bar dataKey="Unidad Móvil" stackId="a" fill={canalColors['Unidad Móvil']} barSize={36}>
-                <LabelList dataKey="Unidad Móvil" content={(props: any) => renderLabel(props, 'Unidad Móvil')} />
+              <Bar dataKey="Unidad Móvil" stackId="a" fill={canalColors['Unidad Móvil']} barSize={44}>
+                <LabelList dataKey="Unidad Móvil" content={(props: any) => renderSmartLabel(props, 'Unidad Móvil')} />
               </Bar>
             </BarChart>
           </ResponsiveContainer>
         </div>
 
-        <p className="text-[11px] text-gray-500 italic bg-gray-50 p-3 rounded-xl border border-gray-100 mt-4">
-          <strong>Nota:</strong> En "Otras Operaciones y Servicios" se incluyen gestiones como: restablecimiento de claves, reseteo de cuentas, activación de cuentas y actualización de datos.
+        {/* Nota explicativa inferior */}
+        <p className="text-[11px] text-gray-500 italic bg-gray-50/80 p-2.5 rounded-xl border border-gray-100 mt-2">
+          <strong>Nota:</strong> "Otras Operaciones" agrupa gestiones como reseteo de claves, activación de productos y actualización de datos.
         </p>
       </div>
     </ChartModalWrapper>
