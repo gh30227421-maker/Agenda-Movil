@@ -15,6 +15,9 @@ import AgenciaRankingChart from './AgenciaRankingChart';
 import AgenciaDistribucionChart from './AgenciaDistribucionChart';
 import UnidadRankingChart from './UnidadRankingChart';
 import UnidadDistribucionChart from './UnidadDistribucionChart';
+import RentabilidadRegionChart from './RentabilidadRegionChart';
+import RentabilidadTopEventosChart from './RentabilidadTopEventosChart';
+import RentabilidadVsCostosChart from './RentabilidadVsCostosChart';
 
 const isEventInPeriod = (evStartDate: string | undefined, period: string) => {
   if (period === 'todos') return true;
@@ -363,6 +366,18 @@ export default function DashboardSection() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <UnidadRankingChart events={filteredEvents} />
           <UnidadDistribucionChart events={filteredEvents} />
+        </div>
+      </div>
+
+      {/* SECCIÓN: Análisis de Rentabilidad y Retorno Financiero */}
+      <div className="pt-6 mt-6 border-t border-gray-200">
+        <h2 className="text-xl font-black text-[#00205B] mb-6">Análisis de Rentabilidad y Retorno Financiero</h2>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          <RentabilidadRegionChart events={filteredEvents} agencies={agencies} />
+          <RentabilidadTopEventosChart events={filteredEvents} />
+        </div>
+        <div className="w-full">
+          <RentabilidadVsCostosChart events={filteredEvents} />
         </div>
       </div>
 
