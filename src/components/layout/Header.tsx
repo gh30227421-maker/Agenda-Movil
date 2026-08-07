@@ -56,12 +56,16 @@ export default function Header() {
   }
 
   return (
-    <header className="h-28 bg-[#00205B] text-white flex items-center justify-between px-6 md:px-10 sticky top-0 z-40 shadow-xl w-full border-b-4 border-[#FE5000]">
+    <header className="h-28 bg-[#00205B] text-white sticky top-0 z-40 shadow-xl w-full border-b-4 border-[#FE5000]">
+      <div className="flex items-center justify-between flex-nowrap px-6 md:px-10 w-full max-w-[1920px] mx-auto h-full">
       
+      {/* Izquierda: Logo y Menú */}
+      <div className="flex items-center flex-nowrap shrink-0 lg:gap-8">
+
       {/* Logotipo / Título - Izquierda */}
-      <div className="flex items-center gap-5">
-        <div className="relative flex items-center justify-center w-16 h-16 flex-shrink-0">
-          <Wifi className="absolute -top-1 w-8 h-8 text-[#FE5000] animate-pulse drop-shadow-md" />
+      <div className="flex items-center gap-4 md:gap-5 shrink-0">
+        <div className="relative flex items-center justify-center w-14 h-14 md:w-16 md:h-16 flex-shrink-0 max-h-16">
+          <Wifi className="absolute -top-1 w-7 h-7 md:w-8 md:h-8 text-[#FE5000] animate-pulse drop-shadow-md" />
           <Truck className="absolute bottom-0 w-12 h-12 text-[#FE5000] drop-shadow-md" />
         </div>
         <div className="flex flex-col">
@@ -72,10 +76,10 @@ export default function Header() {
             Gestión en Vivo
           </span>
         </div>
-      </div>
+        </div>
 
-      {/* Navegación - Centro */}
-      <nav className="hidden lg:flex items-center gap-4 xl:gap-6 flex-1 justify-center px-8">
+      {/* Navegación */}
+      <nav className="hidden lg:flex items-center gap-2 xl:gap-4 flex-nowrap shrink-0">
         {navGroups.map((group) => {
           const Icon = group.icon;
           const isActive = group.href === pathname || group.items?.some(i => i.href === pathname);
@@ -147,9 +151,10 @@ export default function Header() {
           );
         })}
       </nav>
+      </div>
 
       {/* Perfil y Notificaciones - Derecha */}
-      <div className="flex items-center gap-6">
+      <div className="flex items-center gap-3 md:gap-6 flex-nowrap shrink-0">
         <NotificationsDropdown />
         
         <div className="flex items-center gap-3 pl-4 border-l border-white/10">
@@ -165,6 +170,7 @@ export default function Header() {
             <LogOut className="w-6 h-6 group-hover:scale-110 transition-transform" />
           </button>
         </div>
+      </div>
       </div>
     </header>
   );
