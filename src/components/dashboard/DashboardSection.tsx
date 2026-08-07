@@ -7,11 +7,14 @@ import ComboBox from '@/components/ui/ComboBox';
 import KpiCards from './KpiCards';
 import VenezuelaMap from './VenezuelaMap';
 import VolumenChart from './VolumenChart';
-import CostosChart from './CostosChart';
+import CostosParticipacionChart from './CostosParticipacionChart';
+import CostosCategoriasChart from './CostosCategoriasChart';
 import MatrizRentabilidad from './MatrizRentabilidad';
 import HistorialMetrics from './HistorialMetrics';
-import DesgloseAgenciaMovil from './DesgloseAgenciaMovil';
-import DesgloseUnidadMovil from './DesgloseUnidadMovil';
+import AgenciaRankingChart from './AgenciaRankingChart';
+import AgenciaDistribucionChart from './AgenciaDistribucionChart';
+import UnidadRankingChart from './UnidadRankingChart';
+import UnidadDistribucionChart from './UnidadDistribucionChart';
 
 const isEventInPeriod = (evStartDate: string | undefined, period: string) => {
   if (period === 'todos') return true;
@@ -334,18 +337,32 @@ export default function DashboardSection() {
         <VolumenChart events={filteredEvents} />
       </div>
 
-      {/* Bloque 3: Estructura de Costos */}
-      <CostosChart events={filteredEvents} />
+      {/* Bloque 3: Estructura de Costos Globales */}
+      <div className="pt-2">
+        <h2 className="text-xl font-black text-[#00205B] mb-6">Análisis de Costos Globales</h2>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <CostosParticipacionChart events={filteredEvents} />
+          <CostosCategoriasChart events={filteredEvents} />
+        </div>
+      </div>
 
       {/* Bloque 4: Evolución Temporal */}
       <HistorialMetrics events={filteredEvents} />
 
       {/* SECCIÓN: Análisis Detallado por Canal */}
       <div className="pt-6 mt-6 border-t border-gray-200">
-        <h2 className="text-xl font-black text-[#00205B] mb-6">Análisis Detallado por Canal</h2>
-        <div className="space-y-6">
-          <DesgloseAgenciaMovil events={filteredEvents} />
-          <DesgloseUnidadMovil events={filteredEvents} />
+        <h2 className="text-xl font-black text-[#00205B] mb-6">Análisis Detallado por Canal (Agencia Móvil)</h2>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <AgenciaRankingChart events={filteredEvents} />
+          <AgenciaDistribucionChart events={filteredEvents} />
+        </div>
+      </div>
+
+      <div className="pt-6 mt-6 border-t border-gray-200">
+        <h2 className="text-xl font-black text-[#00205B] mb-6">Análisis Detallado por Canal (Unidad Móvil)</h2>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <UnidadRankingChart events={filteredEvents} />
+          <UnidadDistribucionChart events={filteredEvents} />
         </div>
       </div>
 

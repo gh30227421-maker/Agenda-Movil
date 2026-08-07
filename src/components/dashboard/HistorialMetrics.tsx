@@ -56,13 +56,13 @@ export default function HistorialMetrics({ events }: HistorialMetricsProps) {
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
-                <XAxis dataKey="mes" tick={{ fontSize: 11, fill: '#6B7280' }} />
-                <YAxis tickFormatter={(val) => `$${val.toLocaleString()}`} tick={{ fontSize: 11, fill: '#6B7280' }} />
+                <XAxis dataKey="mes" tick={{ fontSize: 15, fill: '#6B7280' }} />
+                <YAxis tickFormatter={(val) => `$${val.toLocaleString()}`} tick={{ fontSize: 15, fill: '#6B7280' }} />
                 <Tooltip 
                   formatter={(val: any, name: any) => [`$${Number(val).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, name]}
                   contentStyle={{ backgroundColor: '#00205B', borderRadius: '10px', color: '#FFF', border: 'none' }}
                 />
-                <Legend verticalAlign="top" wrapperStyle={{ paddingBottom: '10px', fontSize: '12px' }} />
+                <Legend verticalAlign="top" wrapperStyle={{ paddingBottom: '10px', fontSize: '16px' }} />
                 <Area type="monotone" dataKey="saldoUsd" name="Saldo Cierre" stroke="#10B981" fill="#A7F3D0" fillOpacity={0.5} strokeWidth={3} />
                 <Area type="monotone" dataKey="gastoUsd" name="Gastos Operativos" stroke="#EF4444" fill="#FCA5A5" fillOpacity={0.5} strokeWidth={3} />
               </AreaChart>
@@ -83,13 +83,13 @@ export default function HistorialMetrics({ events }: HistorialMetricsProps) {
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
-                <XAxis dataKey="mes" tick={{ fontSize: 11, fill: '#6B7280' }} />
-                <YAxis tick={{ fontSize: 11, fill: '#6B7280' }} />
+                <XAxis dataKey="mes" tick={{ fontSize: 15, fill: '#6B7280' }} />
+                <YAxis tick={{ fontSize: 15, fill: '#6B7280' }} />
                 <Tooltip 
                   formatter={(val: any, name: any) => [`${Number(val).toLocaleString()}`, name]}
                   contentStyle={{ backgroundColor: '#00205B', borderRadius: '10px', color: '#FFF', border: 'none' }}
                 />
-                <Legend verticalAlign="top" wrapperStyle={{ paddingBottom: '10px', fontSize: '12px' }} />
+                <Legend verticalAlign="top" wrapperStyle={{ paddingBottom: '10px', fontSize: '16px' }} />
                 <Bar dataKey="cuentas" name="Apertura de Cuentas" fill="#00205C" radius={[4, 4, 0, 0]} barSize={40} />
                 <Bar dataKey="tdd" name="Entregas TDD" fill="#426095" radius={[4, 4, 0, 0]} barSize={40} />
               </BarChart>

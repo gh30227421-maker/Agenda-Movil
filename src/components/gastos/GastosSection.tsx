@@ -4,8 +4,10 @@ import { useState, useMemo } from 'react';
 import { DollarSign, Truck, Plus, Download, Edit2, Filter, Search, XCircle, Calendar } from 'lucide-react';
 import { useAgenda } from '@/context/AgendaContext';
 import ComboBox from '@/components/ui/ComboBox';
-import DesgloseAgenciaMovil from '../dashboard/DesgloseAgenciaMovil';
-import DesgloseUnidadMovil from '../dashboard/DesgloseUnidadMovil';
+import AgenciaRankingChart from '../dashboard/AgenciaRankingChart';
+import AgenciaDistribucionChart from '../dashboard/AgenciaDistribucionChart';
+import UnidadRankingChart from '../dashboard/UnidadRankingChart';
+import UnidadDistribucionChart from '../dashboard/UnidadDistribucionChart';
 import GastosImport from './GastosImport';
 
 export default function GastosSection() {
@@ -288,12 +290,25 @@ export default function GastosSection() {
           </table>
         </div>
       </div>
-      {/* SECCIÓN: Análisis Detallado por Canal */}
-      <div className="pt-6 mt-6 border-t border-gray-200">
-        <h2 className="text-xl font-black text-[#00205B] mb-6">Análisis Detallado por Canal</h2>
-        <div className="space-y-6">
-          <DesgloseAgenciaMovil events={filteredEvents} />
-          <DesgloseUnidadMovil events={filteredEvents} />
+      <div className="pt-8 border-t border-gray-200">
+        <h2 className="text-xl font-black text-[#00205B] mb-6 flex items-center gap-2">
+          <Truck className="w-6 h-6" />
+          Análisis Específico: Agencia Móvil
+        </h2>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <AgenciaRankingChart events={filteredEvents} />
+          <AgenciaDistribucionChart events={filteredEvents} />
+        </div>
+      </div>
+
+      <div className="pt-8 border-t border-gray-200">
+        <h2 className="text-xl font-black text-[#00205B] mb-6 flex items-center gap-2">
+          <Truck className="w-6 h-6" />
+          Análisis Específico: Unidad Móvil
+        </h2>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <UnidadRankingChart events={filteredEvents} />
+          <UnidadDistribucionChart events={filteredEvents} />
         </div>
       </div>
     </div>

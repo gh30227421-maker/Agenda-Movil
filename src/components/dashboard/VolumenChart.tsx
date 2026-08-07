@@ -84,7 +84,7 @@ export default function VolumenChart({ events }: VolumenChartProps) {
         x={x + width / 2}
         y={y + height / 2 + 4}
         fill="#FFFFFF"
-        fontSize={11}
+        fontSize={15}
         fontWeight="bold"
         textAnchor="middle"
       >
@@ -114,14 +114,14 @@ export default function VolumenChart({ events }: VolumenChartProps) {
               layout="vertical"
               data={data}
               stackOffset="expand"
-              margin={{ top: 10, right: 30, left: 40, bottom: 10 }}
+              margin={{ top: 10, right: 120, left: 40, bottom: 10 }}
             >
               <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#E5E7EB" />
-              <XAxis type="number" tickFormatter={(val) => `${Math.round(val * 100)}%`} tick={{ fontSize: 11, fill: '#6B7280' }} />
+              <XAxis type="number" tickFormatter={(val) => `${Math.round(val * 100)}%`} tick={{ fontSize: 15, fill: '#6B7280' }} />
               <YAxis 
                 type="category" 
                 dataKey="categoria" 
-                tick={{ fontSize: 10, fontWeight: 'bold', fill: '#1F2937' }} 
+                tick={{ fontSize: 15, fontWeight: 'bold', fill: '#1F2937' }} 
                 width={160} 
               />
               <Tooltip 
@@ -133,7 +133,7 @@ export default function VolumenChart({ events }: VolumenChartProps) {
                 }}
                 contentStyle={{ backgroundColor: '#00205B', borderRadius: '10px', color: '#FFF', border: 'none' }}
               />
-              <Legend verticalAlign="top" align="center" wrapperStyle={{ paddingBottom: '20px', fontSize: '12px', fontWeight: 'bold' }} />
+              <Legend verticalAlign="top" align="center" wrapperStyle={{ paddingBottom: '20px', fontSize: '16px', fontWeight: 'bold' }} />
               
               <Bar dataKey="Agencia Móvil" stackId="a" fill={canalColors['Agencia Móvil']} barSize={36}>
                 <LabelList dataKey="Agencia Móvil" content={(props: any) => renderLabel(props, 'Agencia Móvil')} />

@@ -156,20 +156,20 @@ export default function CostosChart({ events }: CostosChartProps) {
           <ResponsiveContainer width="100%" height="100%">
             <BarChart layout="vertical" data={barData} margin={{ top: 0, right: 50, left: 20, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#F3F4F6" />
-              <XAxis type="number" tick={{ fontSize: 11, fill: '#6B7280' }} tickFormatter={(val) => `$${val}`} />
-              <YAxis type="category" dataKey="categoria" tick={{ fontSize: 11, fontWeight: 'bold', fill: '#1F2937' }} width={100} />
+              <XAxis type="number" tick={{ fontSize: 15, fill: '#6B7280' }} tickFormatter={(val) => `$${val}`} />
+              <YAxis type="category" dataKey="categoria" tick={{ fontSize: 15, fontWeight: 'bold', fill: '#1F2937' }} width={100} />
               <Tooltip 
                 formatter={(val: any, name: any) => [`$${Number(val).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, name]}
                 contentStyle={{ backgroundColor: '#00205C', borderRadius: '12px', color: '#FFF', border: 'none' }}
               />
-              <Legend verticalAlign="top" align="right" wrapperStyle={{ fontSize: '11px', paddingBottom: '15px' }} />
+              <Legend verticalAlign="top" align="right" wrapperStyle={{ fontSize: '15px', paddingBottom: '15px' }} />
               <Bar dataKey="Agencia Móvil" stackId="a" fill="#00205C" radius={[0, 0, 0, 0]} barSize={24}>
                 <LabelList dataKey="Agencia Móvil" content={(props: any) => {
                   const { x, y, width, height, value } = props;
                   if (!value || value === 0) return null;
                   const textVal = `$${Number(value).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
                   if (width < 45) return null; // Muy pequeño para Agencia, dependerá del Tooltip
-                  return <text x={x + width / 2} y={y + height / 2 + 4} fill="#FFFFFF" fontSize={10} fontWeight="bold" textAnchor="middle">{textVal}</text>;
+                  return <text x={x + width / 2} y={y + height / 2 + 4} fill="#FFFFFF" fontSize={14} fontWeight="bold" textAnchor="middle">{textVal}</text>;
                 }} />
               </Bar>
               <Bar dataKey="Unidad Móvil" stackId="a" fill="#426095" radius={[0, 4, 4, 0]} barSize={24}>
@@ -178,9 +178,9 @@ export default function CostosChart({ events }: CostosChartProps) {
                   if (!value || value === 0) return null;
                   const textVal = `$${Number(value).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
                   if (width < 45) {
-                    return <text x={x + width + 5} y={y + height / 2 + 4} fill="#6B7280" fontSize={10} fontWeight="bold" textAnchor="start">{textVal}</text>;
+                    return <text x={x + width + 5} y={y + height / 2 + 4} fill="#6B7280" fontSize={14} fontWeight="bold" textAnchor="start">{textVal}</text>;
                   }
-                  return <text x={x + width / 2} y={y + height / 2 + 4} fill="#FFFFFF" fontSize={10} fontWeight="bold" textAnchor="middle">{textVal}</text>;
+                  return <text x={x + width / 2} y={y + height / 2 + 4} fill="#FFFFFF" fontSize={14} fontWeight="bold" textAnchor="middle">{textVal}</text>;
                 }} />
               </Bar>
             </BarChart>
