@@ -202,6 +202,8 @@ export default function EventManagementModal() {
   const [editRegion, setEditRegion] = useState('');
   const [editZone, setEditZone] = useState('');
   const [editState, setEditState] = useState('');
+  const [isSameLocation, setIsSameLocation] = useState<boolean>(true);
+  const [editEstadoOperativo, setEditEstadoOperativo] = useState<string>('');
   const [editStatus, setEditStatus] = useState<EventStatus>('Planificado');
   const [editSegments, setEditSegments] = useState<{startDate: string, endDate: string}[]>([{ 
     startDate: new Date().toISOString().split('T')[0], 
@@ -213,6 +215,8 @@ export default function EventManagementModal() {
     if (modalState.mode === 'create') {
       setEditType('Agencia Móvil');
       setEditCc('');
+      setIsSameLocation(true);
+      setEditEstadoOperativo('');
       setEditStatus('Planificado');
       setEditSegments([{ 
         startDate: modalState.defaultDate || new Date().toISOString().split('T')[0], 
@@ -223,6 +227,8 @@ export default function EventManagementModal() {
       // Extract code from agencyCode like "025 - Centro"
       const codeMatch = event.agencyCode?.split(' - ')[0]?.trim() || '';
       setEditCc(codeMatch);
+      setIsSameLocation(!event.estadoOperativo);
+      setEditEstadoOperativo(event.estadoOperativo || event.state || '');
       setEditStatus(event.status);
       if (event.segments && event.segments.length > 0) {
         setEditSegments(event.segments);
@@ -506,6 +512,7 @@ export default function EventManagementModal() {
                     state: editState || event?.state || '',
                     zone: editZone || event?.zone || '',
                     location: String(fd.get('location')),
+                    estadoOperativo: isSameLocation ? undefined : editEstadoOperativo,
                     vpSolicitante: String(fd.get('vpSolicitante')),
                     responsable: String(fd.get('responsable')),
                     startDate: globalStartDate,
@@ -605,6 +612,39 @@ export default function EventManagementModal() {
                       placeholder="Autocompletado"
                     />
                   </div>
+                </div>
+
+                {/* Switch de Ubicación Real */}
+                <div className="bg-blue-50/50 border border-blue-100 rounded-xl p-4 my-4 flex flex-col gap-3">
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <div className="relative inline-flex items-center cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        className="sr-only peer"
+                        checked={isSameLocation}
+                        onChange={(e) => setIsSameLocation(e.target.checked)}
+                      />
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#00205B]"></div>
+                    </div>
+                    <span className="text-sm font-semibold text-[#00205B]">
+                      ¿El operativo es en la misma localidad del Centro de Costo?
+                    </span>
+                  </label>
+                  
+                  {!isSameLocation && (
+                    <div className="pt-2 border-t border-blue-200/50 mt-2">
+                      <label className="block mb-2 text-sm font-semibold text-gray-900">Estado Físico del Operativo</label>
+                      <ComboBox
+                        value={editEstadoOperativo}
+                        onChange={(val) => setEditEstadoOperativo(val)}
+                        placeholder="Seleccione el estado logístico real..."
+                        options={['Amazonas', 'Anzoátegui', 'Apure', 'Aragua', 'Barinas', 'Bolívar', 'Carabobo', 'Cojedes', 'Delta Amacuro', 'Distrito Capital', 'Falcón', 'Guárico', 'Lara', 'Mérida', 'Miranda', 'Monagas', 'Nueva Esparta', 'Portuguesa', 'Sucre', 'Táchira', 'Trujillo', 'Vargas', 'Yaracuy', 'Zulia'].map(st => ({
+                          value: st,
+                          label: st
+                        }))}
+                      />
+                    </div>
+                  )}
                 </div>
 
                 {/* Nombre del Operativo y Estado */}

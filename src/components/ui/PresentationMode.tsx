@@ -9,6 +9,7 @@ export default function PresentationMode() {
   const isPausedRef = useRef(false);
   const progressBarRef = useRef<HTMLDivElement>(null);
   const controlsRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLDivElement>(null);
 
   // Auto-hide controls logic
   useEffect(() => {
@@ -56,25 +57,60 @@ export default function PresentationMode() {
         console.error("Fullscreen API not supported or blocked.", e);
       }
 
-      // Auto-scroll logic (Smooth, slow cinematic scroll)
+      // Auto-scroll logic (State-Driven Scrolling)
       let scrollInterval: NodeJS.Timeout;
-      
+      let resetTimeout: NodeJS.Timeout;
+      let isResetting = false; // Máquina de estados: false = bajando, true = pausado arriba
+
       const startScrolling = () => {
         scrollInterval = setInterval(() => {
+          if (isPausedRef.current || isResetting) return;
+          
+          let container: Element | Window = window;
+          const overflowContainers = Array.from(document.querySelectorAll('.overflow-y-auto, .overflow-y-scroll, main'));
+          for (const el of overflowContainers) {
+            if (el.scrollHeight > el.clientHeight) {
+              container = el;
+              break;
+            }
+          }
+
+          const scrollTop = container === window ? window.scrollY : (container as Element).scrollTop;
+          const scrollHeight = container === window ? document.documentElement.scrollHeight : (container as Element).scrollHeight;
+          const clientHeight = container === window ? window.innerHeight : (container as Element).clientHeight;
+
           // Update progress bar
           if (progressBarRef.current) {
-            const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
-            const currentProgress = maxScroll > 0 ? (window.scrollY / maxScroll) * 100 : 0;
+            const maxScroll = scrollHeight - clientHeight;
+            const currentProgress = maxScroll > 0 ? (scrollTop / maxScroll) * 100 : 0;
             progressBarRef.current.style.width = `${currentProgress}%`;
           }
 
-          if (isPausedRef.current) return; // Pause scroll
+          const maxScroll = scrollHeight - clientHeight;
+          
+          // Evaluar si llegó al fondo (tolerancia de 20px)
+          if (scrollTop >= maxScroll - 20) {
+            // Cambiar estado a 'up' / 'resetting'
+            isResetting = true;
+            
+            // Salto inmediato a cero
+            if (container === window) {
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            } else {
+              (container as Element).scrollTo({ top: 0, behavior: 'smooth' });
+            }
 
-          const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
-          if (window.scrollY >= maxScroll - 5) {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            // Pausa de 2 segundos en el tope antes de reanudar la bajada
+            resetTimeout = setTimeout(() => {
+              isResetting = false;
+            }, 2000);
           } else {
-            window.scrollBy({ top: 1, left: 0, behavior: 'auto' });
+            // Seguir bajando
+            if (container === window) {
+              window.scrollBy({ top: 1, left: 0, behavior: 'auto' });
+            } else {
+              (container as Element).scrollBy({ top: 1, left: 0, behavior: 'auto' });
+            }
           }
         }, 30);
       };
@@ -86,6 +122,7 @@ export default function PresentationMode() {
         document.body.classList.remove('presentation-mode-active');
         clearInterval(scrollInterval);
         clearTimeout(initialPause);
+        clearTimeout(resetTimeout);
         try {
           if (document.fullscreenElement && document.exitFullscreen) {
             document.exitFullscreen();
@@ -130,6 +167,14 @@ export default function PresentationMode() {
               className="h-full bg-[#FE5000] transition-all duration-75 ease-linear"
               style={{ width: '0%' }}
             />
+          </div>
+
+          {/* Indicador visual Live - Posicionado en el Header global usando Portals o clases (Acoplado arriba, ocultado de abajo) */}
+          <div className="fixed top-5 left-1/2 transform -translate-x-1/2 z-[100] bg-slate-900/80 backdrop-blur-md rounded-full px-6 py-2 shadow-xl flex items-center gap-3 border border-slate-700">
+            <div className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.8)]" />
+            <span className="text-sm font-bold text-white tracking-wide">
+              MODO PRESENTACIÓN EN VIVO
+            </span>
           </div>
 
           {/* Controles de Presentación (Media Player Flotante) */}

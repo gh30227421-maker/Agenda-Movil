@@ -37,6 +37,7 @@ export interface AgendaEvent {
   agencyCode: string;
   eventName: string;
   location?: string;
+  estadoOperativo?: string;
   state: string;
   region: string;
   zone?: string;

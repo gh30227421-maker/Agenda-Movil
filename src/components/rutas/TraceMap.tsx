@@ -36,17 +36,17 @@ export default function TraceMap({ events }: TraceMapProps) {
   // Sort events by date to trace the route
   const sortedEvents = useMemo(() => {
     return [...events]
-      .filter(e => e.state && STATE_COORDS[normalizeStateName(e.state)])
-      .sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime());
+      .filter(e => (e.estadoOperativo || e.state) && STATE_COORDS[normalizeStateName(e.estadoOperativo || e.state)])
+      .sort((a, b) => new Date(a.startDate || a.start_date).getTime() - new Date(b.startDate || b.start_date).getTime());
   }, [events]);
 
-  const activeStates = useMemo(() => new Set(sortedEvents.map(e => normalizeStateName(e.state))), [sortedEvents]);
+  const activeStates = useMemo(() => new Set(sortedEvents.map(e => normalizeStateName(e.estadoOperativo || e.state))), [sortedEvents]);
 
   const routeCoordinates = useMemo(() => {
     const coords: [number, number][] = [];
     const seen = new Set();
     sortedEvents.forEach(e => {
-      const norm = normalizeStateName(e.state);
+      const norm = normalizeStateName(e.estadoOperativo || e.state);
       if (!seen.has(norm)) {
         seen.add(norm);
         coords.push(STATE_COORDS[norm]);

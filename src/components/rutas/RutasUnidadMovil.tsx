@@ -76,8 +76,9 @@ export default function RutasUnidadMovil() {
       if (ev.cifras?.cuentasAbiertas) {
         totalCuentas += ev.cifras.cuentasAbiertas;
       }
-      if (ev.state) {
-        statesSet.add(ev.state);
+      const logisticState = ev.estadoOperativo || ev.state;
+      if (logisticState) {
+        statesSet.add(logisticState);
       }
     });
 
@@ -98,13 +99,13 @@ export default function RutasUnidadMovil() {
   // Cálculos para la ruta
   const routeCoordinates = useMemo(() => {
     const sorted = [...events]
-      .filter(e => e.state && STATE_COORDS[normalizeStateName(e.state)])
+      .filter(e => (e.estadoOperativo || e.state) && STATE_COORDS[normalizeStateName(e.estadoOperativo || e.state)])
       .sort((a, b) => new Date(a.startDate || '').getTime() - new Date(b.startDate || '').getTime());
     
     const coords: [number, number][] = [];
     const seen = new Set();
     sorted.forEach(e => {
-      const norm = normalizeStateName(e.state);
+      const norm = normalizeStateName(e.estadoOperativo || e.state);
       if (!seen.has(norm)) {
         seen.add(norm);
         coords.push(STATE_COORDS[norm]);
@@ -161,7 +162,7 @@ export default function RutasUnidadMovil() {
                 </div>
                 <div className="flex flex-col">
                   <span className="text-slate-400 text-xs tracking-widest uppercase font-bold mb-0.5">Próxima Parada Programada</span>
-                  <strong className="text-white text-base md:text-lg font-bold">{nextEvent.eventName || nextEvent.state} - {new Date(nextEvent.startDate).toLocaleDateString('es-ES', { timeZone: 'UTC' })}</strong>
+                  <strong className="text-white text-base md:text-lg font-bold">{nextEvent.eventName || (nextEvent.estadoOperativo || nextEvent.state)} - {new Date(nextEvent.startDate).toLocaleDateString('es-ES', { timeZone: 'UTC' })}</strong>
                 </div>
               </div>
             </div>
@@ -222,7 +223,7 @@ export default function RutasUnidadMovil() {
                       <p className="text-xs font-bold text-slate-700 leading-tight">{event.eventName || 'Operativo Especial'}</p>
                       <div className="flex items-center gap-2 mt-0.5">
                         <span className="text-[10px] text-slate-400 flex items-center gap-1"><Calendar className="w-2.5 h-2.5" /> {event.startDate ? new Date(event.startDate).toLocaleDateString('es-ES', { timeZone: 'UTC' }) : 'N/A'}</span>
-                        <span className="text-[9px] font-bold text-[#00205B] bg-blue-50 px-1.5 py-0.5 rounded uppercase tracking-wider">{event.state}</span>
+                        <span className="text-[9px] font-bold text-[#00205B] bg-blue-50 px-1.5 py-0.5 rounded uppercase tracking-wider">{event.estadoOperativo || event.state}</span>
                       </div>
                     </div>
                     {((event.cifras?.cuentasAbiertas || 0) + (event.cifras?.atendidos || 0)) > 0 && (
@@ -267,7 +268,7 @@ export default function RutasUnidadMovil() {
               <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-[#009639] to-[#00C04B]" />
               <svg className="absolute bottom-0 left-0 w-full h-1/2 object-cover opacity-30 pointer-events-none text-slate-200" viewBox="0 0 100 30" preserveAspectRatio="none"><path d="M0,30 Q30,5 60,20 T100,5" fill="none" stroke="currentColor" strokeWidth="1.5" vectorEffect="non-scaling-stroke" /></svg>
               <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-                <MapPin className="w-3.5 h-3.5 text-[#009639]" /> Puntos de Despliegue
+                <MapPin className="w-3.5 h-3.5 text-[#009639]" /> Jornadas Desplegadas
               </p>
               <div className="flex flex-wrap items-end gap-2 justify-between">
                 <p className="text-xl lg:text-2xl font-black text-[#00205B] tracking-tight">
@@ -282,7 +283,7 @@ export default function RutasUnidadMovil() {
               <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-[#00205B] to-[#003A9E]" />
               <svg className="absolute bottom-0 left-0 w-full h-1/2 object-cover opacity-30 pointer-events-none text-slate-200" viewBox="0 0 100 30" preserveAspectRatio="none"><path d="M0,30 Q25,10 50,20 T100,5" fill="none" stroke="currentColor" strokeWidth="1.5" vectorEffect="non-scaling-stroke" /></svg>
               <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-                <Truck className="w-3.5 h-3.5 text-[#00205B]" /> Cobertura Nacional
+                <Truck className="w-3.5 h-3.5 text-[#00205B]" /> Estados Visitados
               </p>
               <div className="flex flex-wrap items-end gap-2 justify-between">
                 <p className="text-xl lg:text-2xl font-black text-[#00205B] tracking-tight">

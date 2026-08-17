@@ -123,6 +123,7 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
             agencyCode: agency ? `${agency.code} - ${agency.name}` : ev.agency_id,
             eventName: ev.event_name,
             location: ev.location || undefined,
+            estadoOperativo: ev.estado_operativo || undefined,
             state: agency?.state || '',
             region: agency?.region || '',
             zone: agency?.zone || '',
@@ -203,13 +204,14 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
 
   const updateEvent = async (id: string, data: Partial<AgendaEvent>) => {
     try {
-      if (data.status !== undefined || data.eventName !== undefined || data.startDate !== undefined || data.endDate !== undefined || data.location !== undefined || data.vpSolicitante !== undefined || data.responsable !== undefined || data.segments !== undefined) {
+      if (data.status !== undefined || data.eventName !== undefined || data.startDate !== undefined || data.endDate !== undefined || data.location !== undefined || data.estadoOperativo !== undefined || data.vpSolicitante !== undefined || data.responsable !== undefined || data.segments !== undefined) {
         const { error } = await (supabase as any).from('events').update({
           event_name: data.eventName,
           start_date: data.startDate,
           end_date: data.endDate,
           segments: data.segments,
           location: data.location,
+          estado_operativo: data.estadoOperativo,
           status: data.status,
           vp_solicitante: data.vpSolicitante,
           responsable: data.responsable
@@ -331,6 +333,7 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
         agency_id: agencyId,
         event_name: data.eventName,
         location: data.location || null,
+        estado_operativo: data.estadoOperativo || null,
         start_date: data.startDate,
         end_date: data.endDate,
         segments: data.segments || null,

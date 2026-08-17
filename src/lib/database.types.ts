@@ -138,6 +138,7 @@ export interface Database {
           status: string | null
           vp_solicitante: string | null
           responsable: string | null
+          estado_operativo: string | null
           created_at: string
           created_by: string | null
         }
@@ -152,6 +153,7 @@ export interface Database {
           status?: string | null
           vp_solicitante?: string | null
           responsable?: string | null
+          estado_operativo?: string | null
           created_at?: string
           created_by?: string | null
         }
@@ -166,6 +168,7 @@ export interface Database {
           status?: string | null
           vp_solicitante?: string | null
           responsable?: string | null
+          estado_operativo?: string | null
           created_at?: string
           created_by?: string | null
         }

@@ -87,7 +87,7 @@ export default function VenezuelaMap({ events, agencies = [], selectedState = 't
   const getRegionOfState = (stateName: string): string => {
     const norm = normalizeStateName(stateName);
     // 1. Buscar en eventos coincidentes
-    const ev = events.find(e => normalizeStateName(e.state || '') === norm && e.region);
+    const ev = events.find(e => normalizeStateName(e.estadoOperativo || e.state || '') === norm && e.region);
     if (ev && ev.region) return ev.region.toUpperCase().replace(/^REGI[OÓ]N\s+/i, '').trim();
     // 2. Buscar en agencias
     const ag = agencies.find(a => normalizeStateName(a.state || '') === norm && a.region);
@@ -116,7 +116,7 @@ export default function VenezuelaMap({ events, agencies = [], selectedState = 't
     });
 
     events.forEach(ev => {
-      const stateName = ev.state; 
+      const stateName = ev.estadoOperativo || ev.state; 
       if (!stateName) return;
 
       const c = ev.cifras;
@@ -252,8 +252,8 @@ export default function VenezuelaMap({ events, agencies = [], selectedState = 't
   
   const getDisplayStateName = (geoName: string) => {
     const norm = normalizeStateName(geoName);
-    const fromEvents = events.find(e => normalizeStateName(e.state || '') === norm);
-    if (fromEvents) return fromEvents.state;
+    const fromEvents = events.find(e => normalizeStateName(e.estadoOperativo || e.state || '') === norm);
+    if (fromEvents) return fromEvents.estadoOperativo || fromEvents.state;
     const fromAgencies = agencies.find(a => normalizeStateName(a.state || '') === norm);
     if (fromAgencies) return fromAgencies.state;
     return geoName;

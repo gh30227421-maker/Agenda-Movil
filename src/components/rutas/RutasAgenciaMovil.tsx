@@ -85,8 +85,9 @@ export default function RutasAgenciaMovil() {
       if (ev.cifras?.cuentasAbiertas) {
         totalCuentas += ev.cifras.cuentasAbiertas;
       }
-      if (ev.state) {
-        statesSet.add(ev.state);
+      const logisticState = ev.estadoOperativo || ev.state;
+      if (logisticState) {
+        statesSet.add(logisticState);
       }
     });
 
@@ -129,7 +130,7 @@ export default function RutasAgenciaMovil() {
                 </div>
                 <div className="flex flex-col">
                   <span className="text-slate-400 text-xs tracking-widest uppercase font-bold mb-0.5">Próxima Parada Programada</span>
-                  <strong className="text-white text-base md:text-lg font-bold">{nextEvent.eventName || nextEvent.state} - {new Date(nextEvent.startDate).toLocaleDateString('es-ES', { timeZone: 'UTC' })}</strong>
+                  <strong className="text-white text-base md:text-lg font-bold">{nextEvent.eventName || (nextEvent.estadoOperativo || nextEvent.state)} - {new Date(nextEvent.startDate).toLocaleDateString('es-ES', { timeZone: 'UTC' })}</strong>
                 </div>
               </div>
             </div>
@@ -162,7 +163,7 @@ export default function RutasAgenciaMovil() {
                       <p className="text-xs font-bold text-slate-700 leading-tight">{event.eventName || 'Operativo B2B'}</p>
                       <div className="flex items-center gap-2 mt-0.5">
                         <span className="text-[10px] text-slate-400 flex items-center gap-1"><Calendar className="w-2.5 h-2.5" /> {event.startDate ? new Date(event.startDate).toLocaleDateString('es-ES', { timeZone: 'UTC' }) : 'N/A'}</span>
-                        <span className="text-[9px] font-bold text-[#009639] bg-green-50 px-1.5 py-0.5 rounded uppercase tracking-wider">{event.state}</span>
+                        <span className="text-[9px] font-bold text-[#009639] bg-green-50 px-1.5 py-0.5 rounded uppercase tracking-wider">{event.estadoOperativo || event.state}</span>
                       </div>
                     </div>
                     {((event.cifras?.cuentasAbiertas || 0) + (event.cifras?.atendidos || 0)) > 0 && (
@@ -208,7 +209,7 @@ export default function RutasAgenciaMovil() {
                 <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-[#FE5000] to-[#FF8A50]" />
                 <svg className="absolute bottom-0 left-0 w-full h-1/2 object-cover opacity-30 pointer-events-none text-slate-200" viewBox="0 0 100 30" preserveAspectRatio="none"><path d="M0,30 Q30,5 60,20 T100,5" fill="none" stroke="currentColor" strokeWidth="1.5" vectorEffect="non-scaling-stroke" /></svg>
                 <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-                  <Building2 className="w-3.5 h-3.5 text-[#FE5000]" /> Puntos de Despliegue
+                  <Building2 className="w-3.5 h-3.5 text-[#FE5000]" /> Jornadas Desplegadas
                 </p>
                 <div className="flex flex-wrap items-end gap-2 justify-between">
                   <p className="text-xl lg:text-2xl font-black text-[#00205B] tracking-tight">
@@ -223,7 +224,7 @@ export default function RutasAgenciaMovil() {
                 <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-[#00205B] to-[#003A9E]" />
                 <svg className="absolute bottom-0 left-0 w-full h-1/2 object-cover opacity-30 pointer-events-none text-slate-200" viewBox="0 0 100 30" preserveAspectRatio="none"><path d="M0,30 Q25,10 50,20 T100,5" fill="none" stroke="currentColor" strokeWidth="1.5" vectorEffect="non-scaling-stroke" /></svg>
                 <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-                  <MapPin className="w-3.5 h-3.5 text-[#00205B]" /> Cobertura Nacional
+                  <MapPin className="w-3.5 h-3.5 text-[#00205B]" /> Estados Visitados
                 </p>
                 <div className="flex flex-wrap items-end gap-2 justify-between">
                   <p className="text-xl lg:text-2xl font-black text-[#00205B] tracking-tight">
@@ -287,7 +288,7 @@ export default function RutasAgenciaMovil() {
                   const stateCoords = STATE_COORDS[normName];
                   
                   // Check if state is in route
-                  const isActive = stateCoords && events.some(e => normalizeStateName(e.state || '') === normName);
+                  const isActive = stateCoords && events.some(e => normalizeStateName(e.estadoOperativo || e.state || '') === normName);
 
                   return (
                     <Geography
@@ -337,7 +338,7 @@ export default function RutasAgenciaMovil() {
             </Geographies>
 
             {/* Puntos Metropolitanos con Efecto Radar */}
-            {events.filter(e => e.state && STATE_COORDS[normalizeStateName(e.state)]).map(e => getJitteredCoord(STATE_COORDS[normalizeStateName(e.state)])).map((coord: [number, number], idx: number) => (
+            {events.filter(e => (e.estadoOperativo || e.state) && STATE_COORDS[normalizeStateName(e.estadoOperativo || e.state)]).map(e => getJitteredCoord(STATE_COORDS[normalizeStateName(e.estadoOperativo || e.state)])).map((coord: [number, number], idx: number) => (
               <Marker key={idx} coordinates={coord}>
                 <foreignObject x="-24" y="-36" width="48" height="48">
                   <div className="relative flex flex-col items-center justify-end w-full h-full pb-1 opacity-90 hover:opacity-100 hover:scale-110 transition-transform">
