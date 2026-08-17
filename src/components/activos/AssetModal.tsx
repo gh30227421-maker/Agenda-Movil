@@ -14,48 +14,44 @@ interface AssetModalProps {
 
 export default function AssetModal({ isOpen, onClose, assetToEdit }: AssetModalProps) {
   const { addAsset, updateAsset } = useAssets();
-  const { agencies, employees } = useAgenda(); // Custom hook to fetch reference data
+  const { agencies, employees, events } = useAgenda(); // Custom hook to fetch reference data
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Form state
   const [codigoActivo, setCodigoActivo] = useState('');
   const [tipoEquipo, setTipoEquipo] = useState('');
-  const [marcaModelo, setMarcaModelo] = useState('');
+  const [marca, setMarca] = useState('');
+  const [modelo, setModelo] = useState('');
   const [serial, setSerial] = useState('');
   const [estadoOperativo, setEstadoOperativo] = useState('Operativo');
-  const [asignadoTipo, setAsignadoTipo] = useState<'ninguno' | 'agencia' | 'empleado'>('ninguno');
-  const [agencyCode, setAgencyCode] = useState('');
+  const [tipoAsignacion, setTipoAsignacion] = useState<'stock' | 'agencia' | 'evento'>('stock');
+  const [agenciaId, setAgenciaId] = useState('');
+  const [eventoId, setEventoId] = useState('');
   const [employeeId, setEmployeeId] = useState('');
 
   useEffect(() => {
     if (assetToEdit) {
       setCodigoActivo(assetToEdit.codigo_activo);
       setTipoEquipo(assetToEdit.tipo_equipo);
-      setMarcaModelo(assetToEdit.marca_modelo || '');
+      setMarca(assetToEdit.marca || assetToEdit.marca_modelo || '');
+      setModelo(assetToEdit.modelo || '');
       setSerial(assetToEdit.serial || '');
       setEstadoOperativo(assetToEdit.estado_operativo);
-      if (assetToEdit.agency_code) {
-        setAsignadoTipo('agencia');
-        setAgencyCode(assetToEdit.agency_code);
-        setEmployeeId('');
-      } else if (assetToEdit.employee_id) {
-        setAsignadoTipo('empleado');
-        setEmployeeId(assetToEdit.employee_id);
-        setAgencyCode('');
-      } else {
-        setAsignadoTipo('ninguno');
-        setAgencyCode('');
-        setEmployeeId('');
-      }
+      setTipoAsignacion((assetToEdit.tipo_asignacion as any) || 'stock');
+      setAgenciaId(assetToEdit.agencia_id || '');
+      setEventoId(assetToEdit.evento_id || '');
+      setEmployeeId(assetToEdit.employee_id || '');
     } else {
       // Reset
       setCodigoActivo('');
       setTipoEquipo('');
-      setMarcaModelo('');
+      setMarca('');
+      setModelo('');
       setSerial('');
       setEstadoOperativo('Operativo');
-      setAsignadoTipo('ninguno');
-      setAgencyCode('');
+      setTipoAsignacion('stock');
+      setAgenciaId('');
+      setEventoId('');
       setEmployeeId('');
     }
   }, [assetToEdit, isOpen]);
@@ -70,11 +66,14 @@ export default function AssetModal({ isOpen, onClose, assetToEdit }: AssetModalP
       const assetData = {
         codigo_activo: codigoActivo,
         tipo_equipo: tipoEquipo,
-        marca_modelo: marcaModelo || null,
+        marca: marca || null,
+        modelo: modelo || null,
         serial: serial || null,
         estado_operativo: estadoOperativo,
-        agency_code: asignadoTipo === 'agencia' ? agencyCode : null,
-        employee_id: asignadoTipo === 'empleado' ? employeeId : null,
+        tipo_asignacion: tipoAsignacion,
+        agencia_id: tipoAsignacion === 'agencia' ? (agenciaId || null) : null,
+        evento_id: tipoAsignacion === 'evento' ? (eventoId || null) : null,
+        employee_id: (tipoAsignacion === 'agencia' || tipoAsignacion === 'evento') ? (employeeId || null) : null,
       };
 
       if (assetToEdit) {
@@ -92,9 +91,9 @@ export default function AssetModal({ isOpen, onClose, assetToEdit }: AssetModalP
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
-      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden my-8">
+      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-visible my-8">
         
-        <div className="flex items-center justify-between p-6 border-b border-gray-100 bg-[#00205B]">
+        <div className="flex items-center justify-between p-6 border-b border-gray-100 bg-[#00205B] rounded-t-3xl">
           <h3 className="text-xl font-bold text-white flex items-center gap-2">
             <Box className="w-5 h-5 text-[#FE5000]" />
             {assetToEdit ? 'Editar Activo' : 'Registrar Nuevo Activo'}
@@ -110,7 +109,7 @@ export default function AssetModal({ isOpen, onClose, assetToEdit }: AssetModalP
             {/* Codigo de Activo */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">
-                Código de Activo / Placa *
+                N° Inventario BNC *
               </label>
               <input
                 type="text"
@@ -148,17 +147,33 @@ export default function AssetModal({ isOpen, onClose, assetToEdit }: AssetModalP
               </datalist>
             </div>
 
-            {/* Marca / Modelo */}
+            {/* Marca */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">
-                Marca / Modelo
+                Marca *
               </label>
               <input
                 type="text"
-                value={marcaModelo}
-                onChange={(e) => setMarcaModelo(e.target.value)}
+                required
+                value={marca}
+                onChange={(e) => setMarca(e.target.value)}
                 className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#001A45] focus:border-transparent focus:outline-none"
-                placeholder="Ej. Dell Latitude 3420"
+                placeholder="Ej. Dell"
+              />
+            </div>
+
+            {/* Modelo */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">
+                Modelo *
+              </label>
+              <input
+                type="text"
+                required
+                value={modelo}
+                onChange={(e) => setModelo(e.target.value)}
+                className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#001A45] focus:border-transparent focus:outline-none"
+                placeholder="Ej. Latitude 3420"
               />
             </div>
 
@@ -185,9 +200,7 @@ export default function AssetModal({ isOpen, onClose, assetToEdit }: AssetModalP
                 options={[
                   { value: 'Operativo', label: 'Operativo' },
                   { value: 'En Mantenimiento', label: 'En Mantenimiento' },
-                  { value: 'En Tránsito', label: 'En Tránsito' },
-                  { value: 'Dañado', label: 'Dañado' },
-                  { value: 'Desincorporado', label: 'Desincorporado' }
+                  { value: 'Dañado', label: 'Dañado' }
                 ]}
                 value={estadoOperativo}
                 onChange={setEstadoOperativo}
@@ -209,16 +222,23 @@ export default function AssetModal({ isOpen, onClose, assetToEdit }: AssetModalP
                 </label>
                 <ComboBox
                   options={[
-                    { value: 'ninguno', label: 'Sin Asignar (En Stock)' },
-                    { value: 'agencia', label: 'Asignado a Agencia / Evento' },
-                    { value: 'empleado', label: 'Asignado a Empleado' }
+                    { value: 'stock', label: 'Sin Asignar (En Stock)' },
+                    { value: 'agencia', label: 'Asignado a Agencia' },
+                    { value: 'evento', label: 'Asignado a Evento' }
                   ]}
-                  value={asignadoTipo}
-                  onChange={(val) => setAsignadoTipo(val as any)}
+                  value={tipoAsignacion}
+                  onChange={(val) => {
+                    setTipoAsignacion(val as any);
+                    setAgenciaId('');
+                    setEventoId('');
+                    if (val === 'stock') {
+                      setEmployeeId('');
+                    }
+                  }}
                 />
               </div>
 
-              {asignadoTipo === 'agencia' && (
+              {tipoAsignacion === 'agencia' && (
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-1">
                     Seleccionar Agencia *
@@ -226,18 +246,36 @@ export default function AssetModal({ isOpen, onClose, assetToEdit }: AssetModalP
                   <ComboBox
                     options={[
                       { value: '', label: 'Seleccione...' },
-                      ...agencies.map(ag => ({ value: ag.code, label: `${ag.code} - ${ag.name}` }))
+                      ...agencies.map(ag => ({ value: ag.id, label: `${ag.code} - ${ag.name}` }))
                     ]}
-                    value={agencyCode}
-                    onChange={setAgencyCode}
+                    value={agenciaId}
+                    onChange={setAgenciaId}
                   />
                 </div>
               )}
 
-              {asignadoTipo === 'empleado' && (
+              {tipoAsignacion === 'evento' && (
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-1">
-                    Seleccionar Empleado *
+                    Seleccionar Evento *
+                  </label>
+                  <ComboBox
+                    options={[
+                      { value: '', label: 'Seleccione...' },
+                      ...events
+                        .filter(ev => !['Culminado', 'Cerrado', 'Cancelado'].includes(ev.status || ''))
+                        .map(ev => ({ value: ev.id, label: `${ev.eventName} - ${ev.agencyCode}` }))
+                    ]}
+                    value={eventoId}
+                    onChange={setEventoId}
+                  />
+                </div>
+              )}
+
+              {(tipoAsignacion === 'agencia' || tipoAsignacion === 'evento') && (
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">
+                    Empleado Responsable (Custodio) *
                   </label>
                   <ComboBox
                     options={[

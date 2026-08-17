@@ -5,10 +5,13 @@ import ComboBox from '@/components/ui/ComboBox';
 interface AgendaFiltersProps {
   view: 'list' | 'calendar';
   onViewChange: (view: 'list' | 'calendar') => void;
+  searchQuery: string;
+  onSearchChange: (q: string) => void;
+  statusFilter: string;
+  onStatusChange: (s: string) => void;
 }
 
-export default function AgendaFilters({ view, onViewChange }: AgendaFiltersProps) {
-  const [status, setStatus] = useState('Todos');
+export default function AgendaFilters({ view, onViewChange, searchQuery, onSearchChange, statusFilter, onStatusChange }: AgendaFiltersProps) {
 
   return (
     <div className="flex flex-col sm:flex-row gap-4 items-center justify-between mb-6">
@@ -22,6 +25,8 @@ export default function AgendaFilters({ view, onViewChange }: AgendaFiltersProps
             type="text"
             className="block w-full pl-10 pr-3 py-2 border border-gray-200 rounded-lg text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#00205B] focus:border-transparent bg-white shadow-sm"
             placeholder="Buscar por nombre o ubicación..."
+            value={searchQuery}
+            onChange={(e) => onSearchChange(e.target.value)}
           />
         </div>
 
@@ -35,8 +40,8 @@ export default function AgendaFilters({ view, onViewChange }: AgendaFiltersProps
               { value: 'Culminado', label: 'Culminado' },
               { value: 'Cancelado', label: 'Cancelado' }
             ]}
-            value={status}
-            onChange={setStatus}
+            value={statusFilter}
+            onChange={onStatusChange}
             icon={<Filter className="w-4 h-4 text-gray-500" />}
           />
         </div>

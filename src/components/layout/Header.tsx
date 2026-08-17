@@ -1,6 +1,6 @@
 "use client";
 
-import { Box, Bell, Truck, LayoutDashboard, CalendarRange, Users, BarChart3, Receipt, TrendingUp, UserCircle, LogOut, Settings, Wifi, Building2, ChevronDown } from 'lucide-react';
+import { Box, Bell, Truck, LayoutDashboard, CalendarRange, Users, BarChart3, Receipt, TrendingUp, UserCircle, LogOut, Settings, Wifi, Building2, ChevronDown, MapPinned } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
@@ -23,6 +23,7 @@ export default function Header() {
 
   const navGroups = [
     { name: 'Dashboard', icon: LayoutDashboard, href: '/dashboard' },
+    { name: 'Rutas y Despliegues', icon: MapPinned, href: '/rutas' },
     { 
       name: 'Operativa', 
       icon: CalendarRange, 
@@ -33,7 +34,7 @@ export default function Header() {
       ]
     },
     { 
-      name: 'Finanzas & Reportes', 
+      name: 'Auditoría y Reportes', 
       icon: TrendingUp, 
       items: [
         { name: 'Cifras', href: '/cifras' },
@@ -50,7 +51,8 @@ export default function Header() {
       icon: Settings, 
       items: [
         { name: 'Usuarios', href: '/admin/users' },
-        { name: 'Agencias', href: '/admin/agencies' }
+        { name: 'Agencias', href: '/admin/agencies' },
+        { name: 'Galería de Eventos', href: '/admin/photos' }
       ]
     });
   }
@@ -79,7 +81,7 @@ export default function Header() {
         </div>
 
       {/* Navegación */}
-      <nav className="hidden lg:flex items-center gap-2 xl:gap-4 flex-nowrap shrink-0">
+      <nav id="header-nav" className="hidden lg:flex items-center gap-2 xl:gap-4 flex-nowrap shrink-0">
         {navGroups.map((group) => {
           const Icon = group.icon;
           const isActive = group.href === pathname || group.items?.some(i => i.href === pathname);
@@ -101,7 +103,7 @@ export default function Header() {
             );
           }
 
-          const hasPending = group.name === 'Finanzas & Reportes' && pendingRentabilityCount > 0;
+          const hasPending = false && group.name === 'Auditoría y Reportes' && pendingRentabilityCount > 0; // Deshabilitado temporalmente por UX
 
           return (
             <div key={group.name} className="relative group">
@@ -127,7 +129,7 @@ export default function Header() {
                 <div className="bg-white rounded-xl shadow-xl border border-gray-100 py-2 w-56 flex flex-col">
                   {group.items.map((item) => {
                     const isSubActive = pathname === item.href;
-                    const showBadge = item.name === 'Seg. de Rentabilidad' && pendingRentabilityCount > 0;
+                    const showBadge = false && item.name === 'Seg. de Rentabilidad' && pendingRentabilityCount > 0; // Deshabilitado temporalmente por UX
                     return (
                       <Link
                         key={item.name}
@@ -154,7 +156,7 @@ export default function Header() {
       </div>
 
       {/* Perfil y Notificaciones - Derecha */}
-      <div className="flex items-center gap-3 md:gap-6 flex-nowrap shrink-0">
+      <div id="header-user-menu" className="flex items-center gap-3 md:gap-6 flex-nowrap shrink-0">
         <NotificationsDropdown />
         
         <div className="flex items-center gap-3 pl-4 border-l border-white/10">

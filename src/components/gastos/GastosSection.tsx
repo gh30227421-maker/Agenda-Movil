@@ -9,18 +9,23 @@ import AgenciaDistribucionChart from '../dashboard/AgenciaDistribucionChart';
 import UnidadRankingChart from '../dashboard/UnidadRankingChart';
 import UnidadDistribucionChart from '../dashboard/UnidadDistribucionChart';
 import GastosImport from './GastosImport';
+import ExportDropdown from '@/components/ui/ExportDropdown';
+import { exportToExcel, exportToPDF } from '@/utils/exportUtils';
 
 export default function GastosSection() {
   const { events, openModal } = useAgenda();
   
   const [selectedMonth, setSelectedMonth] = useState<number | 'all'>('all');
   const [selectedEventId, setSelectedEventId] = useState<string | 'all'>('all');
+  const [selectedStatus, setSelectedStatus] = useState<'all' | 'registered' | 'pending'>('all');
+  const [selectedUnitType, setSelectedUnitType] = useState<'all' | 'Agencia Móvil' | 'Unidad Móvil'>('all');
 
   const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
   const availableMonths = useMemo(() => {
     const validMonths = new Set<number>();
     events.forEach(ev => {
+      if (selectedUnitType !== 'all' && ev.type !== selectedUnitType) return;
       if (selectedEventId !== 'all' && ev.id !== selectedEventId) return;
       if (ev.startDate) {
         const evMonth = parseInt(ev.startDate.split('-')[1], 10) - 1;
@@ -33,6 +38,7 @@ export default function GastosSection() {
   const availableEvents = useMemo(() => {
     const evs: { value: string, label: string }[] = [];
     events.forEach(ev => {
+      if (selectedUnitType !== 'all' && ev.type !== selectedUnitType) return;
       if (selectedMonth !== 'all' && ev.startDate) {
         const evMonth = parseInt(ev.startDate.split('-')[1], 10) - 1;
         if (evMonth !== selectedMonth) return;
@@ -50,9 +56,19 @@ export default function GastosSection() {
         const evMonth = parseInt(ev.startDate.split('-')[1], 10) - 1;
         matchMonth = evMonth === selectedMonth;
       }
-      return matchEvent && matchMonth;
+      
+      let matchStatus = true;
+      if (selectedStatus === 'registered') {
+        matchStatus = !!ev.gastos;
+      } else if (selectedStatus === 'pending') {
+        matchStatus = !ev.gastos;
+      }
+
+      const matchUnit = selectedUnitType === 'all' || ev.type === selectedUnitType;
+      
+      return matchEvent && matchMonth && matchStatus && matchUnit;
     });
-  }, [events, selectedEventId, selectedMonth]);
+  }, [events, selectedEventId, selectedMonth, selectedStatus, selectedUnitType]);
 
   // Totales
   const totales = filteredEvents.reduce((acc, ev) => {
@@ -67,11 +83,70 @@ export default function GastosSection() {
     return acc;
   }, { totalBs: 0, totalUsd: 0 });
 
+  const mobileEvents = filteredEvents.filter(e => e.type === 'Agencia Móvil' || e.type === 'Unidad Móvil');
+  const registeredCount = mobileEvents.filter(e => e.gastos).length;
+  const missingCount = mobileEvents.length - registeredCount;
+
+  const handleExport = (type: 'pdf' | 'excel') => {
+    const data = filteredEvents.map(ev => {
+      const g = ev.gastos;
+      if (!g) {
+        return [
+          ev.eventName,
+          '—',
+          '—',
+          '—',
+          'Pendiente'
+        ];
+      }
+      const totalBs = g.alimentacionBs + g.hospedajeBs + g.transporteBs + 
+                      g.soporteTecnicoBs + g.bancaElectronicaBs + g.gastosTributariosBs + 
+                      g.conductorAyudanteBs + g.mantenimientoLimpiezaBs;
+      return [
+        ev.eventName,
+        g.tasaBcv,
+        totalBs,
+        g.totalUsd,
+        'Registrado'
+      ];
+    });
+
+    const filterText = [
+      selectedMonth !== 'all' ? `Mes: ${months[Number(selectedMonth)]}` : '',
+      selectedUnitType !== 'all' ? `Tipo: ${selectedUnitType}` : '',
+      selectedStatus !== 'all' ? `Estado: ${selectedStatus}` : ''
+    ].filter(Boolean).join(' | ');
+
+    const config = {
+      title: 'Gastos y Viáticos Operativos',
+      filename: 'Gastos_Viaticos_BNC',
+      headers: ['Evento / Unidad', 'Tasa BCV (Bs/USD)', 'Total (Bs.)', 'Total (USD)', 'Estado'],
+      data,
+      filters: filterText || 'Vista Global'
+    };
+
+    if (type === 'pdf') exportToPDF(config);
+    if (type === 'excel') exportToExcel(config);
+  };
+
   return (
     <div className="space-y-6 w-full max-w-[95%] xl:max-w-[98%] mx-auto">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-[#00205B]">Gastos y Viáticos Operativos</h2>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+          <h2 className="text-2xl font-bold text-[#00205B]">Gastos y Viáticos Operativos</h2>
+          <div className="flex items-center gap-2 text-sm bg-gray-50 border border-gray-200 rounded-full px-3 py-1">
+            <span className="font-bold text-gray-800">{mobileEvents.length} Total</span>
+            <span className="text-gray-300">|</span>
+            <span className="font-bold text-[#00205B]">{registeredCount} Registrados</span>
+            <span className="text-gray-300">|</span>
+            <span className="font-bold text-[#FE5000]">{missingCount} Faltantes</span>
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
+          <ExportDropdown 
+            onExportPDF={() => handleExport('pdf')}
+            onExportExcel={() => handleExport('excel')}
+          />
           <GastosImport />
           <button 
             onClick={() => openModal('gastos', true)}
@@ -79,10 +154,6 @@ export default function GastosSection() {
           >
             <Plus className="w-5 h-5" />
             <span className="hidden sm:inline">Añadir Gasto</span>
-          </button>
-          <button className="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors shadow-sm">
-            <Download className="w-4 h-4" />
-            Exportar
           </button>
         </div>
       </div>
@@ -115,6 +186,37 @@ export default function GastosSection() {
             />
           </div>
 
+          <div className="w-full md:w-48">
+            <ComboBox
+              options={[
+                { value: 'all', label: 'Todos los Estatus' },
+                { value: 'registered', label: 'Registrados' },
+                { value: 'pending', label: 'Pendientes' }
+              ]}
+              value={selectedStatus}
+              onChange={(val) => setSelectedStatus(val as 'all' | 'registered' | 'pending')}
+              icon={<Filter className="w-4 h-4" />}
+              emptyText="No hay estatus"
+            />
+          </div>
+
+          <div className="w-full md:w-48">
+            <ComboBox
+              options={[
+                { value: 'all', label: 'Todas las Unidades' },
+                { value: 'Agencia Móvil', label: 'Agencia Móvil' },
+                { value: 'Unidad Móvil', label: 'Unidad Móvil' }
+              ]}
+              value={selectedUnitType}
+              onChange={(val) => {
+                setSelectedUnitType(val as 'all' | 'Agencia Móvil' | 'Unidad Móvil');
+                setSelectedEventId('all'); // Reset event if type changes
+              }}
+              icon={<Truck className="w-4 h-4" />}
+              emptyText="No hay tipos"
+            />
+          </div>
+
           <div className="w-full md:flex-1">
             <ComboBox
               options={[{ value: 'all', label: 'Todos los Eventos / Agencias' }, ...availableEvents]}
@@ -129,7 +231,7 @@ export default function GastosSection() {
                   }
                 }
               }}
-              icon={<Filter className="w-4 h-4" />}
+              icon={<Search className="w-4 h-4" />}
               emptyText="No hay operativos"
             />
           </div>
@@ -139,6 +241,7 @@ export default function GastosSection() {
             onClick={() => {
               setSelectedMonth('all');
               setSelectedEventId('all');
+              setSelectedStatus('all');
             }}
             className="shrink-0 flex items-center justify-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-[#FE5000] transition-colors"
           >
@@ -198,7 +301,15 @@ export default function GastosSection() {
               {(() => {
                 const tableEvents = [...filteredEvents]
                   .filter(e => e.type === 'Agencia Móvil' || e.type === 'Unidad Móvil')
-                  .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
+                  .sort((a, b) => {
+                    const aHasGastos = !!a.gastos;
+                    const bHasGastos = !!b.gastos;
+                    
+                    if (aHasGastos && !bHasGastos) return -1;
+                    if (!aHasGastos && bHasGastos) return 1;
+                    
+                    return new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
+                  });
 
                 if (tableEvents.length === 0) {
                   return (
@@ -246,12 +357,12 @@ export default function GastosSection() {
                       <td className="px-6 py-4 text-center">
                         {g ? (
                           <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                            g.estado === 'Convalidado' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
+                            g.estado === 'Convalidado' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-[#00205B]'
                           }`}>
-                            {g.estado}
+                            {g.estado === 'Pendiente' ? 'Registrado' : g.estado}
                           </span>
                         ) : (
-                          <span className="px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
+                          <span className="px-3 py-1 rounded-full text-xs font-medium bg-orange-100 text-[#FE5000]">
                             Pendiente
                           </span>
                         )}

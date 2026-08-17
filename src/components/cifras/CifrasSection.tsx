@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useMemo } from 'react';
-import { CreditCard, Users, PiggyBank, Plus, Edit2, Filter, Search, BarChart3, CalendarRange, XCircle, Calendar } from 'lucide-react';
+import { CreditCard, Users, PiggyBank, Plus, Edit2, Filter, Search, BarChart3, CalendarRange, XCircle, Calendar, Truck } from 'lucide-react';
 import { useAgenda } from '@/context/AgendaContext';
 import { useToast } from '@/context/ToastContext';
 import ComboBox from '@/components/ui/ComboBox';
 import CifrasImport from './CifrasImport';
+import ExportDropdown from '@/components/ui/ExportDropdown';
+import { exportToExcel, exportToPDF } from '@/utils/exportUtils';
 
 export default function CifrasSection() {
   const { events, openModal } = useAgenda();
@@ -13,12 +15,14 @@ export default function CifrasSection() {
 
   const [selectedMonth, setSelectedMonth] = useState<number | 'all'>('all');
   const [selectedEventId, setSelectedEventId] = useState<string | 'all'>('all');
+  const [selectedUnitType, setSelectedUnitType] = useState<'all' | 'Agencia Móvil' | 'Unidad Móvil'>('all');
 
   const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
   const availableMonths = useMemo(() => {
     const validMonths = new Set<number>();
     events.forEach(ev => {
+      if (selectedUnitType !== 'all' && ev.type !== selectedUnitType) return;
       if (selectedEventId !== 'all' && ev.id !== selectedEventId) return;
       if (ev.startDate) {
         const evMonth = parseInt(ev.startDate.split('-')[1], 10) - 1;
@@ -31,6 +35,7 @@ export default function CifrasSection() {
   const availableEvents = useMemo(() => {
     const evs: { value: string, label: string }[] = [];
     events.forEach(ev => {
+      if (selectedUnitType !== 'all' && ev.type !== selectedUnitType) return;
       if (selectedMonth !== 'all' && ev.startDate) {
         const evMonth = parseInt(ev.startDate.split('-')[1], 10) - 1;
         if (evMonth !== selectedMonth) return;
@@ -48,9 +53,12 @@ export default function CifrasSection() {
         const evMonth = parseInt(ev.startDate.split('-')[1], 10) - 1;
         matchMonth = evMonth === selectedMonth;
       }
-      return matchEvent && matchMonth;
+      
+      const matchUnit = selectedUnitType === 'all' || ev.type === selectedUnitType;
+      
+      return matchEvent && matchMonth && matchUnit;
     });
-  }, [events, selectedEventId, selectedMonth]);
+  }, [events, selectedEventId, selectedMonth, selectedUnitType]);
 
   const totales = filteredEvents.reduce((acc, ev) => {
     if (ev.cifras) {
@@ -69,11 +77,47 @@ export default function CifrasSection() {
   const totalOperaciones = totales.cuentasAbiertas + totales.tdd + totales.reclamos;
   const totalJornadas = eventosConCifras.length;
 
+  const handleExport = (type: 'pdf' | 'excel') => {
+    const data = filteredEvents.filter(e => e.cifras).map(ev => {
+      const c = ev.cifras!;
+      const totalOps = c.cuentasAbiertas + c.tdd + c.reclamos;
+      return [
+        ev.eventName,
+        ev.agencyCode || '',
+        ev.type,
+        c.cuentasAbiertas,
+        c.tdd,
+        c.reclamos,
+        totalOps
+      ];
+    });
+    
+    const filterText = [
+      selectedMonth !== 'all' ? `Mes: ${months[Number(selectedMonth)]}` : '',
+      selectedUnitType !== 'all' ? `Tipo: ${selectedUnitType}` : ''
+    ].filter(Boolean).join(' | ');
+
+    const config = {
+      title: 'Auditoría Global de Cifras',
+      filename: 'Cifras_Operativas_BNC',
+      headers: ['Evento / C.C.', 'Agencia', 'Tipo', 'Cuentas Abiertas', 'BNC TDD', 'Otras Ops/Reclamos', 'Total Ops'],
+      data,
+      filters: filterText || 'Vista Global'
+    };
+
+    if (type === 'pdf') exportToPDF(config);
+    if (type === 'excel') exportToExcel(config);
+  };
+
   return (
     <div className="space-y-6 w-full max-w-[95%] xl:max-w-[98%] mx-auto">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <h2 className="text-2xl font-bold text-[#00205B]">Auditoría Global de Cifras</h2>
-        <div className="flex flex-col sm:flex-row items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <ExportDropdown 
+            onExportPDF={() => handleExport('pdf')}
+            onExportExcel={() => handleExport('excel')}
+          />
           <CifrasImport />
           <button 
             onClick={() => openModal('cifras', true)}
@@ -113,6 +157,23 @@ export default function CifrasSection() {
             />
           </div>
 
+          <div className="w-full md:w-48">
+            <ComboBox
+              options={[
+                { value: 'all', label: 'Todas las Unidades' },
+                { value: 'Agencia Móvil', label: 'Agencia Móvil' },
+                { value: 'Unidad Móvil', label: 'Unidad Móvil' }
+              ]}
+              value={selectedUnitType}
+              onChange={(val) => {
+                setSelectedUnitType(val as 'all' | 'Agencia Móvil' | 'Unidad Móvil');
+                setSelectedEventId('all'); // Reset event if type changes
+              }}
+              icon={<Truck className="w-4 h-4" />}
+              emptyText="No hay tipos"
+            />
+          </div>
+
           <div className="w-full md:flex-1">
             <ComboBox
               options={[{ value: 'all', label: 'Todos los Eventos / Agencias' }, ...availableEvents]}
@@ -136,6 +197,7 @@ export default function CifrasSection() {
             type="button"
             onClick={() => {
               setSelectedMonth('all');
+              setSelectedUnitType('all');
               setSelectedEventId('all');
             }}
             className="shrink-0 flex items-center justify-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-[#FE5000] transition-colors"

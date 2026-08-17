@@ -9,9 +9,12 @@ import EventList from "@/components/agenda/EventList";
 import EventCalendar from "@/components/agenda/EventCalendar";
 import EventManagementModal from "@/components/agenda/EventManagementModal";
 import EventsImport from "@/components/agenda/EventsImport";
+import PresentationMode from "@/components/ui/PresentationMode";
 
 function DashboardContent() {
   const [view, setView] = useState<'list' | 'calendar'>('calendar');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('Todos');
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -21,6 +24,17 @@ function DashboardContent() {
   
   const filteredEvents = events.filter(event => {
     if (typeFilter && typeFilter !== 'Todas' && event.type !== typeFilter) return false;
+    if (statusFilter !== 'Todos' && event.status !== statusFilter) return false;
+
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      if (!event.eventName.toLowerCase().includes(q) &&
+          !(event.location?.toLowerCase() || '').includes(q) &&
+          !event.agencyCode?.toLowerCase().includes(q)) {
+        return false;
+      }
+    }
+
     return true;
   });
 
@@ -92,9 +106,17 @@ function DashboardContent() {
         </div>
       </div>
 
-      <AgendaFilters view={view} onViewChange={setView} />
+      <AgendaFilters 
+        view={view} 
+        onViewChange={setView} 
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        statusFilter={statusFilter}
+        onStatusChange={setStatusFilter}
+      />
       
       {view === 'calendar' ? <EventCalendar events={filteredEvents} /> : <EventList events={filteredEvents} />}
+      <PresentationMode />
     </div>
   );
 }

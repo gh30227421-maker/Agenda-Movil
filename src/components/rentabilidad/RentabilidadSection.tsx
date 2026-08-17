@@ -23,12 +23,15 @@ import {
   Filter,
   Search,
   XCircle,
-  Calendar
+  Calendar,
+  Truck
 } from 'lucide-react';
-import { useAgenda } from '@/context/AgendaContext';
+import { useAgenda, type EventRow } from '@/context/AgendaContext';
 import { useToast } from '@/context/ToastContext';
 import ComboBox from '@/components/ui/ComboBox';
 import CierresImport from './CierresImport';
+import ExportDropdown from '@/components/ui/ExportDropdown';
+import { exportToExcel, exportToPDF } from '@/utils/exportUtils';
 
 // ... Add CurrencyInput component right after imports
 function CurrencyInput({ label, name, value, onChange, prefix = "Bs." }: { label: string, name: string, value: number, prefix?: string, onChange: (name: string, val: number) => void }) {
@@ -108,6 +111,8 @@ export default function RentabilidadSection() {
 
   const [selectedMonth, setSelectedMonth] = useState<number | 'all'>('all');
   const [filterEventId, setFilterEventId] = useState<string | 'all'>('all');
+  const [filterStatus, setFilterStatus] = useState<'all' | 'Sin Datos' | 'Rentable' | 'No Rentable'>('all');
+  const [filterUnitType, setFilterUnitType] = useState<'all' | 'Agencia Móvil' | 'Unidad Móvil'>('all');
 
   const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
@@ -115,6 +120,7 @@ export default function RentabilidadSection() {
     const validMonths = new Set<number>();
     events.forEach(ev => {
       if (ev.type === 'Red de Agencias') return;
+      if (filterUnitType !== 'all' && ev.type !== filterUnitType) return;
       if (filterEventId !== 'all' && ev.id !== filterEventId) return;
       if (ev.startDate) {
         const evMonth = parseInt(ev.startDate.split('-')[1], 10) - 1;
@@ -128,6 +134,7 @@ export default function RentabilidadSection() {
     const evs: { value: string, label: string }[] = [];
     events.forEach(ev => {
       if (ev.type === 'Red de Agencias') return;
+      if (filterUnitType !== 'all' && ev.type !== filterUnitType) return;
       if (selectedMonth !== 'all' && ev.startDate) {
         const evMonth = parseInt(ev.startDate.split('-')[1], 10) - 1;
         if (evMonth !== selectedMonth) return;
@@ -147,15 +154,68 @@ export default function RentabilidadSection() {
         const evMonth = parseInt(ev.startDate.split('-')[1], 10) - 1;
         matchMonth = evMonth === selectedMonth;
       }
-      return matchEvent && matchMonth;
+      
+      const matchUnit = filterUnitType === 'all' || ev.type === filterUnitType;
+      
+      return matchEvent && matchMonth && matchUnit;
+    }).sort((a, b) => {
+      const aHasData = !!a.cifras && ((a.cifras.saldosCaptadosBs || 0) > 0 || (a.cifras.saldoCierreDivisas || 0) > 0);
+      const bHasData = !!b.cifras && ((b.cifras.saldosCaptadosBs || 0) > 0 || (b.cifras.saldoCierreDivisas || 0) > 0);
+      
+      if (aHasData && !bHasData) return -1;
+      if (!aHasData && bHasData) return 1;
+      
+      return new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
     });
-  }, [events, filterEventId, selectedMonth]);
+  }, [events, filterEventId, selectedMonth, filterUnitType]);
 
-  // Estado para el modal de registro de saldo fin de mes
   const [isSaldoModalOpen, setIsSaldoModalOpen] = useState(false);
   const [selectedEventId, setSelectedEventId] = useState<string>('');
   const [saldoInputBs, setSaldoInputBs] = useState<number>(0);
   const [saldoInputUsd, setSaldoInputUsd] = useState<number>(0);
+
+  const [saldoSearchQuery, setSaldoSearchQuery] = useState('');
+  const [saldoSearchMonth, setSaldoSearchMonth] = useState<number | 'all'>('all');
+
+  const availableSaldoMonths = useMemo(() => {
+    const validMonths = new Set<number>();
+    events.forEach(ev => {
+      if (ev.type === 'Red de Agencias') return;
+      if (ev.cifras && ((ev.cifras.saldosCaptadosBs && ev.cifras.saldosCaptadosBs > 0) || (ev.cifras.saldoCierreDivisas && ev.cifras.saldoCierreDivisas > 0))) return;
+      
+      if (ev.startDate) {
+        const evMonth = parseInt(ev.startDate.split('-')[1], 10) - 1;
+        validMonths.add(evMonth);
+      }
+    });
+    return Array.from(validMonths).sort((a, b) => a - b);
+  }, [events]);
+
+  const filteredSaldoEvents = useMemo(() => {
+    return events.filter(ev => {
+      if (ev.type === 'Red de Agencias') return false;
+      if (ev.cifras && ((ev.cifras.saldosCaptadosBs && ev.cifras.saldosCaptadosBs > 0) || (ev.cifras.saldoCierreDivisas && ev.cifras.saldoCierreDivisas > 0))) return false;
+
+      const query = saldoSearchQuery.toLowerCase();
+      if (query && !ev.eventName.toLowerCase().includes(query) && !ev.agencyCode?.toLowerCase().includes(query) && !(ev.location || '').toLowerCase().includes(query)) {
+        return false;
+      }
+      
+      if (saldoSearchMonth !== 'all' && ev.startDate) {
+        const evMonth = parseInt(ev.startDate.split('-')[1], 10) - 1;
+        if (evMonth !== saldoSearchMonth) return false;
+      }
+      
+      return true;
+    }).sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
+  }, [events, saldoSearchQuery, saldoSearchMonth]);
+
+  useEffect(() => {
+    if (isSaldoModalOpen) {
+      setSaldoSearchQuery('');
+      setSaldoSearchMonth('all');
+    }
+  }, [isSaldoModalOpen]);
 
   const openSaldoModalForEvent = (eventId: string, currentSaldoBs: number = 0, currentSaldoUsd: number = 0) => {
     setSelectedEventId(eventId);
@@ -189,17 +249,15 @@ export default function RentabilidadSection() {
     showToast('Saldo de fin de mes registrado exitosamente', 'success');
     setIsSaldoModalOpen(false);
     setSelectedEventId('');
-    setSaldoInputBs(0);
     setSaldoInputUsd(0);
   };
 
-  // Calcular métricas por evento usando la nomenclatura contable requerida
-  const filas = filteredEvents.map((ev) => {
+  const filasRaw = filteredEvents.map((ev) => {
     const tieneCifras   = !!ev.cifras;
     const tieneGastos   = !!ev.gastos;
     const tasaBcv       = ev.gastos?.tasaBcv ?? 1; // fallback 1 para evitar div/0
 
-    // 📊 SALDOS E INGRESOS 📊📊📊📊📊📊📊📊📊📊📊📊📊📊📊📊📊📊📊📊📊📊📊📊📊📊📊📊📊📊📊📊📊📊📊📊📊📊📊📊📊📊📊📊📊📊📊📊📊📊📊
+    // 📊 SALDOS E INGRESOS 📊📊📊📊📊📊📊📊📊📊📊📊📊📊📊📊📊📊📊📊📊📊📊📊📊📊📊📊📊📊📊📊📊📊📊📊📊📊📊📊📊📊📊📊📊📊📊📊📊📊
     const saldosBs      = ev.cifras?.saldosCaptadosBs ?? 0;
     const saldoDivisas  = ev.cifras?.saldoCierreDivisas ?? 0;
     const saldosUsd     = (tasaBcv > 0 ? saldosBs / tasaBcv : 0) + saldoDivisas;
@@ -220,7 +278,7 @@ export default function RentabilidadSection() {
     // ── MARGEN Y RENTABILIDAD ───────────────────────────────────────────────
     const margenUsd     = saldosUsd - costosUsd;
     const margenPct     = saldosUsd > 0 ? (margenUsd / saldosUsd) * 100 : 0;
-    const tieneDatos    = saldosBs > 0;
+    const tieneDatos    = saldosBs > 0 || saldoDivisas > 0;
     const estado        = calcularEstado(margenPct, tieneDatos);
 
     return {
@@ -230,6 +288,18 @@ export default function RentabilidadSection() {
       margenUsd, margenPct, estado,
     };
   });
+
+  const filas = filasRaw.filter(f => {
+    if (filterStatus === 'all') return true;
+    if (filterStatus === 'Rentable') return f.estado === 'Rentable' || f.estado === 'Al Límite';
+    return f.estado === filterStatus;
+  });
+
+  const mobileEvents = filteredEvents.filter(e => e.type === 'Agencia Móvil' || e.type === 'Unidad Móvil');
+  const cerradosCount = mobileEvents.filter(e => e.cifras && ((e.cifras.saldosCaptadosBs || 0) > 0 || (e.cifras.saldoCierreDivisas || 0) > 0)).length;
+  const missingCount = mobileEvents.length - cerradosCount;
+
+  // ── TOTALES GLOBALES ───────────────────────────────────────────────────────
 
   // ── TOTALES GLOBALES ───────────────────────────────────────────────────────
   const totSaldosBs       = filas.reduce((a, f) => a + f.saldosBs,     0);
@@ -260,19 +330,66 @@ export default function RentabilidadSection() {
   const activeEventForModal = events.find(ev => ev.id === selectedEventId);
   const isGlobalMarginPositive = totMargenUsd >= 0;
 
+  const handleExport = (type: 'pdf' | 'excel') => {
+    const data = filas.map(({ ev, tieneDatos, tasaBcv, saldosBs, saldosUsd, costosBs, costosUsd, margenUsd, margenPct, estado }) => {
+      return [
+        ev.eventName,
+        ev.agencyCode || '',
+        tieneDatos ? saldosBs : 'Sin Datos',
+        tieneDatos ? tasaBcv : 'Sin Datos',
+        tieneDatos ? saldosUsd : 'Sin Datos',
+        costosBs,
+        costosUsd,
+        margenUsd,
+        margenPct,
+        estado
+      ];
+    });
+
+    const filterText = [
+      selectedMonth !== 'all' ? `Mes: ${months[Number(selectedMonth)]}` : '',
+      filterUnitType !== 'all' ? `Tipo: ${filterUnitType}` : '',
+      filterStatus !== 'all' ? `Estado: ${filterStatus}` : ''
+    ].filter(Boolean).join(' | ');
+
+    const config = {
+      title: 'Rentabilidad y Cierre Financiero',
+      filename: 'Cierre_Operativo_Rentabilidad_BNC',
+      headers: ['Jornada', 'Agencia', 'Cierre Bs.', 'Tasa BCV', 'Cierre USD', 'Costo Bs.', 'Costo USD', 'Margen USD', 'Rentab. %', 'Estado'],
+      data,
+      filters: filterText || 'Vista Global'
+    };
+
+    if (type === 'pdf') exportToPDF(config);
+    if (type === 'excel') exportToExcel(config);
+  };
+
   return (
     <div className="space-y-8 w-full max-w-[95%] xl:max-w-[98%] mx-auto">
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-[#00205B]">Rentabilidad y Cierre Financiero</h2>
-          <p className="text-gray-500 text-sm mt-1">
-            Resumen contable de Saldos Fin de Mes (Bs. y USD) vs. Costos Operativos (Bs. y USD).
-          </p>
+        <div className="flex flex-col xl:flex-row xl:items-center gap-4">
+          <div>
+            <h2 className="text-2xl font-bold text-[#00205B]">Rentabilidad y Cierre Financiero</h2>
+            <p className="text-gray-500 text-sm mt-1">
+              Resumen contable de Saldos Fin de Mes (Bs. y USD) vs. Costos Operativos (Bs. y USD).
+            </p>
+          </div>
+          <div className="flex items-center gap-2 text-sm bg-gray-50 border border-gray-200 rounded-full px-3 py-1">
+            <span className="font-bold text-gray-800">{mobileEvents.length} Total</span>
+            <span className="text-gray-300">|</span>
+            <span className="font-bold text-[#009639]">{cerradosCount} Cerrados</span>
+            <span className="text-gray-300">|</span>
+            <span className="font-bold text-[#FE5000]">{missingCount} Faltantes</span>
+          </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <ExportDropdown 
+            onExportPDF={() => handleExport('pdf')}
+            onExportExcel={() => handleExport('excel')}
+          />
           <CierresImport />
           <button
             onClick={() => {
@@ -316,6 +433,38 @@ export default function RentabilidadSection() {
             />
           </div>
 
+          <div className="w-full md:w-48">
+            <ComboBox
+              options={[
+                { value: 'all', label: 'Todos los Estatus' },
+                { value: 'Sin Datos', label: 'Sin Datos' },
+                { value: 'Rentable', label: 'Rentable' },
+                { value: 'No Rentable', label: 'No Rentable' }
+              ]}
+              value={filterStatus}
+              onChange={(val) => setFilterStatus(val as 'all' | 'Sin Datos' | 'Rentable' | 'No Rentable')}
+              icon={<Filter className="w-4 h-4" />}
+              emptyText="No hay estatus"
+            />
+          </div>
+
+          <div className="w-full md:w-48">
+            <ComboBox
+              options={[
+                { value: 'all', label: 'Todas las Unidades' },
+                { value: 'Agencia Móvil', label: 'Agencia Móvil' },
+                { value: 'Unidad Móvil', label: 'Unidad Móvil' }
+              ]}
+              value={filterUnitType}
+              onChange={(val) => {
+                setFilterUnitType(val as 'all' | 'Agencia Móvil' | 'Unidad Móvil');
+                setFilterEventId('all'); // Reset event if type changes
+              }}
+              icon={<Truck className="w-4 h-4" />}
+              emptyText="No hay tipos"
+            />
+          </div>
+
           <div className="w-full md:flex-1">
             <ComboBox
               options={[{ value: 'all', label: 'Todos los Eventos / Agencias' }, ...availableEvents]}
@@ -339,7 +488,9 @@ export default function RentabilidadSection() {
             type="button"
             onClick={() => {
               setSelectedMonth('all');
+              setFilterUnitType('all');
               setFilterEventId('all');
+              setFilterStatus('all');
             }}
             className="shrink-0 flex items-center justify-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-[#FE5000] transition-colors"
           >
@@ -616,7 +767,7 @@ export default function RentabilidadSection() {
       {/* MODAL DE REGISTRO DE SALDOS A FIN DE MES */}
       {isSaldoModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in duration-200">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl overflow-hidden animate-in fade-in zoom-in duration-200">
             {/* Header Modal */}
             <div className="bg-[#00205B] p-6 text-white flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -639,29 +790,75 @@ export default function RentabilidadSection() {
             {/* Form Modal */}
             <div className="p-6">
               {!selectedEventId ? (
-                <div>
-                  <h4 className="text-lg font-bold text-[#00205B] mb-4">Selecciona un Operativo</h4>
-                  <div className="grid grid-cols-1 gap-4 max-h-[50vh] overflow-y-auto pr-2">
-                    {events.map(ev => (
-                      <div 
-                        key={ev.id}
-                        onClick={() => {
-                          setSelectedEventId(ev.id);
-                          setSaldoInputBs(ev.cifras?.saldosCaptadosBs || 0);
-                          setSaldoInputUsd(ev.cifras?.saldoCierreDivisas || 0);
-                        }}
-                        className="bg-white border border-gray-200 rounded-xl p-4 cursor-pointer hover:border-[#009639] hover:shadow-md hover:bg-green-50/30 transition-all text-left flex flex-col"
-                      >
-                        <div className="flex justify-between items-start mb-2">
-                          <span className="font-bold text-gray-900 line-clamp-1">{ev.eventName}</span>
-                          <span className="text-xs font-semibold px-2 py-1 bg-gray-100 text-gray-600 rounded-lg whitespace-nowrap">{ev.agencyCode}</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-auto pt-2">
-                          <MapPin className="w-3.5 h-3.5" />
-                          <span className="truncate">{ev.location}</span>
-                        </div>
+                <div className="space-y-4">
+                  <div className="flex flex-col md:flex-row gap-4 mb-2">
+                    <div className="relative flex-1">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Search className="h-4 w-4 text-gray-400" />
                       </div>
+                      <input
+                        type="text"
+                        placeholder="Buscar por nombre, C.C o ubicación..."
+                        value={saldoSearchQuery}
+                        onChange={(e) => setSaldoSearchQuery(e.target.value)}
+                        className="block w-full pl-10 pr-3 py-2 border border-gray-200 rounded-xl text-sm bg-white focus:ring-[#00205B] focus:border-[#00205B]"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar pb-2">
+                    <button
+                      onClick={() => setSaldoSearchMonth('all')}
+                      className={`px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-colors ${
+                        saldoSearchMonth === 'all' 
+                          ? 'bg-[#00205B] text-white' 
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      Todos
+                    </button>
+                    {availableSaldoMonths.map((mIdx: number) => (
+                      <button
+                        key={mIdx}
+                        onClick={() => setSaldoSearchMonth(mIdx)}
+                        className={`px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-colors ${
+                          saldoSearchMonth === mIdx 
+                            ? 'bg-[#00205B] text-white' 
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }`}
+                      >
+                        {months[mIdx]}
+                      </button>
                     ))}
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[50vh] overflow-y-auto pr-2">
+                    {filteredSaldoEvents.length === 0 ? (
+                      <div className="col-span-1 md:col-span-2 text-center py-8 text-gray-500">
+                        No hay operativos pendientes de cierre que coincidan con la búsqueda.
+                      </div>
+                    ) : (
+                      filteredSaldoEvents.map((ev: any) => (
+                        <div
+                          key={ev.id}
+                          onClick={() => {
+                            setSelectedEventId(ev.id);
+                            setSaldoInputBs(ev.cifras?.saldosCaptadosBs || 0);
+                            setSaldoInputUsd(ev.cifras?.saldoCierreDivisas || 0);
+                          }}
+                          className="bg-white border border-gray-200 rounded-xl p-4 cursor-pointer hover:border-[#009639] hover:shadow-md hover:bg-green-50/30 transition-all text-left flex flex-col"
+                        >
+                          <div className="flex justify-between items-start mb-2">
+                            <span className="font-bold text-gray-900 line-clamp-1">{ev.eventName}</span>
+                            <span className="text-xs font-semibold px-2 py-1 bg-gray-100 text-gray-600 rounded-lg whitespace-nowrap">{ev.agencyCode}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-auto pt-2">
+                            <MapPin className="w-3.5 h-3.5" />
+                            <span className="truncate">{ev.location}</span>
+                          </div>
+                        </div>
+                      ))
+                    )}
                   </div>
                 </div>
               ) : (

@@ -1,7 +1,7 @@
 "use client";
 
 import { X, Save, FileText, BarChart2, DollarSign, ChevronLeft, Calendar as CalendarIcon, Briefcase, Users, Search, MapPin, ChevronDown, Trash2, CreditCard } from 'lucide-react';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useAgenda } from '@/context/AgendaContext';
 import { useToast } from '@/context/ToastContext';
 import { EventType, EventStatus } from '@/lib/mock-data';
@@ -96,6 +96,55 @@ export default function EventManagementModal() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const event = events.find(e => e.id === modalState.eventId);
+  
+  // Local states for the selection filters
+  const [eventSearchQuery, setEventSearchQuery] = useState('');
+  const [eventSearchMonth, setEventSearchMonth] = useState<number | 'all'>('all');
+  
+  const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+
+  // Calculate available months for pending events
+  const availableModalMonths = useMemo(() => {
+    const validMonths = new Set<number>();
+    events.forEach(ev => {
+      if (modalState.mode === 'gastos' && ev.gastos) return;
+      if (modalState.mode === 'cifras' && ev.cifras) return;
+      if (modalState.mode === 'gastos' && ev.type === 'Red de Agencias') return;
+      
+      if (ev.startDate) {
+        const evMonth = parseInt(ev.startDate.split('-')[1], 10) - 1;
+        validMonths.add(evMonth);
+      }
+    });
+    return Array.from(validMonths).sort((a, b) => a - b);
+  }, [events, modalState.mode]);
+
+  // Filter events for selection lists
+  const filteredModalEvents = useMemo(() => {
+    return events.filter(ev => {
+      if (modalState.mode === 'gastos' && ev.gastos) return false;
+      if (modalState.mode === 'cifras' && ev.cifras) return false;
+      if (modalState.mode === 'gastos' && ev.type === 'Red de Agencias') return false;
+
+      const query = eventSearchQuery.toLowerCase();
+      if (query && !ev.eventName.toLowerCase().includes(query) && !ev.agencyCode?.toLowerCase().includes(query) && !(ev.location || '').toLowerCase().includes(query)) {
+        return false;
+      }
+      
+      if (eventSearchMonth !== 'all' && ev.startDate) {
+        const evMonth = parseInt(ev.startDate.split('-')[1], 10) - 1;
+        if (evMonth !== eventSearchMonth) return false;
+      }
+      
+      return true;
+    }).sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
+  }, [events, modalState.mode, eventSearchQuery, eventSearchMonth]);
+
+  // Reset filters when modal opens/closes
+  useEffect(() => {
+    setEventSearchQuery('');
+    setEventSearchMonth('all');
+  }, [modalState.isOpen, modalState.mode]);
   
   // Local states for the forms
   const [bcvRate, setBcvRate] = useState<number>(0);
@@ -322,7 +371,46 @@ export default function EventManagementModal() {
                    modalState.mode === 'cifras' ? 'Cifras Atendidas' : 'Gastos y Viáticos'}
                 </h3>
                 {event && (
-                  <p className="text-blue-200 text-sm mt-1">{event.eventName} ({event.agencyCode})</p>
+                  <div className="flex items-center gap-3 mt-1.5">
+                    <p className="text-blue-200 text-sm font-medium">{event.eventName} ({event.agencyCode})</p>
+                    {modalState.mode === 'menu' && (
+                      <div className="relative" ref={dropdownRef}>
+                        <button 
+                          onClick={() => setIsEventDropdownOpen(!isEventDropdownOpen)}
+                          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold shadow-sm transition-all cursor-pointer ${
+                            event.status === 'Culminado' ? 'bg-green-100 text-green-700 hover:bg-green-200' :
+                            event.status === 'En Proceso' ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' :
+                            event.status === 'Cancelado' ? 'bg-red-100 text-red-700 hover:bg-red-200' :
+                            'bg-orange-100 text-[#FE5000] hover:bg-orange-200'
+                          }`}
+                        >
+                          <span className="w-1.5 h-1.5 rounded-full bg-current"></span>
+                          {event.status}
+                          <ChevronDown className="w-3 h-3 ml-1" />
+                        </button>
+                        
+                        {isEventDropdownOpen && (
+                          <div className="absolute top-full left-0 mt-1 w-36 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                            {(['Planificado', 'En Proceso', 'Culminado', 'Cancelado'] as EventStatus[]).map(s => (
+                              <button
+                                key={s}
+                                onClick={async () => {
+                                  setIsEventDropdownOpen(false);
+                                  await updateEvent(event.id, { status: s });
+                                  showToast(`Estatus actualizado a ${s}`, 'success');
+                                }}
+                                className={`w-full text-left px-4 py-2.5 text-xs font-bold transition-colors ${
+                                  event.status === s ? 'bg-gray-50 text-[#00205B]' : 'text-gray-600 hover:bg-gray-50 hover:text-[#00205B]'
+                                }`}
+                              >
+                                {s}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
             </div>
@@ -669,29 +757,75 @@ export default function EventManagementModal() {
             {modalState.mode === 'cifras' && (
               <div className="space-y-6">
                 {modalState.isGlobal && !event && (
-                  <div>
-                    <h4 className="text-lg font-bold text-[#00205B] mb-4">Selecciona un Operativo</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[50vh] overflow-y-auto pr-2">
-                      {events.map(ev => (
-                        <div 
-                          key={ev.id}
-                          onClick={() => setModalEventId(ev.id)}
-                          className="bg-white border border-gray-200 rounded-xl p-4 cursor-pointer hover:border-[#009639] hover:shadow-md hover:bg-green-50/30 transition-all text-left flex flex-col"
-                        >
-                          <div className="flex justify-between items-start mb-2">
-                            <span className="font-bold text-gray-900 line-clamp-1">{ev.eventName}</span>
-                            <span className="text-xs font-semibold px-2 py-1 bg-gray-100 text-gray-600 rounded-lg whitespace-nowrap">{ev.agencyCode}</span>
-                          </div>
-                          <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-auto pt-2">
-                            <MapPin className="w-3.5 h-3.5" />
-                            <span className="truncate">{ev.location}</span>
-                          </div>
-                          <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-1">
-                            <CalendarIcon className="w-3.5 h-3.5" />
-                            <span>{ev.startDate}</span>
-                          </div>
+                  <div className="space-y-4">
+                    <div className="flex flex-col md:flex-row gap-4 mb-2">
+                      <div className="relative flex-1">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <Search className="h-4 w-4 text-gray-400" />
                         </div>
+                        <input
+                          type="text"
+                          placeholder="Buscar por nombre, C.C o ubicación..."
+                          value={eventSearchQuery}
+                          onChange={(e) => setEventSearchQuery(e.target.value)}
+                          className="block w-full pl-10 pr-3 py-2 border border-gray-200 rounded-xl text-sm bg-white focus:ring-[#00205B] focus:border-[#00205B]"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar pb-2">
+                      <button
+                        onClick={() => setEventSearchMonth('all')}
+                        className={`px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-colors ${
+                          eventSearchMonth === 'all' 
+                            ? 'bg-[#00205B] text-white' 
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }`}
+                      >
+                        Todos
+                      </button>
+                      {availableModalMonths.map(mIdx => (
+                        <button
+                          key={mIdx}
+                          onClick={() => setEventSearchMonth(mIdx)}
+                          className={`px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-colors ${
+                            eventSearchMonth === mIdx 
+                              ? 'bg-[#00205B] text-white' 
+                              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                          }`}
+                        >
+                          {months[mIdx]}
+                        </button>
                       ))}
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[50vh] overflow-y-auto pr-2">
+                      {filteredModalEvents.length === 0 ? (
+                        <div className="col-span-1 md:col-span-2 text-center py-8 text-gray-500">
+                          No hay operativos pendientes que coincidan con la búsqueda.
+                        </div>
+                      ) : (
+                        filteredModalEvents.map(ev => (
+                          <div
+                            key={ev.id}
+                            onClick={() => setModalEventId(ev.id)}
+                            className="bg-white border border-gray-200 rounded-xl p-4 cursor-pointer hover:border-[#009639] hover:shadow-md hover:bg-green-50/30 transition-all text-left flex flex-col"
+                          >
+                            <div className="flex justify-between items-start mb-2">
+                              <span className="font-bold text-gray-900 line-clamp-1">{ev.eventName}</span>
+                              <span className="text-xs font-semibold px-2 py-1 bg-gray-100 text-gray-600 rounded-lg whitespace-nowrap">{ev.agencyCode}</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-auto pt-2">
+                              <MapPin className="w-3.5 h-3.5" />
+                              <span className="truncate">{ev.location}</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-1">
+                              <CalendarIcon className="w-3.5 h-3.5" />
+                              <span>{ev.startDate}</span>
+                            </div>
+                          </div>
+                        ))
+                      )}
                     </div>
                   </div>
                 )}
@@ -760,29 +894,75 @@ export default function EventManagementModal() {
             {modalState.mode === 'gastos' && (
               <div className="space-y-6">
                 {modalState.isGlobal && !event && (
-                  <div>
-                    <h4 className="text-lg font-bold text-[#00205B] mb-4">Selecciona un Operativo</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[50vh] overflow-y-auto pr-2">
-                      {events.map(ev => (
-                        <div 
-                          key={ev.id}
-                          onClick={() => setModalEventId(ev.id)}
-                          className="bg-white border border-gray-200 rounded-xl p-4 cursor-pointer hover:border-[#FE5000] hover:shadow-md hover:bg-orange-50/30 transition-all text-left flex flex-col"
-                        >
-                          <div className="flex justify-between items-start mb-2">
-                            <span className="font-bold text-gray-900 line-clamp-1">{ev.eventName}</span>
-                            <span className="text-xs font-semibold px-2 py-1 bg-gray-100 text-gray-600 rounded-lg whitespace-nowrap">{ev.agencyCode}</span>
-                          </div>
-                          <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-auto pt-2">
-                            <MapPin className="w-3.5 h-3.5" />
-                            <span className="truncate">{ev.location}</span>
-                          </div>
-                          <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-1">
-                            <CalendarIcon className="w-3.5 h-3.5" />
-                            <span>{ev.startDate}</span>
-                          </div>
+                  <div className="space-y-4">
+                    <div className="flex flex-col md:flex-row gap-4 mb-2">
+                      <div className="relative flex-1">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <Search className="h-4 w-4 text-gray-400" />
                         </div>
+                        <input
+                          type="text"
+                          placeholder="Buscar por nombre, C.C o ubicación..."
+                          value={eventSearchQuery}
+                          onChange={(e) => setEventSearchQuery(e.target.value)}
+                          className="block w-full pl-10 pr-3 py-2 border border-gray-200 rounded-xl text-sm bg-white focus:ring-[#00205B] focus:border-[#00205B]"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar pb-2">
+                      <button
+                        onClick={() => setEventSearchMonth('all')}
+                        className={`px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-colors ${
+                          eventSearchMonth === 'all' 
+                            ? 'bg-[#00205B] text-white' 
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }`}
+                      >
+                        Todos
+                      </button>
+                      {availableModalMonths.map(mIdx => (
+                        <button
+                          key={mIdx}
+                          onClick={() => setEventSearchMonth(mIdx)}
+                          className={`px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-colors ${
+                            eventSearchMonth === mIdx 
+                              ? 'bg-[#00205B] text-white' 
+                              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                          }`}
+                        >
+                          {months[mIdx]}
+                        </button>
                       ))}
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[50vh] overflow-y-auto pr-2">
+                      {filteredModalEvents.length === 0 ? (
+                        <div className="col-span-1 md:col-span-2 text-center py-8 text-gray-500">
+                          No hay operativos pendientes que coincidan con la búsqueda.
+                        </div>
+                      ) : (
+                        filteredModalEvents.map(ev => (
+                          <div
+                            key={ev.id}
+                            onClick={() => setModalEventId(ev.id)}
+                            className="bg-white border border-gray-200 rounded-xl p-4 cursor-pointer hover:border-[#FE5000] hover:shadow-md hover:bg-orange-50/30 transition-all text-left flex flex-col"
+                          >
+                            <div className="flex justify-between items-start mb-2">
+                              <span className="font-bold text-gray-900 line-clamp-1">{ev.eventName}</span>
+                              <span className="text-xs font-semibold px-2 py-1 bg-gray-100 text-gray-600 rounded-lg whitespace-nowrap">{ev.agencyCode}</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-auto pt-2">
+                              <MapPin className="w-3.5 h-3.5" />
+                              <span className="truncate">{ev.location}</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-1">
+                              <CalendarIcon className="w-3.5 h-3.5" />
+                              <span>{ev.startDate}</span>
+                            </div>
+                          </div>
+                        ))
+                      )}
                     </div>
                   </div>
                 )}

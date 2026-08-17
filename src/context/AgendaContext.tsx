@@ -184,10 +184,10 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    if (!isAuthLoading && user) {
+    if (!isAuthLoading && user?.id) {
       fetchData();
     }
-  }, [user, isAuthLoading]);
+  }, [user?.id, isAuthLoading]);
 
   const handleSeed = async () => {
     setIsSeeding(true);

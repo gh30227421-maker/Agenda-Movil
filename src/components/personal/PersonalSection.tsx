@@ -5,6 +5,7 @@ import { Plus, CheckCircle2, Circle, MoreVertical, Search, UserPlus, Calendar as
 import { useAgenda } from '@/context/AgendaContext';
 import { Employee } from '@/lib/mock-data';
 import { useToast } from '@/context/ToastContext';
+import ComboBox from '@/components/ui/ComboBox';
 
 export default function PersonalSection() {
   const { events, assignments, toggleAssignmentStatus, addAssignment, employees, addEmployee, updateEmployee, deleteEmployee } = useAgenda();
@@ -14,7 +15,9 @@ export default function PersonalSection() {
   const [activeTab, setActiveTab] = useState<'asignaciones' | 'directorio'>('asignaciones');
 
   // Event selector state
-  const [selectedEventId, setSelectedEventId] = useState<string>(events[0]?.id || '');
+  const currentMonth = new Date().getMonth();
+  const [selectedMonth, setSelectedMonth] = useState<number | 'all'>(currentMonth);
+  const [selectedEventId, setSelectedEventId] = useState<string>('');
   const [isEventDropdownOpen, setIsEventDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   
@@ -65,6 +68,40 @@ export default function PersonalSection() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+  
+  const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+
+  const availableEventsForDropdown = useMemo(() => {
+    return events.filter(ev => {
+      // Excluir culminados/cerrados
+      if (['Culminado', 'Cerrado', 'Cancelado'].includes(ev.status || ev.state || '')) return false;
+      
+      // Filtro por mes
+      if (selectedMonth !== 'all' && ev.startDate) {
+        const evMonth = parseInt(ev.startDate.split('-')[1], 10) - 1;
+        if (evMonth !== selectedMonth) return false;
+      }
+      return true;
+    });
+  }, [events, selectedMonth]);
+
+  useEffect(() => {
+    if (!selectedEventId || !availableEventsForDropdown.find(e => e.id === selectedEventId)) {
+      if (availableEventsForDropdown.length > 0) {
+        setSelectedEventId(availableEventsForDropdown[0].id);
+      } else {
+        setSelectedEventId('');
+      }
+    }
+  }, [availableEventsForDropdown, selectedEventId]);
+
+  const formatDateShort = (dateStr: string) => {
+    if (!dateStr) return '';
+    const d = new Date(dateStr);
+    const day = d.getUTCDate();
+    const monthStr = d.toLocaleString('es-ES', { month: 'short', timeZone: 'UTC' });
+    return `${day} ${monthStr.charAt(0).toUpperCase() + monthStr.slice(1)}`;
+  };
   
   const activeEvent = events.find(e => e.id === selectedEventId);
   
@@ -221,38 +258,61 @@ export default function PersonalSection() {
       {activeTab === 'asignaciones' && (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
           
-          <div className="relative" ref={dropdownRef}>
-            <div 
-              onClick={() => setIsEventDropdownOpen(!isEventDropdownOpen)}
-              className="flex items-center justify-between gap-3 bg-white border border-gray-200 px-4 py-3 rounded-xl shadow-sm w-full md:w-80 cursor-pointer hover:border-gray-300 transition-colors"
-            >
-              <div className="flex items-center gap-3 overflow-hidden">
-                <CalendarIcon className="w-5 h-5 text-[#FE5000] shrink-0" />
-                <span className="text-sm font-bold text-[#00205B] truncate">
-                  {activeEvent ? `${activeEvent.eventName} - ${activeEvent.agencyCode}` : 'Seleccione un evento...'}
-                </span>
-              </div>
-              <ChevronDown className={`w-4 h-4 text-gray-500 shrink-0 transition-transform ${isEventDropdownOpen ? 'rotate-180' : ''}`} />
+          <div className="flex flex-col md:flex-row gap-4 mb-4">
+            {/* Filtro de Meses */}
+            <div className="w-full md:w-64 z-20 relative">
+              <ComboBox
+                options={[{ value: 'all', label: 'Todos los Meses' }, ...months.map((m, i) => ({ value: i.toString(), label: m }))]}
+                value={selectedMonth === 'all' ? 'all' : selectedMonth.toString()}
+                onChange={(val) => {
+                  const numVal = val === 'all' ? 'all' : Number(val);
+                  setSelectedMonth(numVal);
+                }}
+                icon={<CalendarIcon className="w-4 h-4" />}
+                emptyText="No hay meses"
+              />
             </div>
-            
-            {isEventDropdownOpen && (
-              <div className="absolute top-full left-0 mt-2 w-full bg-white border border-gray-100 rounded-xl shadow-lg z-10 max-h-60 overflow-y-auto animate-in fade-in slide-in-from-top-2">
-                {events.map(ev => (
-                  <div 
-                    key={ev.id}
-                    onClick={() => {
-                      setSelectedEventId(ev.id);
-                      setIsEventDropdownOpen(false);
-                    }}
-                    className={`px-4 py-3 cursor-pointer text-sm font-medium transition-colors border-b border-gray-50 last:border-0 ${
-                      selectedEventId === ev.id ? 'bg-blue-50 text-[#00205B]' : 'text-gray-600 hover:bg-gray-50'
-                    }`}
-                  >
-                    {ev.eventName} - <span className="text-gray-400">{ev.agencyCode}</span>
-                  </div>
-                ))}
+
+            {/* Selector de Eventos */}
+            <div className="relative flex-1 z-10" ref={dropdownRef}>
+              <div 
+                onClick={() => setIsEventDropdownOpen(!isEventDropdownOpen)}
+                className="flex items-center justify-between gap-3 bg-white border border-gray-200 px-4 py-3 rounded-xl shadow-sm w-full cursor-pointer hover:border-gray-300 transition-colors"
+              >
+                <div className="flex items-center gap-3 overflow-hidden">
+                  <CalendarIcon className="w-5 h-5 text-[#FE5000] shrink-0" />
+                  <span className="text-sm font-bold text-[#00205B] truncate">
+                    {activeEvent 
+                      ? `${activeEvent.eventName} - ${activeEvent.agencyCode} (${formatDateShort(activeEvent.startDate)})` 
+                      : 'Seleccione un evento...'}
+                  </span>
+                </div>
+                <ChevronDown className={`w-4 h-4 text-gray-500 shrink-0 transition-transform ${isEventDropdownOpen ? 'rotate-180' : ''}`} />
               </div>
-            )}
+            
+              {isEventDropdownOpen && (
+                <div className="absolute top-full left-0 mt-2 w-full bg-white border border-gray-100 rounded-xl shadow-lg z-10 max-h-60 overflow-y-auto animate-in fade-in slide-in-from-top-2">
+                  {availableEventsForDropdown.length === 0 ? (
+                    <div className="px-4 py-3 text-sm text-gray-500">No hay operativos activos en este mes.</div>
+                  ) : (
+                    availableEventsForDropdown.map(ev => (
+                      <div 
+                        key={ev.id}
+                        onClick={() => {
+                          setSelectedEventId(ev.id);
+                          setIsEventDropdownOpen(false);
+                        }}
+                        className={`px-4 py-3 cursor-pointer text-sm font-medium transition-colors border-b border-gray-50 last:border-0 ${
+                          selectedEventId === ev.id ? 'bg-blue-50 text-[#00205B]' : 'text-gray-600 hover:bg-gray-50'
+                        }`}
+                      >
+                        {ev.eventName} - {ev.agencyCode} <span className="text-gray-400 text-xs ml-1">({formatDateShort(ev.startDate)})</span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">

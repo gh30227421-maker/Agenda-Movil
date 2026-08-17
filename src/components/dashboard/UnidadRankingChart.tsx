@@ -3,7 +3,7 @@
 import React, { useMemo } from 'react';
 import ChartModalWrapper from './ChartModalWrapper';
 import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList, Cell
+  ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList, Legend
 } from 'recharts';
 
 interface UnidadRankingChartProps {
@@ -16,77 +16,128 @@ const BLUE_SCALE = [
 ];
 
 export default function UnidadRankingChart({ events }: UnidadRankingChartProps) {
-  const barData = useMemo(() => {
+  const { ranking, activeCategories, categoryColors } = useMemo(() => {
     const unidadEvents = events.filter(ev => ev.type === 'Unidad Móvil');
     
-    let soporte = 0;
-    let chofer = 0;
-    let mantenimiento = 0;
-    let alimentacion = 0;
-    let transporte = 0;
-    let combustible = 0;
-    let hospedaje = 0;
-    let banca = 0;
-    let tributos = 0;
+    // 1. Calculate global totals to match the Donut chart logic for exact colors
+    let globalSoporte = 0;
+    let globalChofer = 0;
+    let globalMantenimiento = 0;
+    let globalAlimentacion = 0;
+    let globalTransporte = 0;
+    let globalCombustible = 0;
+    let globalHospedaje = 0;
+    let globalBanca = 0;
+    let globalTributos = 0;
 
     unidadEvents.forEach(ev => {
       const g = ev.gastos;
       if (!g) return;
       const tasa = g.tasaBcv || 1;
-      soporte += (g.soporteTecnicoBs || 0) / tasa;
-      chofer += (g.conductorAyudanteBs || 0) / tasa;
-      mantenimiento += (g.mantenimientoLimpiezaBs || 0) / tasa;
-      alimentacion += (g.alimentacionBs || 0) / tasa;
-      transporte += (g.transporteBs || 0) / tasa;
-      combustible += (g.gastoCombustibleBs || 0) / tasa;
-      hospedaje += (g.hospedajeBs || 0) / tasa;
-      banca += (g.bancaElectronicaBs || 0) / tasa;
-      tributos += (g.gastosTributariosBs || 0) / tasa;
+      globalSoporte += (g.soporteTecnicoBs || 0) / tasa;
+      globalChofer += (g.conductorAyudanteBs || 0) / tasa;
+      globalMantenimiento += (g.mantenimientoLimpiezaBs || 0) / tasa;
+      globalAlimentacion += (g.alimentacionBs || 0) / tasa;
+      globalTransporte += (g.transporteBs || 0) / tasa;
+      globalCombustible += (g.gastoCombustibleBs || 0) / tasa;
+      globalHospedaje += (g.hospedajeBs || 0) / tasa;
+      globalBanca += (g.bancaElectronicaBs || 0) / tasa;
+      globalTributos += (g.gastosTributariosBs || 0) / tasa;
     });
 
-    return [
-      { categoria: 'Soporte TI', Gasto: soporte },
-      { categoria: 'Chofer / Ayudante', Gasto: chofer },
-      { categoria: 'Mantenimiento / Limpieza', Gasto: mantenimiento },
-      { categoria: 'Alimentación', Gasto: alimentacion },
-      { categoria: 'Transporte / Logística', Gasto: transporte },
-      { categoria: 'Combustible', Gasto: combustible },
-      { categoria: 'Hospedaje', Gasto: hospedaje },
-      { categoria: 'Banca Electrónica', Gasto: banca },
-      { categoria: 'Tributos', Gasto: tributos },
-    ].filter(d => d.Gasto > 0).sort((a, b) => b.Gasto - a.Gasto);
+    const globalCategories = [
+      { name: 'Soporte TI', value: globalSoporte },
+      { name: 'Chofer / Ayudante', value: globalChofer },
+      { name: 'Mantenimiento / Limpieza', value: globalMantenimiento },
+      { name: 'Alimentación', value: globalAlimentacion },
+      { name: 'Transporte / Logística', value: globalTransporte },
+      { name: 'Combustible', value: globalCombustible },
+      { name: 'Hospedaje', value: globalHospedaje },
+      { name: 'Banca Electrónica', value: globalBanca },
+      { name: 'Tributos', value: globalTributos },
+    ].filter(d => d.value > 0).sort((a, b) => b.value - a.value);
+
+    const colorsMap: Record<string, string> = {};
+    globalCategories.forEach((cat, index) => {
+      colorsMap[cat.name] = BLUE_SCALE[index % BLUE_SCALE.length];
+    });
+
+    const activeCats = globalCategories.map(c => c.name);
+
+    // 2. Calculate data per event
+    const rankingData = unidadEvents.map(ev => {
+      const g = ev.gastos;
+      const totalUsd = g?.totalUsd || 0;
+      
+      const tasa = g?.tasaBcv || 1;
+      const soporte = ((g?.soporteTecnicoBs || 0) / tasa) || 0;
+      const chofer = ((g?.conductorAyudanteBs || 0) / tasa) || 0;
+      const mantenimiento = ((g?.mantenimientoLimpiezaBs || 0) / tasa) || 0;
+      const alimentacion = ((g?.alimentacionBs || 0) / tasa) || 0;
+      const transporte = ((g?.transporteBs || 0) / tasa) || 0;
+      const combustible = ((g?.gastoCombustibleBs || 0) / tasa) || 0;
+      const hospedaje = ((g?.hospedajeBs || 0) / tasa) || 0;
+      const banca = ((g?.bancaElectronicaBs || 0) / tasa) || 0;
+      const tributos = ((g?.gastosTributariosBs || 0) / tasa) || 0;
+
+      return {
+        evento: ev.eventName,
+        gastoUsd: totalUsd,
+        'Soporte TI': soporte > 0 ? soporte : undefined,
+        'Chofer / Ayudante': chofer > 0 ? chofer : undefined,
+        'Mantenimiento / Limpieza': mantenimiento > 0 ? mantenimiento : undefined,
+        'Alimentación': alimentacion > 0 ? alimentacion : undefined,
+        'Transporte / Logística': transporte > 0 ? transporte : undefined,
+        'Combustible': combustible > 0 ? combustible : undefined,
+        'Hospedaje': hospedaje > 0 ? hospedaje : undefined,
+        'Banca Electrónica': banca > 0 ? banca : undefined,
+        'Tributos': tributos > 0 ? tributos : undefined,
+      };
+    }).sort((a, b) => b.gastoUsd - a.gastoUsd).slice(0, 10);
+
+    return { ranking: rankingData, activeCategories: activeCats, categoryColors: colorsMap };
   }, [events]);
 
   return (
     <ChartModalWrapper
-      title="Detalle de Costos (Unidad Móvil)"
-      subtitle="Gastos operativos desglosados por categoría"
+      title="Ranking de Eventos (Unidad Móvil)"
+      subtitle="Top 10 eventos por costo operativo"
     >
       <div className="w-full h-full min-h-[480px] flex flex-col justify-center py-2">
-        {barData.length > 0 ? (
+        {ranking.length > 0 ? (
           <ResponsiveContainer width="100%" height={460}>
-            <BarChart layout="vertical" data={barData} margin={{ top: 10, right: 120, left: 80, bottom: 15 }}>
+            <ComposedChart layout="vertical" data={ranking} margin={{ top: 10, right: 120, left: 220, bottom: 15 }}>
               <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#F3F4F6" />
               <XAxis type="number" tick={{ fontSize: 13, fill: '#6B7280' }} tickFormatter={(val) => `$${val}`} />
-              <YAxis type="category" dataKey="categoria" tick={{ fontSize: 13, fontWeight: 600, fill: '#1F2937' }} width={140} />
+              <YAxis type="category" dataKey="evento" tick={{ fontSize: 12, fontWeight: 600, fill: '#1F2937' }} width={230} />
               <Tooltip 
-                formatter={(val: any) => [`$${Number(val).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 'Gasto']}
-                contentStyle={{ backgroundColor: '#00205C', borderRadius: '12px', color: '#FFF', border: 'none' }}
+                formatter={(val: any, name: any) => [
+                  `$${Number(val).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 
+                  name === 'gastoUsd' ? 'Gasto Total' : name
+                ]}
+                contentStyle={{ backgroundColor: '#FE5000', borderRadius: '12px', color: '#FFF', border: 'none' }}
+                itemStyle={{ color: '#FFF' }}
               />
-              <Bar dataKey="Gasto" name="Gasto Total" radius={[0, 4, 4, 0]} barSize={22}>
-                {barData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={BLUE_SCALE[index % BLUE_SCALE.length]} />
-                ))}
+              <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
+              
+              {/* Stacked bars for categories */}
+              {activeCategories.map((cat, index) => (
+                <Bar key={cat} dataKey={cat} stackId="a" fill={categoryColors[cat]} radius={[0, 0, 0, 0]} barSize={22} />
+              ))}
+              
+              {/* Invisible line just to hold the LabelList with the Total at the end of the stack */}
+              <Line dataKey="gastoUsd" stroke="transparent" dot={false} isAnimationActive={false}>
                 <LabelList 
-                  dataKey="Gasto" 
+                  dataKey="gastoUsd" 
                   position="right" 
                   formatter={(val: any) => `$${Number(val).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`} 
                   fill="#4B5563" 
                   fontSize={13} 
                   fontWeight="bold" 
                 />
-              </Bar>
-            </BarChart>
+              </Line>
+
+            </ComposedChart>
           </ResponsiveContainer>
         ) : (
           <div className="flex h-64 items-center justify-center text-sm text-gray-400">Sin eventos de Unidad Móvil registrados</div>
@@ -95,3 +146,5 @@ export default function UnidadRankingChart({ events }: UnidadRankingChartProps) 
     </ChartModalWrapper>
   );
 }
+
+

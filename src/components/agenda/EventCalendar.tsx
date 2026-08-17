@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { AgendaEvent, EventType } from '@/lib/mock-data';
-import { ChevronLeft, ChevronRight, Calendar, MapPin, Truck, Building2, Store } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar, MapPin, Truck, Building2, Store, Printer } from 'lucide-react';
 import { useAgenda } from '@/context/AgendaContext';
 import Loader from '@/components/ui/Loader';
 
@@ -13,7 +13,7 @@ interface EventCalendarProps {
 export default function EventCalendar({ events }: EventCalendarProps) {
   const { isLoading, handleSeed, isSeeding, openModal } = useAgenda();
   // Start in July 2026 for the demo, or fallback to current month
-  const [currentDate, setCurrentDate] = useState(new Date(2026, 6, 1)); 
+  const [currentDate, setCurrentDate] = useState(new Date()); 
   
   // State for the confirmation modal when clicking an empty day
   const [confirmDateModal, setConfirmDateModal] = useState<{isOpen: boolean, date: string | null}>({isOpen: false, date: null});
@@ -33,6 +33,15 @@ export default function EventCalendar({ events }: EventCalendarProps) {
 
   const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  const eventsInMonth = events.filter(event => {
+    const startStr = `${year}-${String(month + 1).padStart(2, '0')}-01`;
+    const endStr = `${year}-${String(month + 1).padStart(2, '0')}-${daysInMonth}`;
+    if (event.segments && event.segments.length > 0) {
+      return event.segments.some(seg => seg.startDate <= endStr && seg.endDate >= startStr);
+    }
+    return event.startDate <= endStr && event.endDate >= startStr;
+  });
 
   const getEventStyle = (type: EventType) => {
     switch (type) {
@@ -78,7 +87,85 @@ export default function EventCalendar({ events }: EventCalendarProps) {
   }
 
   return (
-    <div className="space-y-6">
+    <>
+      <style dangerouslySetInnerHTML={{__html: `
+        @media print {
+          @page {
+            size: landscape;
+            margin: 5mm;
+          }
+          body {
+            background-color: white !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+          /* Hide EVERYTHING */
+          body * {
+            visibility: hidden;
+          }
+          /* Show ONLY the calendar container */
+          #print-calendar-container, #print-calendar-container * {
+            visibility: visible;
+          }
+          #print-calendar-container {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100vw;
+            height: 100vh;
+            margin: 0;
+            padding: 0;
+            box-shadow: none !important;
+            border: none !important;
+            display: flex !important;
+            flex-direction: column !important;
+            transform: scale(0.9);
+            transform-origin: top center;
+          }
+          
+          /* The grid containing the days */
+          #print-calendar-grid {
+            flex-grow: 1;
+            height: auto !important;
+          }
+          
+          /* Cell styling for print to avoid truncation */
+          #print-calendar-grid > div {
+             min-height: 0 !important;
+             height: 100% !important;
+             overflow: hidden !important;
+             page-break-inside: avoid;
+             padding: 2px !important;
+          }
+          
+          /* Adjust event buttons to be more compact in print */
+          #print-calendar-grid button {
+             padding: 2px 4px !important;
+             margin-bottom: 2px !important;
+             box-shadow: none !important;
+             border-left-width: 3px !important;
+          }
+          
+          #print-calendar-grid span, #print-calendar-grid div {
+             line-height: 1.1 !important;
+          }
+          
+          /* Header compacting */
+          #print-calendar-container > div:first-child {
+             padding: 8px !important;
+          }
+          /* Day names compacting */
+          #print-calendar-container > div:nth-child(2) {
+             padding-top: 2px !important;
+             padding-bottom: 2px !important;
+          }
+          /* Legend compacting */
+          #print-calendar-container > div:last-of-type {
+             padding: 5px !important;
+          }
+        }
+      `}} />
+      <div className="space-y-6">
       {events.length === 0 && (
         <div className="bg-orange-50 border-2 border-orange-200 rounded-2xl p-6 text-center">
           <h3 className="text-xl font-bold text-[#FE5000] mb-2">Base de Datos Vacía</h3>
@@ -94,7 +181,7 @@ export default function EventCalendar({ events }: EventCalendarProps) {
       )}
 
       {/* Month Selector Tabs */}
-      <div className="bg-white rounded-2xl p-2 shadow-sm border border-gray-100 flex items-center gap-2 overflow-x-auto hide-scrollbar">
+      <div className="bg-white rounded-2xl p-2 shadow-sm border border-gray-100 flex items-center gap-2 overflow-x-auto hide-scrollbar print:hidden">
         {monthNames.map((mName, idx) => (
           <button
             key={mName}
@@ -110,23 +197,32 @@ export default function EventCalendar({ events }: EventCalendarProps) {
         ))}
       </div>
 
-      <div className="bg-white rounded-3xl shadow-sm border border-gray-200 overflow-hidden relative">
+      <div id="print-calendar-container" className="bg-white rounded-3xl shadow-sm border border-gray-200 flex flex-col overflow-hidden relative">
         {/* Header del Calendario */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-6 border-b border-gray-100 bg-gray-50/50 gap-4">
-          <div>
-            <h2 className="text-2xl font-black text-[#00205B] tracking-tight">
-              {monthNames[month]} {year}
-            </h2>
-            <p className="text-sm text-gray-500 font-medium mt-1">Programación mensual de operativos</p>
+        <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between p-6 border-b border-gray-100 bg-gray-50/50 gap-4">
+          <div className="flex flex-col xl:flex-row xl:items-center gap-4">
+            <div>
+              <h2 className="text-2xl font-black text-[#00205B] tracking-tight">
+                {monthNames[month]} {year}
+              </h2>
+              <p className="text-sm text-gray-500 font-medium mt-1">Programación mensual de operativos</p>
+            </div>
+            <div className="flex items-center gap-2 text-sm bg-white border border-gray-200 rounded-full px-3 py-1 shadow-sm">
+              <span className="font-bold text-[#00205B]">{eventsInMonth.length} Eventos en {monthNames[month]}</span>
+            </div>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={handlePrevMonth} className="p-2.5 bg-white border border-gray-200 rounded-xl hover:border-[#00205B] hover:text-[#00205B] transition-colors shadow-sm">
+            <button onClick={() => window.print()} className="px-4 py-2.5 bg-[#FE5000] text-white rounded-xl text-sm font-bold hover:bg-[#E04700] transition-colors shadow-sm flex items-center gap-2 hide-on-download print:hidden">
+              <Printer className="w-4 h-4" />
+              Imprimir
+            </button>
+            <button onClick={handlePrevMonth} className="p-2.5 bg-white border border-gray-200 rounded-xl hover:border-[#00205B] hover:text-[#00205B] transition-colors shadow-sm print:hidden">
               <ChevronLeft className="w-5 h-5" />
             </button>
-            <button onClick={() => setCurrentDate(new Date())} className="px-5 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-bold text-gray-700 hover:border-[#00205B] hover:text-[#00205B] transition-colors shadow-sm">
+            <button onClick={() => setCurrentDate(new Date())} className="px-5 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-bold text-gray-700 hover:border-[#00205B] hover:text-[#00205B] transition-colors shadow-sm print:hidden">
               Hoy
             </button>
-            <button onClick={handleNextMonth} className="p-2.5 bg-white border border-gray-200 rounded-xl hover:border-[#00205B] hover:text-[#00205B] transition-colors shadow-sm">
+            <button onClick={handleNextMonth} className="p-2.5 bg-white border border-gray-200 rounded-xl hover:border-[#00205B] hover:text-[#00205B] transition-colors shadow-sm print:hidden">
               <ChevronRight className="w-5 h-5" />
             </button>
           </div>
@@ -141,10 +237,10 @@ export default function EventCalendar({ events }: EventCalendarProps) {
           ))}
         </div>
         
-        <div className="grid grid-cols-7 auto-rows-fr bg-gray-100 gap-[1px]">
+        <div id="print-calendar-grid" className="grid grid-cols-7 grid-rows-6 bg-gray-100 gap-[1px] flex-grow min-h-[60vh] lg:min-h-[70vh]">
           {/* Blanks */}
           {blanks.map(blank => (
-            <div key={`blank-${blank}`} className="bg-white min-h-[140px] opacity-40"></div>
+            <div key={`blank-${blank}`} className="bg-white min-h-[100px] lg:min-h-[110px] h-full opacity-40"></div>
           ))}
           
           {/* Days */}
@@ -158,7 +254,7 @@ export default function EventCalendar({ events }: EventCalendarProps) {
               <div 
                 key={day} 
                 onClick={() => handleDayClick(day)}
-                className={`bg-white min-h-[140px] p-2 flex flex-col group transition-colors hover:bg-blue-50/10 cursor-pointer`}
+                className={`bg-white min-h-[100px] lg:min-h-[110px] h-full p-2 flex flex-col group transition-colors hover:bg-blue-50/10 cursor-pointer overflow-hidden`}
               >
                 <div className="flex justify-between items-center mb-2 px-1 pt-1">
                   <span className={`text-sm font-bold w-8 h-8 flex items-center justify-center rounded-full transition-all ${isToday ? 'bg-[#FE5000] text-white shadow-md' : 'text-gray-700 group-hover:bg-gray-100'}`}>
@@ -307,6 +403,7 @@ export default function EventCalendar({ events }: EventCalendarProps) {
           document.body
         )}
       </div>
-    </div>
+      </div>
+    </>
   );
 }

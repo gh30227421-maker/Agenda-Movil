@@ -14,11 +14,16 @@ export interface Database {
           id: string
           codigo_activo: string
           tipo_equipo: string
-          marca_modelo: string | null
+          marca: string | null
+          modelo: string | null
+          tipo_asignacion: string | null
+          agencia_id: string | null
+          evento_id: string | null
+          marca_modelo?: string | null
           serial: string | null
           estado_operativo: string
           employee_id: string | null
-          agency_code: string | null
+          agency_code?: string | null
           fecha_adquisicion: string | null
           created_at: string
           updated_at: string
@@ -27,6 +32,11 @@ export interface Database {
           id?: string
           codigo_activo: string
           tipo_equipo: string
+          marca?: string | null
+          modelo?: string | null
+          tipo_asignacion?: string | null
+          agencia_id?: string | null
+          evento_id?: string | null
           marca_modelo?: string | null
           serial?: string | null
           estado_operativo?: string
@@ -40,6 +50,11 @@ export interface Database {
           id?: string
           codigo_activo?: string
           tipo_equipo?: string
+          marca?: string | null
+          modelo?: string | null
+          tipo_asignacion?: string | null
+          agencia_id?: string | null
+          evento_id?: string | null
           marca_modelo?: string | null
           serial?: string | null
           estado_operativo?: string
@@ -283,6 +298,35 @@ export interface Database {
           tasa_bcv_rentabilidad?: number | null
           closed_at?: string
           closed_by?: string | null
+        }
+      }
+      event_photos: {
+        Row: {
+          id: string
+          event_id: string
+          photo_url: string
+          caption: string | null
+          category: string | null
+          uploaded_by: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          event_id: string
+          photo_url: string
+          caption?: string | null
+          category?: string | null
+          uploaded_by?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          event_id?: string
+          photo_url?: string
+          caption?: string | null
+          category?: string | null
+          uploaded_by?: string | null
+          created_at?: string
         }
       }
     }
