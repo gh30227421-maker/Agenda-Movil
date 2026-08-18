@@ -52,9 +52,9 @@ export default function RootLayout({
             <AuthGuard>
               <AgendaProvider>
                 <RentabilityProvider>
-                  <div className="min-h-screen flex flex-col relative z-10">
+                  <div className="min-h-screen flex flex-col relative z-10 [.presentation-mode-active_&]:h-screen [.presentation-mode-active_&]:overflow-hidden">
                     <Header />
-                    <main className="flex-1 w-full max-w-full p-0 flex flex-col min-h-0">
+                    <main className="flex flex-col min-h-0 w-full flex-1 overflow-y-auto hide-scrollbar pt-6 lg:pt-8 px-6 lg:px-10 pb-8 bg-slate-50 print:p-0 [.presentation-mode-active_&]:p-0">
                       {children}
                     </main>
                     <footer className="mt-auto w-full py-3 px-4 text-center border-t border-slate-100 bg-white/50 backdrop-blur-sm print:hidden">

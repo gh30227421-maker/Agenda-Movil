@@ -54,7 +54,7 @@ export default function PremiumCarousel({ photos }: PremiumCarouselProps) {
   }, [displayPhotos.length]);
 
   return (
-    <div className="w-full relative mb-2 backdrop-blur-md bg-white/70 rounded-xl shadow-2xl shadow-slate-200/50 border border-white/60 p-3 overflow-hidden flex flex-col">
+    <div className="w-full h-full relative mb-2 backdrop-blur-md bg-white/70 rounded-xl shadow-2xl shadow-slate-200/50 border border-white/60 p-3 overflow-hidden flex flex-col">
       <style dangerouslySetInnerHTML={{__html: `
         @keyframes kenBurns {
           0% { transform: scale(1); }
@@ -74,7 +74,7 @@ export default function PremiumCarousel({ photos }: PremiumCarouselProps) {
       )}
 
       {/* Cross-Fade Slider Container */}
-      <div className="relative w-full aspect-[16/10] bg-slate-200 rounded-xl overflow-hidden shadow-inner border border-slate-200/50">
+      <div className="relative w-full h-full flex-1 bg-slate-200 rounded-xl overflow-hidden shadow-inner border border-slate-200/50">
         {displayPhotos.map((photo, index) => (
           <div 
             key={photo.id}

@@ -38,6 +38,41 @@ export default function RutasUnidadMovil() {
   const { events: allEvents, isLoading: isEventsLoading } = useAgenda();
   const events = useMemo(() => allEvents.filter(e => e.type === 'Unidad Móvil'), [allEvents]);
   
+  const [photos, setPhotos] = useState<any[]>([]);
+  const [loadingPhotos, setLoadingPhotos] = useState(true);
+  const [dbTotalKm, setDbTotalKm] = useState<number>(0);
+  const [loadingKm, setLoadingKm] = useState(true);
+
+  // Consulta directa a Supabase para sumar kilómetros reales
+  useEffect(() => {
+    const fetchKilometros = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('event_expenses')
+          .select('distancia_km, events!inner(event_type)')
+          .eq('events.event_type', 'Unidad Móvil');
+
+        if (error) throw error;
+
+        const totalKilometros = data 
+          ? data.reduce((acc, curr) => acc + (Number(curr.distancia_km) || 0), 0) 
+          : 0;
+          
+        setDbTotalKm(totalKilometros);
+      } catch (err) {
+        console.error('Error fetching km from DB', err);
+        // Fallback matemático en caso de error
+        setDbTotalKm(0); 
+      } finally {
+        setLoadingKm(false);
+      }
+    };
+    
+    if (!isEventsLoading) {
+      fetchKilometros();
+    }
+  }, [isEventsLoading]);
+
   // Referencias para la exportación a PNG
   const kpiProximaParadaRef = useRef<HTMLDivElement>(null);
   const kpiCiudadanosRef = useRef<HTMLDivElement>(null);
@@ -76,8 +111,7 @@ export default function RutasUnidadMovil() {
     }
   };
   
-  const [photos, setPhotos] = useState<any[]>([]);
-  const [loadingPhotos, setLoadingPhotos] = useState(true);
+
   const [tooltip, setTooltip] = useState<{ content: string; x: number; y: number } | null>(null);
 
   useEffect(() => {
@@ -213,7 +247,7 @@ export default function RutasUnidadMovil() {
       <div className="grid grid-cols-1 lg:grid-cols-[380px_1fr_280px] xl:grid-cols-[440px_1fr_320px] gap-6 xl:gap-8 w-full px-4 xl:px-8 max-w-[1920px] mx-auto items-start">
         
         {/* Columna Izquierda: Narrativa y Contexto Visual */}
-        <div className="flex flex-col relative z-20 w-full gap-4">
+        <div className="flex flex-col relative z-20 w-full gap-3">
           
           {/* Texto Informativo */}
           <p className="text-slate-600 text-sm leading-relaxed mb-4">
@@ -247,7 +281,7 @@ export default function RutasUnidadMovil() {
           )}
 
           {/* Foto Institucional (Con Badge en Vivo) */}
-          <div className="w-full min-h-[260px] xl:min-h-[340px] rounded-2xl overflow-hidden shadow-2xl shadow-slate-900/50 border border-white/10 group bg-slate-950/40 relative z-20 mb-6 transition-all duration-500">
+          <div className="w-full h-[260px] xl:h-[340px] rounded-2xl overflow-hidden shadow-2xl shadow-slate-900/50 border border-white/10 group bg-slate-950/40 relative z-20 transition-all duration-500">
             <div className="absolute inset-0 flex items-center justify-center text-white/20">
               <Camera className="w-8 h-8" />
             </div>
@@ -275,7 +309,7 @@ export default function RutasUnidadMovil() {
           </div>
 
           {/* Galería Dinámica */}
-          <div className="w-full rounded-2xl overflow-hidden shadow-[0_15px_40px_rgba(0,32,91,0.1)] border border-slate-200 bg-white/40 backdrop-blur-sm pointer-events-auto transform scale-100 hover:scale-[1.01] transition-transform duration-500 min-h-[220px]">
+          <div className="w-full h-[260px] xl:h-[340px] rounded-2xl overflow-hidden shadow-[0_15px_40px_rgba(0,32,91,0.1)] border border-slate-200 bg-white/40 backdrop-blur-sm pointer-events-auto transform scale-100 hover:scale-[1.01] transition-transform duration-500">
             <PremiumCarousel photos={photos} />
           </div>
 
@@ -371,8 +405,13 @@ export default function RutasUnidadMovil() {
                 <Navigation className="w-3.5 h-3.5 text-slate-500" /> Logística Recorrida
               </p>
               <div className="flex flex-wrap items-end gap-2 justify-between relative z-10">
-                <p className="text-xl lg:text-2xl font-black text-[#00205B] tracking-tight">
-                  <AnimatedCounter end={kpis.kilometros} /> <span className="text-sm text-slate-400">Km</span>
+                <p className="text-xl lg:text-2xl font-black text-[#00205B] tracking-tight flex items-center gap-2">
+                  {loadingKm ? (
+                    <Loader2 className="w-5 h-5 animate-spin text-[#00205B]" />
+                  ) : (
+                    <AnimatedCounter end={dbTotalKm || kpis.kilometros} /> 
+                  )}
+                  <span className="text-sm text-slate-400">Km</span>
                 </p>
                 <span className="text-[10px] font-bold text-[#009639] bg-green-50 px-1.5 py-0.5 rounded-md mb-1">📈 +5%</span>
               </div>

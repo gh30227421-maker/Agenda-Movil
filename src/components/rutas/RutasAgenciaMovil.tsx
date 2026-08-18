@@ -48,6 +48,40 @@ export default function RutasAgenciaMovil() {
   const { events: allEvents, isLoading: isEventsLoading } = useAgenda();
   const events = useMemo(() => allEvents.filter(e => e.type === 'Agencia Móvil'), [allEvents]);
   
+  const [photos, setPhotos] = useState<any[]>([]);
+  const [loadingPhotos, setLoadingPhotos] = useState(true);
+  const [dbTotalKm, setDbTotalKm] = useState<number>(0);
+  const [loadingKm, setLoadingKm] = useState(true);
+
+  // Consulta directa a Supabase para sumar kilómetros reales
+  useEffect(() => {
+    const fetchKilometros = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('event_expenses')
+          .select('distancia_km, events!inner(event_type)')
+          .eq('events.event_type', 'Agencia Móvil');
+
+        if (error) throw error;
+
+        const totalKilometros = data 
+          ? data.reduce((acc, curr) => acc + (Number(curr.distancia_km) || 0), 0) 
+          : 0;
+          
+        setDbTotalKm(totalKilometros);
+      } catch (err) {
+        console.error('Error fetching km from DB', err);
+        setDbTotalKm(0); 
+      } finally {
+        setLoadingKm(false);
+      }
+    };
+    
+    if (!isEventsLoading) {
+      fetchKilometros();
+    }
+  }, [isEventsLoading]);
+  
   // Referencias para la exportación a PNG
   const kpiProximaParadaRef = useRef<HTMLDivElement>(null);
   const kpiCiudadanosRef = useRef<HTMLDivElement>(null);
@@ -87,8 +121,7 @@ export default function RutasAgenciaMovil() {
     }
   };
 
-  const [photos, setPhotos] = useState<any[]>([]);
-  const [loadingPhotos, setLoadingPhotos] = useState(true);
+
   const [tooltip, setTooltip] = useState<{ content: string; x: number; y: number } | null>(null);
 
   useEffect(() => {
@@ -165,7 +198,7 @@ export default function RutasAgenciaMovil() {
       <div className="grid grid-cols-1 lg:grid-cols-[380px_1fr_280px] xl:grid-cols-[440px_1fr_320px] gap-6 xl:gap-8 w-full px-4 xl:px-8 max-w-[1920px] mx-auto items-start pt-6">
         
         {/* Columna Izquierda: Narrativa y Contexto Visual */}
-        <div className="flex flex-col relative z-20 w-full gap-5">
+        <div className="flex flex-col relative z-20 w-full gap-3">
           
           {/* Micro-Tarjeta Próximo Destino (Real de BD) */}
           {nextEvent ? (
@@ -194,7 +227,9 @@ export default function RutasAgenciaMovil() {
           )}
 
           {/* Carrusel Inmersivo */}
-          <PremiumCarousel photos={photos} />
+          <div className="w-full h-[260px] xl:h-[340px]">
+            <PremiumCarousel photos={photos} />
+          </div>
 
           {/* Live Timeline Vertical */}
           <div className="flex flex-col backdrop-blur-md bg-white/70 p-4 rounded-xl shadow-xl shadow-slate-200/50 border border-white/60 relative overflow-hidden mt-2">
@@ -326,8 +361,13 @@ export default function RutasAgenciaMovil() {
                   <Activity className="w-3.5 h-3.5 text-slate-500" /> Logística Recorrida
                 </p>
                 <div className="flex flex-wrap items-end gap-2 justify-between relative z-10">
-                  <p className="text-xl lg:text-2xl font-black text-[#00205B] tracking-tight">
-                    <AnimatedCounter end={kpis.distancia} /> <span className="text-sm text-slate-400">Km</span>
+                  <p className="text-xl lg:text-2xl font-black text-[#00205B] tracking-tight flex items-center gap-2">
+                    {loadingKm ? (
+                      <Loader2 className="w-5 h-5 animate-spin text-[#00205B]" />
+                    ) : (
+                      <AnimatedCounter end={dbTotalKm || kpis.distancia} /> 
+                    )}
+                    <span className="text-sm text-slate-400">Km</span>
                   </p>
                   <span className="text-[10px] font-bold text-[#009639] bg-green-50 px-1.5 py-0.5 rounded-md mb-1">📈 +8%</span>
                 </div>

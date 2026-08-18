@@ -58,61 +58,41 @@ export default function PresentationMode() {
       }
 
       // Auto-scroll logic (State-Driven Scrolling)
-      let scrollInterval: NodeJS.Timeout;
-      let resetTimeout: NodeJS.Timeout;
-      let isResetting = false; // Máquina de estados: false = bajando, true = pausado arriba
+      let tvScrollInterval: NodeJS.Timeout;
+      
+      const container = document.getElementById('tv-scroll-container') || document.querySelector('main');
 
       const startScrolling = () => {
-        scrollInterval = setInterval(() => {
-          if (isPausedRef.current || isResetting) return;
-          
-          let container: Element | Window = window;
-          const overflowContainers = Array.from(document.querySelectorAll('.overflow-y-auto, .overflow-y-scroll, main'));
-          for (const el of overflowContainers) {
-            if (el.scrollHeight > el.clientHeight) {
-              container = el;
-              break;
-            }
-          }
+        if (!container) return;
+        
+        let scrollSpeed = 1; // Velocidad del desplazamiento en píxeles
+        let intervalTime = 30; // Frecuencia en milisegundos
 
-          const scrollTop = container === window ? window.scrollY : (container as Element).scrollTop;
-          const scrollHeight = container === window ? document.documentElement.scrollHeight : (container as Element).scrollHeight;
-          const clientHeight = container === window ? window.innerHeight : (container as Element).clientHeight;
+        tvScrollInterval = setInterval(() => {
+          if (isPausedRef.current || !container) return;
 
           // Update progress bar
           if (progressBarRef.current) {
-            const maxScroll = scrollHeight - clientHeight;
-            const currentProgress = maxScroll > 0 ? (scrollTop / maxScroll) * 100 : 0;
+            const maxScroll = container.scrollHeight - container.clientHeight;
+            const currentProgress = maxScroll > 0 ? (container.scrollTop / maxScroll) * 100 : 0;
             progressBarRef.current.style.width = `${currentProgress}%`;
           }
 
-          const maxScroll = scrollHeight - clientHeight;
-          
-          // Evaluar si llegó al fondo (tolerancia de 20px)
-          if (scrollTop >= maxScroll - 20) {
-            // Cambiar estado a 'up' / 'resetting'
-            isResetting = true;
-            
-            // Salto inmediato a cero
-            if (container === window) {
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            } else {
-              (container as Element).scrollTo({ top: 0, behavior: 'smooth' });
-            }
+          // Desplazar hacia abajo
+          container.scrollTop += scrollSpeed;
 
-            // Pausa de 2 segundos en el tope antes de reanudar la bajada
-            resetTimeout = setTimeout(() => {
-              isResetting = false;
-            }, 2000);
-          } else {
-            // Seguir bajando
-            if (container === window) {
-              window.scrollBy({ top: 1, left: 0, behavior: 'auto' });
-            } else {
-              (container as Element).scrollBy({ top: 1, left: 0, behavior: 'auto' });
-            }
+          // Validar si llegó al final del scroll
+          const reachedBottom = container.scrollTop + container.clientHeight >= container.scrollHeight - 5;
+
+          if (reachedBottom) {
+            // Pausa pequeña opcional antes de reiniciar o salto directo al inicio
+            setTimeout(() => {
+              if (container) {
+                container.scrollTop = 0; // Reinicia al principio de forma limpia
+              }
+            }, 1000); // 1 segundo de pausa al llegar al final antes de volver arriba
           }
-        }, 30);
+        }, intervalTime);
       };
 
       // Start scrolling after a brief pause
@@ -120,9 +100,8 @@ export default function PresentationMode() {
 
       return () => {
         document.body.classList.remove('presentation-mode-active');
-        clearInterval(scrollInterval);
+        clearInterval(tvScrollInterval);
         clearTimeout(initialPause);
-        clearTimeout(resetTimeout);
         try {
           if (document.fullscreenElement && document.exitFullscreen) {
             document.exitFullscreen();
