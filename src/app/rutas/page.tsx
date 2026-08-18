@@ -11,7 +11,7 @@ export const metadata = {
 
 export default function RutasPage() {
   return (
-    <div className="relative z-10 flex flex-col w-full -mt-6 -mx-4 md:-mx-8 sm:w-[calc(100%+2rem)] md:w-[calc(100%+4rem)] min-h-screen text-[#00205B] overflow-hidden pb-20">
+    <div className="relative z-10 flex flex-col w-full min-h-screen text-[#00205B] overflow-hidden pb-20">
       
       {/* Fondo Gradiente + Malla de Puntos Financiera */}
       <div className="absolute inset-0 bg-gradient-to-b from-gray-50 via-slate-100 to-white" />
@@ -24,7 +24,7 @@ export default function RutasPage() {
       />
       
       {/* Hero Section Rediseñada (Centro de Comando) */}
-      <div className="relative w-full pt-6 pb-2 px-8 mb-4 animate-in fade-in slide-in-from-top-4 duration-1000 z-50 [.presentation-mode-active_&]:fixed [.presentation-mode-active_&]:top-28 [.presentation-mode-active_&]:left-0 [.presentation-mode-active_&]:w-full [.presentation-mode-active_&]:bg-white [.presentation-mode-active_&]:shadow-md [.presentation-mode-active_&]:border-b [.presentation-mode-active_&]:border-slate-100 [.presentation-mode-active_&]:pt-4 [.presentation-mode-active_&]:mb-0">
+      <div className="relative w-full pt-6 lg:pt-8 px-6 lg:px-10 mb-6 animate-in fade-in slide-in-from-top-4 duration-1000 z-50 [.presentation-mode-active_&]:fixed [.presentation-mode-active_&]:top-28 [.presentation-mode-active_&]:left-0 [.presentation-mode-active_&]:w-full [.presentation-mode-active_&]:bg-white [.presentation-mode-active_&]:shadow-md [.presentation-mode-active_&]:border-b [.presentation-mode-active_&]:border-slate-100 [.presentation-mode-active_&]:pt-4 [.presentation-mode-active_&]:mb-0">
         <div className="flex flex-col md:flex-row md:items-center gap-4 max-w-[1920px] mx-auto">
           <div className="flex items-center gap-3">
             <Radar className="w-10 h-10 md:w-12 md:h-12 text-[#00205B]" />

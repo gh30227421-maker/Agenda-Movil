@@ -14,6 +14,12 @@ export const metadata: Metadata = {
   description: "Sistema de gestión para jornadas bancarias de BNC",
 };
 
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+};
+
 const montserrat = Montserrat({ subsets: ["latin"], variable: "--font-montserrat" });
 
 export default function RootLayout({
