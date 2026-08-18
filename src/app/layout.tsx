@@ -46,11 +46,16 @@ export default function RootLayout({
             <AuthGuard>
               <AgendaProvider>
                 <RentabilityProvider>
-                  <div className="min-h-screen flex flex-col">
+                  <div className="min-h-screen flex flex-col relative z-10">
                     <Header />
-                    <main className="flex-1 w-full max-w-full p-4 sm:p-8">
+                    <main className="flex-1 w-full max-w-full p-0 flex flex-col min-h-0">
                       {children}
                     </main>
+                    <footer className="mt-auto w-full py-3 px-4 text-center border-t border-slate-100 bg-white/50 backdrop-blur-sm print:hidden">
+                      <span className="text-[11px] font-medium text-slate-400 tracking-wide select-none">
+                        © 2026 Agenda Móvil - Todos los derechos reservados.
+                      </span>
+                    </footer>
                   </div>
                   <EventManagementModal />
                 </RentabilityProvider>

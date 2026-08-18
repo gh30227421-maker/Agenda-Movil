@@ -94,7 +94,7 @@ export default function LoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="bg-[#00153B] border border-white/10 text-white text-sm rounded-xl focus:ring-[#FE5000] focus:border-[#FE5000] block w-full ps-11 p-3.5 transition-colors placeholder-blue-300/40"
-                  placeholder="usuario@bnc.com.ve"
+                  placeholder="usuario@gmail.com"
                   required
                 />
               </div>
@@ -133,9 +133,12 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <div className="mt-8 text-center border-t border-white/10 pt-6">
+          <div className="mt-8 text-center border-t border-white/10 pt-6 flex flex-col gap-2">
             <p className="text-xs text-blue-200/60 font-medium">
               Uso exclusivo para personal autorizado.
+            </p>
+            <p className="text-[11px] text-blue-200/40 font-medium tracking-wide">
+              © 2026 Agenda Móvil - Todos los derechos reservados.
             </p>
           </div>
         </div>

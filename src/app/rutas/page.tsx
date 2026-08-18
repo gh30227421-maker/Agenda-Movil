@@ -3,6 +3,7 @@ import RutasUnidadMovil from '@/components/rutas/RutasUnidadMovil';
 import RutasAgenciaMovil from '@/components/rutas/RutasAgenciaMovil';
 import { Truck, Building2, Radar } from 'lucide-react';
 import PresentationMode from '@/components/ui/PresentationMode';
+import SystemStatus from '@/components/ui/SystemStatus';
 
 export const metadata = {
   title: 'Monitoreo Territorial | Impacto Corporativo',
@@ -34,7 +35,7 @@ export default function RutasPage() {
           
           <div className="md:ml-auto bg-slate-900/5 rounded-full px-4 py-1.5 flex items-center gap-2 border border-slate-200/50 shadow-sm">
             <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.8)]" />
-            <span className="text-xs font-bold text-slate-500 tracking-widest uppercase">Sistema Activo | 14 de Agosto de 2026</span>
+            <SystemStatus />
           </div>
         </div>
       </div>

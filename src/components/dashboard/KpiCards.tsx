@@ -57,7 +57,7 @@ export default function KpiCards({ events }: KpiCardsProps) {
   const color = colorPalette[estadoGlobal as keyof typeof colorPalette];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-5">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5">
       {/* Cuentas Captadas */}
       <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex items-center justify-between">
         <div>
@@ -126,7 +126,7 @@ export default function KpiCards({ events }: KpiCardsProps) {
         </div>
       </div>
       
-      {/* Rentabilidad Global (%) */}
+      {/* Rentabilidad Global (%) OCULTA TEMPORALMENTE
       <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex items-center justify-between relative overflow-hidden">
         <div className={`absolute top-0 left-0 w-1.5 h-full ${color.iconBg.replace('bg-', 'bg-').replace('50', '500')}`} />
         <div className="pl-2">
@@ -142,6 +142,7 @@ export default function KpiCards({ events }: KpiCardsProps) {
           <TrendingUp className="w-6 h-6" />
         </div>
       </div>
+      */}
     </div>
   );
 }

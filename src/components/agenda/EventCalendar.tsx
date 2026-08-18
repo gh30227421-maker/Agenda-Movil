@@ -2,15 +2,16 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { AgendaEvent, EventType } from '@/lib/mock-data';
-import { ChevronLeft, ChevronRight, Calendar, MapPin, Truck, Building2, Store, Printer } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar, MapPin, Truck, Building2, Store, Printer, Menu } from 'lucide-react';
 import { useAgenda } from '@/context/AgendaContext';
 import Loader from '@/components/ui/Loader';
 
 interface EventCalendarProps {
   events: AgendaEvent[];
+  onToggleSidebar?: () => void;
 }
 
-export default function EventCalendar({ events }: EventCalendarProps) {
+export default function EventCalendar({ events, onToggleSidebar }: EventCalendarProps) {
   const { isLoading, handleSeed, isSeeding, openModal } = useAgenda();
   // Start in July 2026 for the demo, or fallback to current month
   const [currentDate, setCurrentDate] = useState(new Date()); 
@@ -45,10 +46,10 @@ export default function EventCalendar({ events }: EventCalendarProps) {
 
   const getEventStyle = (type: EventType) => {
     switch (type) {
-      case 'Agencia Móvil': return { bg: 'bg-blue-50', border: 'border-blue-100', text: 'text-[#00205B]', icon: <Building2 className="w-3 h-3" />, solid: '#00205B' };
-      case 'Unidad Móvil': return { bg: 'bg-orange-50', border: 'border-orange-100', text: 'text-[#FE5000]', icon: <Truck className="w-3 h-3" />, solid: '#FE5000' };
-      case 'Red de Agencias': return { bg: 'bg-green-50', border: 'border-green-100', text: 'text-[#009639]', icon: <Store className="w-3 h-3" />, solid: '#009639' };
-      default: return { bg: 'bg-gray-50', border: 'border-gray-200', text: 'text-gray-700', icon: <Calendar className="w-3 h-3" />, solid: '#6b7280' };
+      case 'Agencia Móvil': return { bg: 'bg-[#00205B]', border: 'border-transparent', text: 'text-white', icon: <Building2 className="w-3 h-3 text-white" />, solid: '#00205B' };
+      case 'Unidad Móvil': return { bg: 'bg-[#FE5000]', border: 'border-transparent', text: 'text-white', icon: <Truck className="w-3 h-3 text-white" />, solid: '#FE5000' };
+      case 'Red de Agencias': return { bg: 'bg-[#009639]', border: 'border-transparent', text: 'text-white', icon: <Store className="w-3 h-3 text-white" />, solid: '#009639' };
+      default: return { bg: 'bg-gray-500', border: 'border-transparent', text: 'text-white', icon: <Calendar className="w-3 h-3 text-white" />, solid: '#6b7280' };
     }
   };
 
@@ -152,22 +153,22 @@ export default function EventCalendar({ events }: EventCalendarProps) {
           
           /* Header compacting */
           #print-calendar-container > div:first-child {
-             padding: 8px !important;
+             padding: 4px !important;
           }
           /* Day names compacting */
           #print-calendar-container > div:nth-child(2) {
              padding-top: 2px !important;
              padding-bottom: 2px !important;
           }
-          /* Legend compacting */
+          /* Legend hidden in print to save space if desired, or compact it */
           #print-calendar-container > div:last-of-type {
-             padding: 5px !important;
+             padding: 2px !important;
           }
         }
       `}} />
-      <div className="space-y-6">
+      <div className="w-full h-full min-h-0 flex flex-col gap-3">
       {events.length === 0 && (
-        <div className="bg-orange-50 border-2 border-orange-200 rounded-2xl p-6 text-center">
+        <div className="bg-orange-50 border-2 border-orange-200 rounded-2xl p-6 text-center shrink-0">
           <h3 className="text-xl font-bold text-[#FE5000] mb-2">Base de Datos Vacía</h3>
           <p className="text-gray-600 mb-4">No se encontraron operativos. Puedes comenzar a crearlos manualmente o sembrar la base de datos con los datos de prueba.</p>
           <button 
@@ -180,67 +181,120 @@ export default function EventCalendar({ events }: EventCalendarProps) {
         </div>
       )}
 
-      {/* Month Selector Tabs */}
-      <div className="bg-white rounded-2xl p-2 shadow-sm border border-gray-100 flex items-center gap-2 overflow-x-auto hide-scrollbar print:hidden">
-        {monthNames.map((mName, idx) => (
-          <button
-            key={mName}
-            onClick={() => handleSetMonth(idx)}
-            className={`px-4 py-2.5 rounded-xl text-sm font-bold whitespace-nowrap transition-all ${
-              month === idx 
-                ? 'bg-[#00205B] text-white shadow-md' 
-                : 'text-gray-500 hover:bg-gray-50 hover:text-[#00205B]'
-            }`}
-          >
-            {mName}
-          </button>
-        ))}
-      </div>
+      <style dangerouslySetInnerHTML={{__html: `
+        @media print {
+          @page { 
+            size: landscape; 
+            margin: 5mm !important; 
+          }
+          html, body, main, #__next, .pantalla-completa {
+            padding: 0 !important;
+            margin: 0 !important;
+            height: 100vh !important;
+            min-height: 100vh !important;
+            background: white !important;
+            overflow: hidden !important;
+            display: block !important; /* Evita que el body centre el contenido */
+          }
+          .print-wrapper {
+            height: 98vh !important;
+            max-height: 98vh !important;
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: flex-start !important; /* ESTO PEGA TODO ARRIBA */
+            padding-top: 0 !important;
+            margin-top: 0 !important;
+            overflow: hidden !important;
+          }
+          /* Eliminar paddings del título y su contenedor */
+          .print-wrapper > div:first-child,
+          .print-wrapper h1, 
+          .print-wrapper h2 {
+            margin-top: 0 !important;
+            padding-top: 0 !important;
+          }
+          .print-grid {
+            flex-grow: 1 !important; 
+            height: 100% !important;
+            display: grid !important;
+            grid-auto-rows: minmax(0, 1fr) !important; 
+          }
+          ::-webkit-scrollbar { display: none; }
+        }
+      `}} />
 
-      <div id="print-calendar-container" className="bg-white rounded-3xl shadow-sm border border-gray-200 flex flex-col overflow-hidden relative">
-        {/* Header del Calendario */}
-        <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between p-6 border-b border-gray-100 bg-gray-50/50 gap-4">
-          <div className="flex flex-col xl:flex-row xl:items-center gap-4">
-            <div>
-              <h2 className="text-2xl font-black text-[#00205B] tracking-tight">
-                {monthNames[month]} {year}
-              </h2>
-              <p className="text-sm text-gray-500 font-medium mt-1">Programación mensual de operativos</p>
-            </div>
-            <div className="flex items-center gap-2 text-sm bg-white border border-gray-200 rounded-full px-3 py-1 shadow-sm">
-              <span className="font-bold text-[#00205B]">{eventsInMonth.length} Eventos en {monthNames[month]}</span>
+      <div id="print-calendar-container" className="w-full flex-1 min-h-0 flex flex-col relative z-10 print-wrapper">
+        {/* Header Superior: Año y Controles */}
+        <div className="flex flex-col sm:flex-row items-center justify-between px-2 pt-1 mb-1 gap-3 print:p-0 print:m-0">
+          <div className="flex items-center gap-4">
+            {onToggleSidebar && (
+              <button 
+                onClick={onToggleSidebar}
+                className="p-2 -ml-2 rounded-full hover:bg-slate-100 transition-colors text-slate-600 print:hidden"
+                title="Abrir Panel de Control"
+              >
+                <Menu className="w-5 h-5" />
+              </button>
+            )}
+            <h2 className="text-2xl font-black text-[#00205B] tracking-tight">
+              <span className="print:hidden">{year}</span>
+              <span className="hidden print:inline">{monthNames[month]} {year}</span>
+            </h2>
+            <div className="hidden lg:flex items-center gap-2 text-xs text-slate-500 font-medium px-3 py-1 bg-white border border-slate-200 rounded-full shadow-sm print:hidden">
+              <span className="font-bold text-[#00205B]">{eventsInMonth.length} Eventos</span>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <button onClick={() => window.print()} className="px-4 py-2.5 bg-[#FE5000] text-white rounded-xl text-sm font-bold hover:bg-[#E04700] transition-colors shadow-sm flex items-center gap-2 hide-on-download print:hidden">
+          
+          <div className="flex items-center gap-1 print:hidden">
+            <button onClick={() => window.print()} className="px-4 py-2.5 bg-[#FE5000] text-white rounded-xl text-xs font-bold hover:bg-[#E04700] transition-colors shadow-sm flex items-center gap-2 mr-2">
               <Printer className="w-4 h-4" />
-              Imprimir
+              <span className="hidden sm:inline">Imprimir</span>
             </button>
-            <button onClick={handlePrevMonth} className="p-2.5 bg-white border border-gray-200 rounded-xl hover:border-[#00205B] hover:text-[#00205B] transition-colors shadow-sm print:hidden">
-              <ChevronLeft className="w-5 h-5" />
-            </button>
-            <button onClick={() => setCurrentDate(new Date())} className="px-5 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-bold text-gray-700 hover:border-[#00205B] hover:text-[#00205B] transition-colors shadow-sm print:hidden">
-              Hoy
-            </button>
-            <button onClick={handleNextMonth} className="p-2.5 bg-white border border-gray-200 rounded-xl hover:border-[#00205B] hover:text-[#00205B] transition-colors shadow-sm print:hidden">
-              <ChevronRight className="w-5 h-5" />
-            </button>
+            <div className="flex bg-white rounded-xl shadow-sm border border-slate-200 p-1">
+              <button onClick={handlePrevMonth} className="p-1.5 text-slate-500 rounded-lg hover:bg-slate-100 transition-colors">
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+              <button onClick={() => setCurrentDate(new Date())} className="px-4 py-1.5 text-xs font-semibold text-slate-700 hover:text-[#00205B] transition-colors">
+                Hoy
+              </button>
+              <button onClick={handleNextMonth} className="p-1.5 text-slate-500 rounded-lg hover:bg-slate-100 transition-colors">
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Grid del Calendario */}
-        <div className="grid grid-cols-7 border-b border-gray-100 bg-white">
+        {/* Barra de Meses Premium Simétrica */}
+        <div className="flex w-full bg-white rounded-t-2xl shadow-sm border border-slate-200 print:hidden mb-2 overflow-hidden divide-x divide-slate-100">
+          {monthNames.map((mName, idx) => (
+            <button
+              key={mName}
+              onClick={() => handleSetMonth(idx)}
+              className={`flex-1 text-center py-2 px-1 text-[11px] lg:text-xs font-semibold tracking-wide uppercase transition-all border-b-4 ${
+                month === idx 
+                  ? 'border-[#FE5000] text-[#00205B] bg-slate-50 shadow-inner' 
+                  : 'border-transparent text-slate-500 hover:text-[#00205B] hover:bg-slate-50'
+              }`}
+            >
+              <span className="block truncate w-full">{mName}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Cabecera de los Días */}
+        <div className="grid grid-cols-7 shrink-0 mb-1 print:mb-0.5">
           {dayNames.map(day => (
-            <div key={day} className="py-4 text-center text-[11px] font-black text-gray-400 uppercase tracking-widest">
+            <div key={day} className="py-1 text-center text-xs font-bold tracking-wider text-slate-400 uppercase">
               {day}
             </div>
           ))}
         </div>
         
-        <div id="print-calendar-grid" className="grid grid-cols-7 grid-rows-6 bg-gray-100 gap-[1px] flex-grow min-h-[60vh] lg:min-h-[70vh]">
+        {/* Unified Canvas Grid */}
+        <div id="print-calendar-grid" className="print-grid grid grid-cols-7 auto-rows-fr gap-[1px] bg-slate-200 border border-slate-200 rounded-b-2xl shadow-md flex-1 min-h-0 overflow-hidden print:h-[calc(100vh-80px)] print:grid-rows-[repeat(auto-fit,minmax(0,1fr))] print:overflow-hidden print:border-none print:bg-transparent print:gap-0">
           {/* Blanks */}
           {blanks.map(blank => (
-            <div key={`blank-${blank}`} className="bg-white min-h-[100px] lg:min-h-[110px] h-full opacity-40"></div>
+            <div key={`blank-${blank}`} className="bg-slate-50/50 h-full min-h-0 print:hidden"></div>
           ))}
           
           {/* Days */}
@@ -254,71 +308,39 @@ export default function EventCalendar({ events }: EventCalendarProps) {
               <div 
                 key={day} 
                 onClick={() => handleDayClick(day)}
-                className={`bg-white min-h-[100px] lg:min-h-[110px] h-full p-2 flex flex-col group transition-colors hover:bg-blue-50/10 cursor-pointer overflow-hidden`}
+                className={`bg-white h-full min-h-0 p-2 print:p-1 flex flex-col group transition-colors hover:bg-slate-50 cursor-pointer overflow-hidden print:min-h-0 print:h-auto print:overflow-hidden print:border print:border-slate-300`}
               >
-                <div className="flex justify-between items-center mb-2 px-1 pt-1">
-                  <span className={`text-sm font-bold w-8 h-8 flex items-center justify-center rounded-full transition-all ${isToday ? 'bg-[#FE5000] text-white shadow-md' : 'text-gray-700 group-hover:bg-gray-100'}`}>
+                <div className="flex justify-between items-center mb-1.5 px-1 shrink-0 print:mb-0.5">
+                  <span className={`text-sm font-bold w-7 h-7 flex items-center justify-center rounded-full transition-all ${isToday ? 'bg-[#FE5000] text-white shadow-sm' : 'text-slate-700 group-hover:bg-slate-200'}`}>
                     {day}
                   </span>
-                  <span className="text-[10px] text-[#FE5000] font-semibold opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
-                    <Calendar className="w-3 h-3" /> Añadir
+                  <span className="text-[10px] text-[#FE5000] font-semibold opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5 print:hidden">
+                    <Calendar className="w-3 h-3" />
                   </span>
                 </div>
-                <div className="flex-1 space-y-2 overflow-y-auto pr-1">
-                  {dayEvents.slice(0, 2).map(event => {
+                <div className="flex-1 space-y-1.5 overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent pr-0.5 print:space-y-0.5 print:overflow-hidden flex flex-col">
+                  {dayEvents.map(event => {
                     const style = getEventStyle(event.type);
                     return (
                       <button 
                         key={`${event.id}-${day}`} 
                         onClick={(e) => { e.stopPropagation(); openModal('menu', false, event.id); }}
-                        className={`w-full text-left p-2.5 rounded-xl border-l-4 transition-all hover:shadow-md hover:-translate-y-0.5 cursor-pointer flex flex-col gap-1.5 ${style.bg} ${style.border}`}
+                        className={`w-full text-left px-2.5 py-1 print:py-1 print:px-2 rounded-md transition-all hover:brightness-95 cursor-pointer flex flex-row items-center gap-1.5 ${style.bg} shrink-0`}
                         title={`${event.type} - ${event.eventName}`}
-                        style={{ borderLeftColor: style.solid }}
                       >
-                        <div className={`flex items-start gap-1.5 font-bold text-[10px] sm:text-[11px] leading-tight ${style.text}`}>
-                          <div className="mt-0.5">{style.icon}</div>
-                          <span className="line-clamp-2">{event.eventName}</span>
-                        </div>
-                        <div className="flex items-center gap-1 text-[9px] text-gray-500 font-medium ml-4">
-                          <MapPin className="w-3 h-3 text-gray-400" />
-                          <span className="truncate">{event.location}</span>
+                        <div className={`flex items-center gap-1.5 font-semibold text-[13px] leading-tight ${style.text} w-full print:text-[10px] print:truncate print:whitespace-nowrap`}>
+                          <div className="shrink-0 scale-90 print:hidden">{style.icon}</div>
+                          <span className="truncate print:truncate print:whitespace-nowrap">{event.eventName}</span>
                         </div>
                       </button>
                     )
                   })}
-                  
-                  {dayEvents.length > 2 && (
-                    <button
-                      onClick={(e) => { 
-                        e.stopPropagation(); 
-                        setPopoverState({ isOpen: true, day, events: dayEvents }); 
-                      }}
-                      className="w-full text-left px-2 py-1 text-[11px] font-bold text-[#00205B] hover:bg-blue-50 rounded-lg transition-colors mt-1"
-                    >
-                      +{dayEvents.length - 2} más
-                    </button>
-                  )}
                 </div>
               </div>
             );
           })}
         </div>
         
-        {/* Leyenda */}
-        <div className="p-5 bg-white flex flex-wrap justify-center sm:justify-start gap-4 text-xs font-bold text-gray-600 border-t border-gray-100">
-          <div className="flex items-center gap-2 bg-blue-50/50 px-4 py-2 rounded-xl border border-blue-100 text-[#00205B]">
-            <Building2 className="w-4 h-4" />
-            <span>Agencia Móvil</span>
-          </div>
-          <div className="flex items-center gap-2 bg-orange-50/50 px-4 py-2 rounded-xl border border-orange-100 text-[#FE5000]">
-            <Truck className="w-4 h-4" />
-            <span>Unidad Móvil</span>
-          </div>
-          <div className="flex items-center gap-2 bg-green-50/50 px-4 py-2 rounded-xl border border-green-100 text-[#009639]">
-            <Store className="w-4 h-4" />
-            <span>Red de Agencias</span>
-          </div>
-        </div>
 
         {/* Modal de Confirmación Global usando Portal */}
         {mounted && confirmDateModal.isOpen && createPortal(

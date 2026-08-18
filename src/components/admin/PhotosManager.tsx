@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/context/ToastContext';
-import { Loader2, Upload, Trash2, Image as ImageIcon, Search } from 'lucide-react';
+import { Loader2, Upload, Trash2, Image as ImageIcon, Search, Video } from 'lucide-react';
 
 interface Event {
   id: string;
@@ -30,9 +30,15 @@ export default function PhotosManager() {
   
   const [coverUploading, setCoverUploading] = useState(false);
   const [coverPreviewTimestamp, setCoverPreviewTimestamp] = useState(Date.now());
+  const [videoUploading, setVideoUploading] = useState(false);
+  const [videoPreviewTimestamp, setVideoPreviewTimestamp] = useState(Date.now());
+  const [agenciaVideoUploading, setAgenciaVideoUploading] = useState(false);
+  const [agenciaVideoPreviewTimestamp, setAgenciaVideoPreviewTimestamp] = useState(Date.now());
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
+  const agenciaVideoInputRef = useRef<HTMLInputElement>(null);
   const { showToast } = useToast();
 
   useEffect(() => {
@@ -149,6 +155,68 @@ export default function PhotosManager() {
     }
   };
 
+  const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    const file = e.target.files[0];
+    
+    // Check file size (max 50MB)
+    if (file.size > 50 * 1024 * 1024) {
+      showToast('El video es demasiado pesado. Máximo 50MB.', 'info');
+      return;
+    }
+
+    try {
+      setVideoUploading(true);
+      const { data, error } = await supabase.storage
+        .from('event_photos')
+        .upload('unidad-oficial-video.mp4', file, { 
+          upsert: true,
+          cacheControl: '10'
+        });
+
+      if (error) throw error;
+      
+      showToast('Video institucional actualizado exitosamente', 'success');
+      setVideoPreviewTimestamp(Date.now());
+    } catch (err: any) {
+      showToast(err.message || 'Error al actualizar el video', 'error');
+    } finally {
+      setVideoUploading(false);
+      if (videoInputRef.current) videoInputRef.current.value = '';
+    }
+  };
+
+  const handleAgenciaVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    const file = e.target.files[0];
+    
+    // Check file size (max 50MB)
+    if (file.size > 50 * 1024 * 1024) {
+      showToast('El video es demasiado pesado. Máximo 50MB.', 'info');
+      return;
+    }
+
+    try {
+      setAgenciaVideoUploading(true);
+      const { data, error } = await supabase.storage
+        .from('event_photos')
+        .upload('agencia-movil-video.mp4', file, { 
+          upsert: true,
+          cacheControl: '10'
+        });
+
+      if (error) throw error;
+      
+      showToast('Video Agencia Móvil actualizado exitosamente', 'success');
+      setAgenciaVideoPreviewTimestamp(Date.now());
+    } catch (err: any) {
+      showToast(err.message || 'Error al actualizar el video', 'error');
+    } finally {
+      setAgenciaVideoUploading(false);
+      if (agenciaVideoInputRef.current) agenciaVideoInputRef.current.value = '';
+    }
+  };
+
   const handleDelete = async (photoId: string) => {
     if (!window.confirm('¿Está seguro de eliminar esta fotografía permanentemente?')) return;
 
@@ -180,6 +248,8 @@ export default function PhotosManager() {
   }
 
   const coverUrl = `${supabase.storage.from('event_photos').getPublicUrl('unidad-oficial-cover.jpg').data.publicUrl}?t=${coverPreviewTimestamp}`;
+  const videoUrl = `${supabase.storage.from('event_photos').getPublicUrl('unidad-oficial-video.mp4').data.publicUrl}?t=${videoPreviewTimestamp}`;
+  const agenciaVideoUrl = `${supabase.storage.from('event_photos').getPublicUrl('agencia-movil-video.mp4').data.publicUrl}?t=${agenciaVideoPreviewTimestamp}`;
 
   return (
     <div className="flex flex-col gap-6 w-full">
@@ -239,6 +309,63 @@ export default function PhotosManager() {
                 <Upload className="w-4 h-4" />
               )}
               {coverUploading ? 'Actualizando Portada...' : 'Actualizar Portada Oficial'}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* SECCIÓN NUEVA: VIDEO INSTITUCIONAL */}
+      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row gap-6 mt-2">
+        {/* Video Unidad Móvil */}
+        <div className="w-full md:w-1/2 flex flex-col xl:flex-row gap-6 items-center border-b md:border-b-0 md:border-r border-gray-100 pb-6 md:pb-0 md:pr-6">
+          <div className="w-full xl:w-1/2 aspect-[9/16] max-h-[250px] bg-gray-100 rounded-xl overflow-hidden border border-gray-200 relative group flex items-center justify-center shrink-0">
+            <video 
+              src={videoUrl} 
+              className="w-full h-full object-cover"
+              controls
+              muted
+              playsInline
+            />
+            <div className="absolute top-2 left-2 bg-[#FE5000] text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-sm z-10 pointer-events-none">
+              UNIDAD MÓVIL
+            </div>
+          </div>
+          <div className="flex-1 flex flex-col justify-center">
+            <h3 className="text-md font-bold text-gray-800 mb-2 flex items-center gap-2"><Video className="w-5 h-5 text-[#00205B]" /> Video Unidad Móvil</h3>
+            <p className="text-xs text-gray-500 mb-4">
+              Se reproduce a la derecha del mapa superior. (Formatos: MP4, Máximo 50MB).
+            </p>
+            <input type="file" accept="video/mp4,video/quicktime" className="hidden" ref={videoInputRef} onChange={handleVideoUpload} />
+            <button onClick={() => videoInputRef.current?.click()} disabled={videoUploading} className="flex justify-center items-center gap-2 bg-[#00205B] hover:bg-[#00153B] text-white px-4 py-2 rounded-xl text-sm font-bold shadow-md transition-all disabled:opacity-50">
+              {videoUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+              {videoUploading ? 'Actualizando...' : 'Actualizar Video'}
+            </button>
+          </div>
+        </div>
+
+        {/* Video Agencia Móvil */}
+        <div className="w-full md:w-1/2 flex flex-col xl:flex-row gap-6 items-center pl-0 md:pl-2">
+          <div className="w-full xl:w-1/2 aspect-[9/16] max-h-[250px] bg-gray-100 rounded-xl overflow-hidden border border-gray-200 relative group flex items-center justify-center shrink-0">
+            <video 
+              src={agenciaVideoUrl} 
+              className="w-full h-full object-cover"
+              controls
+              muted
+              playsInline
+            />
+            <div className="absolute top-2 left-2 bg-[#009639] text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-sm z-10 pointer-events-none">
+              AGENCIA MÓVIL
+            </div>
+          </div>
+          <div className="flex-1 flex flex-col justify-center">
+            <h3 className="text-md font-bold text-gray-800 mb-2 flex items-center gap-2"><Video className="w-5 h-5 text-[#009639]" /> Video Agencia Móvil</h3>
+            <p className="text-xs text-gray-500 mb-4">
+              Se reproduce a la derecha del mapa inferior. (Formatos: MP4, Máximo 50MB).
+            </p>
+            <input type="file" accept="video/mp4,video/quicktime" className="hidden" ref={agenciaVideoInputRef} onChange={handleAgenciaVideoUpload} />
+            <button onClick={() => agenciaVideoInputRef.current?.click()} disabled={agenciaVideoUploading} className="flex justify-center items-center gap-2 bg-[#009639] hover:bg-[#007A2E] text-white px-4 py-2 rounded-xl text-sm font-bold shadow-md transition-all disabled:opacity-50">
+              {agenciaVideoUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+              {agenciaVideoUploading ? 'Actualizando...' : 'Actualizar Video'}
             </button>
           </div>
         </div>

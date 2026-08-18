@@ -1,6 +1,7 @@
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { toPng } from 'html-to-image';
 
 export interface ExportConfig {
   title: string;
@@ -124,4 +125,38 @@ export const exportToPDF = ({ title, filename, headers, data, filters }: ExportC
   });
   
   doc.save(`${filename}.pdf`);
+};
+
+export const exportToPNG = async (elementId: string, filename: string) => {
+  const element = document.getElementById(elementId);
+  if (!element) {
+    console.error(`Element with id ${elementId} not found`);
+    return;
+  }
+  
+  try {
+    const dataUrl = await toPng(element, {
+      backgroundColor: '#ffffff',
+      pixelRatio: 2,
+      filter: (node: HTMLElement) => {
+        if (node.classList && node.classList.contains('hide-on-download')) {
+          return false;
+        }
+        return true;
+      },
+      style: {
+        transform: 'scale(1)',
+        transformOrigin: 'top left',
+        width: element.offsetWidth + 'px',
+        height: element.offsetHeight + 'px',
+      }
+    });
+    
+    const link = document.createElement('a');
+    link.download = `${filename.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.png`;
+    link.href = dataUrl;
+    link.click();
+  } catch (err) {
+    console.error("Error exporting to PNG:", err);
+  }
 };

@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import PremiumCarousel from './PremiumCarousel';
 import AnimatedCounter from '@/components/ui/AnimatedCounter';
 import { supabase } from '@/lib/supabase';
 import { useAgenda } from '@/context/AgendaContext';
-import { Loader2, Users, MapPin, Truck, Activity, Calendar, Navigation, Camera } from 'lucide-react';
+import { Loader2, Users, MapPin, Truck, Activity, Calendar, Navigation, Camera, Video, Download } from 'lucide-react';
+import { toPng } from 'html-to-image';
 // @ts-ignore
 import { ComposableMap, Geographies, Geography, Marker, Line } from 'react-simple-maps';
 
@@ -36,6 +37,44 @@ const geoUrl = '/venezuela.json';
 export default function RutasUnidadMovil() {
   const { events: allEvents, isLoading: isEventsLoading } = useAgenda();
   const events = useMemo(() => allEvents.filter(e => e.type === 'Unidad Móvil'), [allEvents]);
+  
+  // Referencias para la exportación a PNG
+  const kpiProximaParadaRef = useRef<HTMLDivElement>(null);
+  const kpiCiudadanosRef = useRef<HTMLDivElement>(null);
+  const kpiJornadasRef = useRef<HTMLDivElement>(null);
+  const kpiEstadosRef = useRef<HTMLDivElement>(null);
+  const kpiLogisticaRef = useRef<HTMLDivElement>(null);
+  const mapaRef = useRef<HTMLDivElement>(null);
+  const downloadImage = async (ref: React.RefObject<HTMLDivElement | null>, filename: string, bgColor: string = '#ffffff') => {
+    if (!ref.current) return;
+    try {
+      // Pequeño retardo para asegurar renderizado completo del DOM
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
+      const dataUrl = await toPng(ref.current, {
+        backgroundColor: bgColor,
+        pixelRatio: 2,
+        filter: (node: HTMLElement) => {
+          if (node.classList && node.classList.contains('ignore-export')) {
+            return false;
+          }
+          return true;
+        },
+        style: {
+          transform: 'scale(1)',
+          transformOrigin: 'top left',
+          width: ref.current.offsetWidth + 'px',
+          height: ref.current.offsetHeight + 'px',
+        }
+      });
+      const link = document.createElement('a');
+      link.download = `${filename.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.png`;
+      link.href = dataUrl;
+      link.click();
+    } catch (err) {
+      console.error('Error al generar la imagen', err);
+    }
+  };
   
   const [photos, setPhotos] = useState<any[]>([]);
   const [loadingPhotos, setLoadingPhotos] = useState(true);
@@ -72,20 +111,48 @@ export default function RutasUnidadMovil() {
     let totalCuentas = 0;
     const statesSet = new Set<string>();
     
-    events.forEach(ev => {
-      if (ev.cifras?.cuentasAbiertas) {
-        totalCuentas += ev.cifras.cuentasAbiertas;
-      }
-      const logisticState = ev.estadoOperativo || ev.state;
+    events.forEach(e => {
+      totalCuentas += (e.cifras?.cuentasAbiertas || 0) + (e.cifras?.atendidos || 0);
+      const stateName = e.estadoOperativo || e.state;
+      const logisticState = stateName && STATE_COORDS[normalizeStateName(stateName)] ? normalizeStateName(stateName) : null;
       if (logisticState) {
         statesSet.add(logisticState);
       }
     });
 
+    const sortedForRoute = [...events]
+      .filter(e => (e.estadoOperativo || e.state) && STATE_COORDS[normalizeStateName(e.estadoOperativo || e.state)])
+      .sort((a, b) => new Date(a.startDate || '').getTime() - new Date(b.startDate || '').getTime());
+    
+    const coordsForRoute: [number, number][] = [];
+    const seenForRoute = new Set();
+    sortedForRoute.forEach(e => {
+      const norm = normalizeStateName(e.estadoOperativo || e.state);
+      if (!seenForRoute.has(norm)) {
+        seenForRoute.add(norm);
+        coordsForRoute.push(STATE_COORDS[norm]);
+      }
+    });
+
+    let totalKm = 0;
+    const R = 6371;
+    for (let i = 1; i < coordsForRoute.length; i++) {
+      const [lon1, lat1] = coordsForRoute[i-1];
+      const [lon2, lat2] = coordsForRoute[i];
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLon/2) * Math.sin(dLon/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      totalKm += R * c;
+    }
+
     return {
       beneficiados: totalCuentas, 
       eventos: events.length,
-      estados: statesSet.size
+      estados: statesSet.size,
+      kilometros: Math.round(totalKm)
     };
   }, [events]);
 
@@ -143,10 +210,10 @@ export default function RutasUnidadMovil() {
       `}} />
 
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 w-full max-w-[95%] 2xl:max-w-screen-2xl mx-auto items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-[380px_1fr_280px] xl:grid-cols-[440px_1fr_320px] gap-6 xl:gap-8 w-full px-4 xl:px-8 max-w-[1920px] mx-auto items-start">
         
-        {/* Columna Izquierda: Narrativa y Contexto Visual (30%) */}
-        <div className="flex flex-col lg:col-span-4 relative z-20 w-full gap-4">
+        {/* Columna Izquierda: Narrativa y Contexto Visual */}
+        <div className="flex flex-col relative z-20 w-full gap-4">
           
           {/* Texto Informativo */}
           <p className="text-slate-600 text-sm leading-relaxed mb-4">
@@ -155,7 +222,14 @@ export default function RutasUnidadMovil() {
 
           {/* Micro-Tarjeta Próximo Destino (Real de BD) */}
           {nextEvent ? (
-            <div className="bg-slate-900 rounded-xl p-4 shadow-lg flex flex-col justify-center border border-slate-800 mb-4 transition-all duration-300">
+            <div ref={kpiProximaParadaRef} id="kpi-proxima-parada" className="group relative bg-slate-900 rounded-xl p-4 shadow-lg flex flex-col justify-center border border-slate-800 mb-4 transition-all duration-300">
+              <button
+                onClick={() => downloadImage(kpiProximaParadaRef, 'Proxima_Parada_Unidad_Movil', '#0f172a')}
+                className="ignore-export absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-white/10 hover:bg-[#FE5000] text-white p-1.5 rounded-md backdrop-blur-sm shadow-md z-50"
+                title="Descargar en PNG"
+              >
+                <Download className="w-3.5 h-3.5" />
+              </button>
               <div className="flex items-center gap-3">
                 <div className="shrink-0">
                   <MapPin className="w-6 h-6 text-orange-500" />
@@ -173,7 +247,7 @@ export default function RutasUnidadMovil() {
           )}
 
           {/* Foto Institucional (Con Badge en Vivo) */}
-          <div className="w-full aspect-video rounded-xl overflow-hidden shadow-2xl shadow-slate-900/50 border border-white/10 group bg-slate-950/40 relative z-20 mb-4">
+          <div className="w-full min-h-[260px] xl:min-h-[340px] rounded-2xl overflow-hidden shadow-2xl shadow-slate-900/50 border border-white/10 group bg-slate-950/40 relative z-20 mb-6 transition-all duration-500">
             <div className="absolute inset-0 flex items-center justify-center text-white/20">
               <Camera className="w-8 h-8" />
             </div>
@@ -188,59 +262,27 @@ export default function RutasUnidadMovil() {
             />
             
             {/* Badge Animado en Vivo */}
-            <div className="absolute top-3 right-3 z-30 bg-slate-900/80 backdrop-blur-md border border-white/20 rounded-full px-3 py-1.5 flex items-center gap-2 shadow-lg">
+            <div className="absolute top-4 right-4 z-30 bg-slate-900/80 backdrop-blur-md border border-white/20 rounded-full px-3 py-1.5 flex items-center gap-2 shadow-lg">
               <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.8)]" />
               <span className="text-[10px] font-bold uppercase tracking-wider text-white">ESTADO: DESPLEGADA</span>
             </div>
             
-            <div className="absolute bottom-0 left-0 w-full p-4 bg-gradient-to-t from-black/90 via-black/40 to-transparent z-20">
-              <span className="text-white text-xs md:text-sm font-bold uppercase tracking-widest drop-shadow-md flex items-center gap-2">
-                <Truck className="w-4 h-4" /> Unidad Móvil Oficial
+            <div className="absolute bottom-0 left-0 w-full p-6 bg-gradient-to-t from-black/90 via-black/40 to-transparent z-20">
+              <span className="text-white text-sm md:text-base font-bold uppercase tracking-widest drop-shadow-md flex items-center gap-2">
+                <Truck className="w-5 h-5" /> Unidad Móvil Oficial
               </span>
             </div>
           </div>
 
           {/* Galería Dinámica */}
-          <PremiumCarousel photos={photos} />
-
-          {/* Live Timeline Vertical */}
-          <div className="flex flex-col backdrop-blur-md bg-white/70 p-4 rounded-xl shadow-xl shadow-slate-200/50 border border-white/60 relative overflow-hidden mt-2">
-            <div className="flex items-center gap-2 mb-3">
-              <Activity className="w-4 h-4 text-[#00205B]" />
-              <h3 className="text-xs font-bold uppercase tracking-wider text-[#00205B]">Últimos Despliegues</h3>
-              <div className="ml-auto flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-green-100/50 border border-green-200">
-                <div className="w-1.5 h-1.5 rounded-full bg-[#009639] animate-pulse" />
-                <span className="text-[9px] font-bold text-[#009639] uppercase tracking-wider">Live</span>
-              </div>
-            </div>
-            
-            <div className="flex flex-col gap-3 relative border-l-2 border-slate-200 ml-2 pl-4 mt-2">
-              {[...events].sort((a, b) => new Date(b.startDate || 0).getTime() - new Date(a.startDate || 0).getTime()).slice(0, 3).map((event, idx) => (
-                <div key={event.id || idx} className="relative flex flex-col z-10 pb-2">
-                  <div className="absolute -left-[23px] top-1.5 w-3 h-3 rounded-full bg-[#FE5000] border-2 border-white shadow-sm z-10" />
-                  <div className="flex justify-between items-start w-full">
-                    <div className="flex flex-col">
-                      <p className="text-xs font-bold text-slate-700 leading-tight">{event.eventName || 'Operativo Especial'}</p>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-[10px] text-slate-400 flex items-center gap-1"><Calendar className="w-2.5 h-2.5" /> {event.startDate ? new Date(event.startDate).toLocaleDateString('es-ES', { timeZone: 'UTC' }) : 'N/A'}</span>
-                        <span className="text-[9px] font-bold text-[#00205B] bg-blue-50 px-1.5 py-0.5 rounded uppercase tracking-wider">{event.estadoOperativo || event.state}</span>
-                      </div>
-                    </div>
-                    {((event.cifras?.cuentasAbiertas || 0) + (event.cifras?.atendidos || 0)) > 0 && (
-                      <div className="bg-green-50 text-green-700 px-2 py-1 rounded-md text-[10px] font-bold shrink-0 ml-2 shadow-sm border border-green-100 whitespace-nowrap">
-                        👥 {(event.cifras?.cuentasAbiertas || 0) + (event.cifras?.atendidos || 0)} Atendidos
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
+          <div className="w-full rounded-2xl overflow-hidden shadow-[0_15px_40px_rgba(0,32,91,0.1)] border border-slate-200 bg-white/40 backdrop-blur-sm pointer-events-auto transform scale-100 hover:scale-[1.01] transition-transform duration-500 min-h-[220px]">
+            <PremiumCarousel photos={photos} />
           </div>
 
         </div>
 
-        {/* Columna Derecha: Data y Monitoreo (70%) */}
-        <div className="flex flex-col lg:col-span-8 relative w-full h-full">
+        {/* Columna Central: Data y Monitoreo */}
+        <div className="flex flex-col relative w-full h-full">
           
           {/* Fila Única de KPIs */}
           <div className="flex items-center gap-4 mb-4 relative z-20">
@@ -249,7 +291,14 @@ export default function RutasUnidadMovil() {
           </div>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 w-full relative z-20">
             {/* KPI: Ciudadanos Atendidos */}
-            <div className="group flex flex-col backdrop-blur-md bg-white/90 p-4 rounded-xl shadow-xl shadow-slate-200/50 border border-slate-200 hover:shadow-[0_15px_40px_rgba(254,80,0,0.12)] transition-all duration-500 relative overflow-hidden">
+            <div ref={kpiCiudadanosRef} id="kpi-ciudadanos-atendidos-unidad" className="group flex flex-col backdrop-blur-md bg-white/90 p-4 rounded-xl shadow-xl shadow-slate-200/50 border border-slate-200 hover:shadow-[0_15px_40px_rgba(254,80,0,0.12)] transition-all duration-500 relative overflow-hidden">
+              <button
+                onClick={() => downloadImage(kpiCiudadanosRef, 'KPI_Ciudadanos_Atendidos')}
+                className="ignore-export absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-slate-100 hover:bg-[#FE5000] hover:text-white text-slate-400 p-1.5 rounded-md shadow-sm z-50"
+                title="Descargar en PNG"
+              >
+                <Download className="w-3.5 h-3.5" />
+              </button>
               <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-[#FE5000] to-[#FF8A50]" />
               <svg className="absolute bottom-0 left-0 w-full h-1/2 object-cover opacity-30 pointer-events-none text-slate-200" viewBox="0 0 100 30" preserveAspectRatio="none"><path d="M0,30 Q20,15 50,25 T100,10" fill="none" stroke="currentColor" strokeWidth="1.5" vectorEffect="non-scaling-stroke" /></svg>
               <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
@@ -264,7 +313,14 @@ export default function RutasUnidadMovil() {
             </div>
 
             {/* KPI: Puntos de Despliegue */}
-            <div className="group flex flex-col backdrop-blur-md bg-white/90 p-4 rounded-xl shadow-xl shadow-slate-200/50 border border-slate-200 hover:shadow-[0_15px_40px_rgba(0,150,57,0.12)] transition-all duration-500 relative overflow-hidden">
+            <div ref={kpiJornadasRef} id="kpi-jornadas-desplegadas-unidad" className="group flex flex-col backdrop-blur-md bg-white/90 p-4 rounded-xl shadow-xl shadow-slate-200/50 border border-slate-200 hover:shadow-[0_15px_40px_rgba(0,150,57,0.12)] transition-all duration-500 relative overflow-hidden">
+              <button
+                onClick={() => downloadImage(kpiJornadasRef, 'KPI_Jornadas_Desplegadas')}
+                className="ignore-export absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-slate-100 hover:bg-[#009639] hover:text-white text-slate-400 p-1.5 rounded-md shadow-sm z-50"
+                title="Descargar en PNG"
+              >
+                <Download className="w-3.5 h-3.5" />
+              </button>
               <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-[#009639] to-[#00C04B]" />
               <svg className="absolute bottom-0 left-0 w-full h-1/2 object-cover opacity-30 pointer-events-none text-slate-200" viewBox="0 0 100 30" preserveAspectRatio="none"><path d="M0,30 Q30,5 60,20 T100,5" fill="none" stroke="currentColor" strokeWidth="1.5" vectorEffect="non-scaling-stroke" /></svg>
               <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
@@ -279,7 +335,14 @@ export default function RutasUnidadMovil() {
             </div>
 
             {/* KPI: Cobertura Nacional */}
-            <div className="group flex flex-col backdrop-blur-md bg-white/90 p-4 rounded-xl shadow-xl shadow-slate-200/50 border border-slate-200 hover:shadow-[0_15px_40px_rgba(0,32,91,0.12)] transition-all duration-500 relative overflow-hidden">
+            <div ref={kpiEstadosRef} id="kpi-estados-visitados-unidad" className="group flex flex-col backdrop-blur-md bg-white/90 p-4 rounded-xl shadow-xl shadow-slate-200/50 border border-slate-200 hover:shadow-[0_15px_40px_rgba(0,32,91,0.12)] transition-all duration-500 relative overflow-hidden">
+              <button
+                onClick={() => downloadImage(kpiEstadosRef, 'KPI_Estados_Visitados')}
+                className="ignore-export absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-slate-100 hover:bg-[#00205B] hover:text-white text-slate-400 p-1.5 rounded-md shadow-sm z-50"
+                title="Descargar en PNG"
+              >
+                <Download className="w-3.5 h-3.5" />
+              </button>
               <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-[#00205B] to-[#003A9E]" />
               <svg className="absolute bottom-0 left-0 w-full h-1/2 object-cover opacity-30 pointer-events-none text-slate-200" viewBox="0 0 100 30" preserveAspectRatio="none"><path d="M0,30 Q25,10 50,20 T100,5" fill="none" stroke="currentColor" strokeWidth="1.5" vectorEffect="non-scaling-stroke" /></svg>
               <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
@@ -294,7 +357,14 @@ export default function RutasUnidadMovil() {
             </div>
 
             {/* KPI: Logística Recorrida */}
-            <div className="group flex flex-col backdrop-blur-md bg-white/90 p-4 rounded-xl shadow-xl shadow-slate-200/50 border border-slate-200 hover:shadow-[0_15px_40px_rgba(100,116,139,0.12)] transition-all duration-500 relative overflow-hidden">
+            <div ref={kpiLogisticaRef} id="kpi-logistica-recorrida-unidad" className="group flex flex-col backdrop-blur-md bg-white/90 p-4 rounded-xl shadow-xl shadow-slate-200/50 border border-slate-200 hover:shadow-[0_15px_40px_rgba(100,116,139,0.12)] transition-all duration-500 relative overflow-hidden">
+              <button
+                onClick={() => downloadImage(kpiLogisticaRef, 'KPI_Logistica_Recorrida')}
+                className="ignore-export absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-slate-100 hover:bg-slate-500 hover:text-white text-slate-400 p-1.5 rounded-md shadow-sm z-50"
+                title="Descargar en PNG"
+              >
+                <Download className="w-3.5 h-3.5" />
+              </button>
               <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-slate-400 to-slate-600" />
               <svg className="absolute bottom-0 left-0 w-full h-1/2 object-cover opacity-30 pointer-events-none text-slate-200" viewBox="0 0 100 30" preserveAspectRatio="none"><path d="M0,30 Q40,5 70,25 T100,10" fill="none" stroke="currentColor" strokeWidth="1.5" vectorEffect="non-scaling-stroke" /></svg>
               <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
@@ -302,7 +372,7 @@ export default function RutasUnidadMovil() {
               </p>
               <div className="flex flex-wrap items-end gap-2 justify-between relative z-10">
                 <p className="text-xl lg:text-2xl font-black text-[#00205B] tracking-tight">
-                  <AnimatedCounter end={14320} /> <span className="text-sm text-slate-400">Km</span>
+                  <AnimatedCounter end={kpis.kilometros} /> <span className="text-sm text-slate-400">Km</span>
                 </p>
                 <span className="text-[10px] font-bold text-[#009639] bg-green-50 px-1.5 py-0.5 rounded-md mb-1">📈 +5%</span>
               </div>
@@ -315,15 +385,23 @@ export default function RutasUnidadMovil() {
           </div>
 
           {/* Mapa 3D Protagonista */}
-          <div className="w-full max-w-full overflow-visible flex items-center justify-center min-h-[600px] lg:min-h-[700px] relative mt-16 z-10">
+          <div ref={mapaRef} id="mapa-unidad-movil" className="group w-full max-w-full overflow-visible flex items-center justify-center min-h-[600px] lg:min-h-[700px] relative mt-16 z-10">
+            <button
+              onClick={() => downloadImage(mapaRef, 'Mapa_Unidad_Movil')}
+              className="ignore-export absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-white/80 hover:bg-[#FE5000] hover:text-white text-slate-500 p-2 rounded-lg shadow-lg z-50 backdrop-blur-sm"
+              title="Descargar Mapa en PNG"
+            >
+              <Download className="w-5 h-5" />
+            </button>
           <ComposableMap
+            xmlns="http://www.w3.org/2000/svg"
             projection="geoMercator"
             projectionConfig={{
               scale: 2400,
               center: [-66.5, 6.8]
             }}
             viewBox="0 0 1000 750"
-            className="w-full h-auto scale-110 md:scale-115 origin-top transition-transform duration-1000"
+            className="w-[95%] mx-auto h-auto scale-110 md:scale-115 origin-center transition-transform duration-1000"
             style={{ 
               overflow: 'visible', 
               filter: 'drop-shadow(0 25px 35px rgba(0, 0, 0, 0.5))'
@@ -464,7 +542,72 @@ export default function RutasUnidadMovil() {
             )}
           </ComposableMap>
         </div>
-      </div>
+        
+        </div>
+
+        {/* Columna Derecha: Panel de Video & Timeline */}
+        <div className="flex flex-col relative w-full h-full pr-4 xl:pr-6">
+          <div className="sticky top-24 flex flex-col gap-6 lg:mt-[4.5rem]">
+            
+            {/* Video Institucional */}
+            <div className="w-full h-auto rounded-2xl overflow-hidden shadow-[0_15px_40px_rgba(0,32,91,0.1)] border border-slate-200 bg-slate-900/40 backdrop-blur-sm group pointer-events-auto relative">
+              <video 
+                src={`${supabase.storage.from('event_photos').getPublicUrl('unidad-oficial-video.mp4').data.publicUrl}`}
+                className="w-full h-auto block object-cover relative z-10"
+                autoPlay
+                muted
+                loop
+                playsInline
+                onError={(e) => {
+                  e.currentTarget.style.opacity = '0';
+                }}
+              />
+              <div className="absolute top-3 right-3 z-20 bg-[#00205B]/80 backdrop-blur border border-white/20 rounded-full px-2 py-1 flex items-center gap-1.5 shadow-md">
+                 <Video className="w-3.5 h-3.5 text-white" />
+                 <span className="text-[9px] font-bold uppercase tracking-wider text-white">Institucional</span>
+              </div>
+            </div>
+
+            {/* Live Timeline Vertical */}
+            <div className="flex flex-col backdrop-blur-md bg-white/70 p-5 rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-200 relative overflow-hidden pointer-events-auto">
+              <div className="flex items-center gap-2 mb-4">
+                <Activity className="w-4 h-4 text-[#00205B]" />
+                <h3 className="text-xs font-bold uppercase tracking-wider text-[#00205B]">Últimos Despliegues</h3>
+                <div className="ml-auto flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-green-100/50 border border-green-200">
+                  <div className="w-1.5 h-1.5 rounded-full bg-[#009639] animate-pulse" />
+                  <span className="text-[9px] font-bold text-[#009639] uppercase tracking-wider">Live</span>
+                </div>
+              </div>
+              
+              <div className="flex flex-col gap-4 relative border-l-2 border-slate-200 ml-2 pl-4 mt-2">
+                {[...events]
+                  .filter(e => new Date(e.startDate || 0).getTime() <= new Date().getTime())
+                  .sort((a, b) => new Date(b.startDate || 0).getTime() - new Date(a.startDate || 0).getTime())
+                  .slice(0, 3).map((event, idx) => (
+                  <div key={event.id || idx} className="relative flex flex-col z-10 pb-2">
+                    <div className="absolute -left-[23px] top-1 w-3.5 h-3.5 rounded-full bg-[#FE5000] border-2 border-white shadow-sm z-10" />
+                    <div className="flex flex-col w-full">
+                      <div className="flex flex-col">
+                        <p className="text-[13px] font-bold text-slate-700 leading-tight">{event.eventName || 'Operativo Especial'}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-[10px] text-slate-500 flex items-center gap-1"><Calendar className="w-3 h-3" /> {event.startDate ? new Date(event.startDate).toLocaleDateString('es-ES', { timeZone: 'UTC' }) : 'N/A'}</span>
+                          <span className="text-[9px] font-bold text-[#00205B] bg-blue-50 px-1.5 py-0.5 rounded uppercase tracking-wider border border-blue-100">{event.estadoOperativo || event.state}</span>
+                        </div>
+                      </div>
+                      {((event.cifras?.cuentasAbiertas || 0) + (event.cifras?.atendidos || 0)) > 0 && (
+                        <div className="bg-green-50 text-green-700 px-2 py-0.5 rounded-md text-[10px] font-bold shadow-sm border border-green-100 w-fit mt-2">
+                          👥 {(event.cifras?.cuentasAbiertas || 0) + (event.cifras?.atendidos || 0)} Atendidos
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+          </div>
+        </div>
+
       </div>
 
       {tooltip && (
