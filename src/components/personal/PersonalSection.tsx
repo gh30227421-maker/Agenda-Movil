@@ -699,7 +699,7 @@ export default function PersonalSection() {
             
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-bold mb-1.5 text-gray-800">Número de Ficha</label>
+                <label className="block text-sm font-bold mb-1.5 text-gray-800">Código de Empleado</label>
                 <input 
                   required
                   type="text" 
@@ -778,7 +778,7 @@ export default function PersonalSection() {
             
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-bold mb-1.5 text-gray-800">Número de Ficha</label>
+                <label className="block text-sm font-bold mb-1.5 text-gray-800">Código de Empleado</label>
                 <input 
                   required
                   type="text" 

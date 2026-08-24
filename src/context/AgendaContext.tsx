@@ -385,6 +385,8 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
   const addEmployee = async (data: Omit<Employee, 'id'>) => {
     try {
       const { error } = await (supabase as any).from('employees').insert({
+        employee_code: data.employeeCode,
+        dni: data.dni,
         full_name: data.fullName,
         cargo: data.cargo
       } as any);

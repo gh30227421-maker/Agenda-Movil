@@ -42,8 +42,38 @@ export default function RutasUnidadMovil() {
   const [loadingPhotos, setLoadingPhotos] = useState(true);
   const [dbTotalKm, setDbTotalKm] = useState<number>(0);
   const [loadingKm, setLoadingKm] = useState(true);
+  
+  const [playlist, setPlaylist] = useState<string[]>([]);
+  const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
 
-  // Consulta directa a Supabase para sumar kilómetros reales
+  // Fetch Playlist de Videos
+  useEffect(() => {
+    const fetchVideos = async () => {
+      try {
+        const { data } = await supabase.storage.from('event_photos').list('');
+        if (data) {
+          const uVideos = data
+            .filter(f => f.name.startsWith('unidad-oficial-video') && f.name.endsWith('.mp4'))
+            .map(f => supabase.storage.from('event_photos').getPublicUrl(f.name).data.publicUrl);
+          
+          if (uVideos.length > 0) {
+            setPlaylist(uVideos);
+          } else {
+            setPlaylist([supabase.storage.from('event_photos').getPublicUrl('unidad-oficial-video.mp4').data.publicUrl]);
+          }
+        }
+      } catch (e) {
+        setPlaylist([supabase.storage.from('event_photos').getPublicUrl('unidad-oficial-video.mp4').data.publicUrl]);
+      }
+    };
+    fetchVideos();
+  }, []);
+
+  const handleVideoEnded = () => {
+    if (playlist.length > 1) {
+      setCurrentVideoIndex((prev) => (prev + 1) % playlist.length);
+    }
+  };
   useEffect(() => {
     const fetchKilometros = async () => {
       try {
@@ -590,20 +620,26 @@ export default function RutasUnidadMovil() {
             
             {/* Video Institucional */}
             <div className="w-full h-auto rounded-2xl overflow-hidden shadow-[0_15px_40px_rgba(0,32,91,0.1)] border border-slate-200 bg-slate-900/40 backdrop-blur-sm group pointer-events-auto relative">
-              <video 
-                src={`${supabase.storage.from('event_photos').getPublicUrl('unidad-oficial-video.mp4').data.publicUrl}`}
-                className="w-full h-auto block object-cover relative z-10"
-                autoPlay
-                muted
-                loop
-                playsInline
-                onError={(e) => {
-                  e.currentTarget.style.opacity = '0';
-                }}
-              />
-              <div className="absolute top-3 right-3 z-20 bg-[#00205B]/80 backdrop-blur border border-white/20 rounded-full px-2 py-1 flex items-center gap-1.5 shadow-md">
+              {playlist.length > 0 && (
+                <video 
+                  key={playlist[currentVideoIndex]}
+                  src={playlist[currentVideoIndex]}
+                  className="w-full h-auto block object-cover relative z-10"
+                  autoPlay
+                  muted
+                  loop={playlist.length === 1}
+                  playsInline
+                  onEnded={handleVideoEnded}
+                  onError={(e) => {
+                    e.currentTarget.style.opacity = '0';
+                  }}
+                />
+              )}
+              <div className="absolute top-3 right-3 z-20 bg-[#00205B]/80 backdrop-blur border border-white/20 rounded-full px-2 py-1 flex items-center gap-1.5 shadow-md transition-all">
                  <Video className="w-3.5 h-3.5 text-white" />
-                 <span className="text-[9px] font-bold uppercase tracking-wider text-white">Institucional</span>
+                 <span className="text-[9px] font-bold uppercase tracking-wider text-white">
+                   Institucional {playlist.length > 1 ? `(${currentVideoIndex + 1}/${playlist.length})` : ''}
+                 </span>
               </div>
             </div>
 
