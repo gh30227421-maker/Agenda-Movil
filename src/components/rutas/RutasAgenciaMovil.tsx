@@ -5,7 +5,7 @@ import PremiumCarousel from './PremiumCarousel';
 import AnimatedCounter from '@/components/ui/AnimatedCounter';
 import { supabase } from '@/lib/supabase';
 import { useAgenda } from '@/context/AgendaContext';
-import { Loader2, Users, MapPin, Building2, Activity, Calendar, Video, Download } from 'lucide-react';
+import { Loader2, Users, MapPin, Building2, Activity, Calendar, Video, Download, Truck } from 'lucide-react';
 import { exportToPNG } from '@/utils/exportUtils';
 import { toPng } from 'html-to-image';
 // @ts-ignore
@@ -305,7 +305,7 @@ export default function RutasAgenciaMovil() {
           {/* Fila Única de KPIs */}
           <div className="flex flex-col w-full relative z-20">
             <div className="flex items-center gap-4 mb-4">
-              <h3 className="text-sm md:text-base font-bold text-slate-700 uppercase tracking-widest m-0">Indicadores Operativos - Agencia Móvil</h3>
+              <h3 className="text-lg md:text-xl font-black text-slate-900 uppercase tracking-widest m-0">Indicadores Operativos - Agencia Móvil</h3>
               <div className="flex-grow h-px bg-slate-200"></div>
             </div>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 w-full">
@@ -499,23 +499,18 @@ export default function RutasAgenciaMovil() {
               }
             </Geographies>
 
-            {/* Puntos Metropolitanos con Efecto Radar */}
+            {/* Puntos de Camión */}
             {events.filter(e => (e.estadoOperativo || e.state) && STATE_COORDS[normalizeStateName(e.estadoOperativo || e.state)]).map(e => getJitteredCoord(STATE_COORDS[normalizeStateName(e.estadoOperativo || e.state)])).map((coord: [number, number], idx: number) => (
               <Marker key={idx} coordinates={coord}>
                 <foreignObject x="-24" y="-36" width="48" height="48">
-                  <div className="relative flex flex-col items-center justify-end w-full h-full pb-1 opacity-90 hover:opacity-100 hover:scale-110 transition-transform">
-                    {/* Capas concéntricas de radar verdes */}
-                    <span className="relative flex h-3 w-3 bottom-1">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500 shadow-lg shadow-green-500/50"></span>
-                    </span>
+                  <div className="relative flex flex-col items-center justify-end w-full h-full pb-1 opacity-90 hover:opacity-100 hover:-translate-y-1 transition-all">
                     
-                    {/* Marcador Flotante */}
+                    {/* Contenedor Flotante del Camión */}
                     <div className="relative flex flex-col items-center">
-                      <div className="bg-[#009639] p-1.5 rounded-md shadow-[0_0_12px_rgba(0,150,57,0.8)] border border-white/20">
+                      <div className="bg-[#00205B] p-1.5 rounded-lg shadow-[#00205B]/50 border border-white/20">
                         <Building2 className="w-3 h-3 text-white" />
                       </div>
-                      <div className="w-0 h-0 border-l-[4px] border-l-transparent border-r-[4px] border-r-transparent border-t-[5px] border-t-[#009639]"></div>
+                      <div className="w-0 h-0 border-l-[4px] border-l-transparent border-r-[4px] border-r-transparent border-t-[5px] border-t-[#00205B]"></div>
                     </div>
                   </div>
                 </foreignObject>

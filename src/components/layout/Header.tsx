@@ -28,7 +28,7 @@ export default function Header() {
       name: 'Operativa', 
       icon: CalendarRange, 
       items: [
-        { name: 'Agenda', href: '/' },
+        { name: 'Agenda', href: '/agenda' },
         { name: 'Personal', href: '/personal' },
         { name: 'Activos', href: '/activos' },
       ]

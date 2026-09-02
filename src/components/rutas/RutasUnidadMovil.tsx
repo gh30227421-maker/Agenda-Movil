@@ -350,7 +350,7 @@ export default function RutasUnidadMovil() {
           
           {/* Fila Única de KPIs */}
           <div className="flex items-center gap-4 mb-4 relative z-20">
-            <h3 className="text-sm md:text-base font-bold text-slate-700 uppercase tracking-widest m-0">Indicadores Operativos - Unidad Móvil</h3>
+            <h3 className="text-lg md:text-xl font-black text-slate-900 uppercase tracking-widest m-0">Indicadores Operativos - Unidad Móvil</h3>
             <div className="flex-grow h-px bg-slate-200"></div>
           </div>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 w-full relative z-20">
@@ -548,67 +548,32 @@ export default function RutasUnidadMovil() {
               }
             </Geographies>
 
-            {/* Glowing Line */}
-            {routeCoordinates.length > 1 && (
-              <Line
-                coordinates={routeCoordinates}
-                stroke="#009639"
-                strokeWidth={6}
-                strokeOpacity={0.15}
-                style={{ strokeLinecap: "round" }}
-              />
-            )}
-            
-            {/* Solid Line Animada - Fibra Óptica Neón */}
-            {routeCoordinates.length > 1 && (
-              <Line
-                coordinates={routeCoordinates}
-                stroke="#009639"
-                strokeWidth={2}
-                strokeDasharray="6 4"
-                className="animate-dash-flow"
-                style={{ 
-                  strokeLinecap: "round",
-                  filter: 'drop-shadow(0 0 8px rgba(0, 150, 57, 0.6))'
-                }}
-              />
-            )}
-
-            {/* State Markers con Efecto Radar */}
-            {routeCoordinates.map((coord: [number, number], idx: number) => (
+            {/* Truck Markers */}
+            {routeCoordinates.map((coord: [number, number], idx: number) => {
+              const isLast = idx === routeCoordinates.length - 1;
+              return (
               <Marker key={idx} coordinates={coord}>
-                <foreignObject x="-16" y="-16" width="32" height="32">
-                  <div className="relative flex items-center justify-center w-full h-full">
-                    {/* Capas concéntricas de radar */}
-                    <span className="relative flex h-3 w-3">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500 shadow-lg shadow-green-500/50"></span>
-                    </span>
-                  </div>
-                </foreignObject>
-              </Marker>
-            ))}
-
-            {/* Current Position Truck con Pulso Radar */}
-            {routeCoordinates.length > 0 && (
-              <Marker coordinates={routeCoordinates[routeCoordinates.length - 1]}>
                 <foreignObject x="-32" y="-56" width="64" height="64">
-                  <div className="relative flex flex-col items-center justify-end w-full h-full pb-2">
-                    {/* Radar bajo el camión */}
-                    <div className="absolute bottom-2 w-10 h-10 bg-[#009639] rounded-full animate-ping opacity-40" style={{ animationDuration: '2s' }}></div>
-                    <div className="absolute bottom-4 w-6 h-6 bg-[#009639] rounded-full animate-ping opacity-60" style={{ animationDuration: '2s', animationDelay: '1s' }}></div>
+                  <div className={`relative flex flex-col items-center justify-end w-full h-full pb-2 ${isLast ? 'z-50' : 'z-10'}`}>
+                    {/* Radar bajo el camión (sólo para el actual) */}
+                    {isLast && (
+                      <>
+                        <div className="absolute bottom-2 w-10 h-10 bg-[#00205B] rounded-full animate-ping opacity-40" style={{ animationDuration: '2s' }}></div>
+                        <div className="absolute bottom-4 w-6 h-6 bg-[#00205B] rounded-full animate-ping opacity-60" style={{ animationDuration: '2s', animationDelay: '1s' }}></div>
+                      </>
+                    )}
                     
-                    {/* Contenedor Flotante */}
-                    <div className="relative flex flex-col items-center animate-bounce">
-                      <div className="bg-[#009639] p-1.5 rounded-lg shadow-[0_0_15px_rgba(0,150,57,0.8)] border border-white/20">
+                    {/* Contenedor Flotante del Camión */}
+                    <div className={`relative flex flex-col items-center ${isLast ? 'animate-bounce' : 'opacity-90 hover:opacity-100 hover:-translate-y-1 transition-all'}`}>
+                      <div className={`p-1.5 rounded-lg shadow-lg border border-white/20 ${isLast ? 'bg-[#FE5000] shadow-[0_0_15px_rgba(254,80,0,0.8)]' : 'bg-[#00205B] shadow-[#00205B]/50'}`}>
                         <Truck className="w-4 h-4 text-white" />
                       </div>
-                      <div className="w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-t-[6px] border-t-[#009639]"></div>
+                      <div className={`w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-t-[6px] ${isLast ? 'border-t-[#FE5000]' : 'border-t-[#00205B]'}`}></div>
                     </div>
                   </div>
                 </foreignObject>
               </Marker>
-            )}
+            )})}
           </ComposableMap>
         </div>
         
