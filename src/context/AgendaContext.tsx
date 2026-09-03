@@ -451,7 +451,7 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
       events, agencies, updateEvent, deleteEvent, addEvent, 
       assignments, addAssignment, toggleAssignmentStatus,
       employees, addEmployee, updateEmployee, deleteEmployee, isLoading, isSeeding, fetchData, handleSeed,
-      modalState, openModal, closeModal, setModalMode, setModalEventId 
+      modalState, openModal, closeModal, setModalMode, setModalEventId
     }}>
       {children}
     </AgendaContext.Provider>

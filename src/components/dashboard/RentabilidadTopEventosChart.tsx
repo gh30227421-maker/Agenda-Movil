@@ -95,7 +95,7 @@ export default function RentabilidadTopEventosChart({ events }: RentabilidadTopE
                 </span>
               </div>
               <div className="bg-emerald-50/60 border border-emerald-100 rounded-xl p-3 text-center">
-                <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider block">Rentabilidad Neta</span>
+                <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider block">Efectividad Operativa Neta</span>
                 <span className="text-lg font-black text-emerald-700 block mt-0.5">
                   +${singleEvent.rentabilidadUsd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
@@ -178,7 +178,7 @@ export default function RentabilidadTopEventosChart({ events }: RentabilidadTopE
                       <p><span className="text-gray-300">Canal:</span> <span className="font-semibold text-white">{p.type}</span></p>
                       <p><span className="text-gray-300">Saldo Captado:</span> <span className="font-bold text-white">${p.saldoUsd.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span></p>
                       <p><span className="text-gray-300">Gasto Total:</span> <span className="font-bold text-[#FFA07A]">${p.gastoUsd.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span></p>
-                      <p><span className="text-gray-300">Rentabilidad Neta:</span> <span className="font-bold text-[#A7F3D0]">${p.rentabilidadUsd.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span></p>
+                      <p><span className="text-gray-300">Efectividad Operativa Neta:</span> <span className="font-bold text-[#A7F3D0]">${p.rentabilidadUsd.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span></p>
                       <p><span className="text-gray-300">Margen Neto:</span> <span className="font-bold text-white">{p.margenPct}%</span></p>
                     </div>,
                     'Detalle del Evento'
@@ -186,7 +186,7 @@ export default function RentabilidadTopEventosChart({ events }: RentabilidadTopE
                 }}
                 contentStyle={{ backgroundColor: '#00205C', borderRadius: '12px', color: '#FFF', border: 'none', padding: '12px' }}
               />
-              <Bar dataKey="rentabilidadUsd" name="Rentabilidad Neta" radius={[0, 4, 4, 0]} barSize={22}>
+              <Bar dataKey="rentabilidadUsd" name="Efectividad Operativa Neta" radius={[0, 4, 4, 0]} barSize={22}>
                 {ranking.slice(0, 10).map((entry, index) => (
                   <Cell 
                     key={`cell-${index}`} 

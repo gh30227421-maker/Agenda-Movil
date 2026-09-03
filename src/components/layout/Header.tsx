@@ -22,10 +22,10 @@ export default function Header() {
   }).length;
 
   const navGroups = [
-    { name: 'Dashboard', icon: LayoutDashboard, href: '/dashboard' },
     { name: 'Rutas y Despliegues', icon: MapPinned, href: '/rutas' },
+    { name: 'Dashboard', icon: LayoutDashboard, href: '/dashboard' },
     { 
-      name: 'Operativa', 
+      name: 'Gestión Operativa', 
       icon: CalendarRange, 
       items: [
         { name: 'Agenda', href: '/agenda' },
@@ -40,7 +40,7 @@ export default function Header() {
         { name: 'Cifras', href: '/cifras' },
         { name: 'Gastos', href: '/gastos' },
         { name: 'Cierre de Operativo', href: '/rentabilidad' },
-        { name: 'Seg. de Rentabilidad', href: '/seguimiento' },
+        { name: 'Seg. de Efectividad Operativa', href: '/seguimiento' },
       ]
     },
   ];
@@ -58,7 +58,7 @@ export default function Header() {
   }
 
   return (
-    <header className="h-28 bg-[#00205B] text-white sticky top-0 z-40 shadow-xl w-full border-b-4 border-[#FE5000]">
+    <header className="h-28 bg-[#00205B] text-white fixed top-0 left-0 right-0 z-50 shadow-md w-full border-b-4 border-[#FE5000]">
       <div className="flex items-center justify-between flex-nowrap px-6 md:px-10 w-full max-w-[1920px] mx-auto h-full">
       
       {/* Izquierda: Logo y Menú */}
@@ -129,7 +129,7 @@ export default function Header() {
                 <div className="bg-white rounded-xl shadow-xl border border-gray-100 py-2 w-56 flex flex-col">
                   {group.items.map((item) => {
                     const isSubActive = pathname === item.href;
-                    const showBadge = false && item.name === 'Seg. de Rentabilidad' && pendingRentabilityCount > 0; // Deshabilitado temporalmente por UX
+                    const showBadge = false && item.name === 'Seg. de Efectividad Operativa' && pendingRentabilityCount > 0; // Deshabilitado temporalmente por UX
                     return (
                       <Link
                         key={item.name}
@@ -157,7 +157,8 @@ export default function Header() {
 
       {/* Perfil y Notificaciones - Derecha */}
       <div id="header-user-menu" className="flex items-center gap-3 md:gap-6 flex-nowrap shrink-0">
-        <NotificationsDropdown />
+        {/* Módulo de Notificaciones Oculto Temporalmente */}
+        {/* <NotificationsDropdown /> */}
         
         <div className="flex items-center gap-3 pl-4 border-l border-white/10">
           <div className="flex flex-col text-right hidden sm:flex">

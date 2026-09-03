@@ -123,8 +123,8 @@ export default function RentabilidadRegionChart({ events, agencies = [] }: Renta
 
   return (
     <ChartModalWrapper
-      title="Rentabilidad Neta por Región"
-      subtitle="Margen y retorno financiero consolidado vs. volumen de operativos por zona"
+      title="Efectividad Operativa Neta por Región"
+      subtitle="Margen consolidado vs. volumen de operativos por zona"
     >
       <div className="w-full h-full min-h-[460px] flex flex-col justify-center py-2">
         {data.length > 0 ? (
@@ -175,7 +175,7 @@ export default function RentabilidadRegionChart({ events, agencies = [] }: Renta
                   }
                   return [
                     <div key="tooltip-content" className="space-y-1 text-xs">
-                      <p><span className="text-gray-300">Rentabilidad Neta:</span> <span className="font-bold text-[#A7F3D0]">${p.rentabilidadUsd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></p>
+                      <p><span className="text-gray-300">Efectividad Operativa Neta:</span> <span className="font-bold text-[#A7F3D0]">${p.rentabilidadUsd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></p>
                       <p><span className="text-gray-300">Saldo Captado:</span> <span className="font-bold text-white">${p.saldoUsd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></p>
                       <p><span className="text-gray-300">Gasto Total:</span> <span className="font-bold text-[#FFA07A]">${p.gastoUsd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></p>
                       <p><span className="text-gray-300">Margen Neto:</span> <span className="font-bold text-white">{p.margenPct}%</span></p>
@@ -197,7 +197,7 @@ export default function RentabilidadRegionChart({ events, agencies = [] }: Renta
               <Bar 
                 yAxisId="left"
                 dataKey="rentabilidadUsd" 
-                name="Rentabilidad Neta ($ USD)" 
+                name="Efectividad Operativa Neta ($ USD)" 
                 fill="#00205C" 
                 radius={[6, 6, 0, 0]} 
                 barSize={44}

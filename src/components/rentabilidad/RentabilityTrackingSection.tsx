@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useRentability } from '@/context/RentabilityContext';
 import { useAgenda } from '@/context/AgendaContext';
-import { TrendingUp, AlertCircle, CheckCircle2, ChevronRight, DollarSign, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { TrendingUp, AlertCircle, CheckCircle2, ChevronRight, DollarSign, ArrowUpRight, ArrowDownRight, Building2 } from 'lucide-react';
 import { format, isPast, isSameMonth } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { RentabilityTracking } from '@/lib/mock-data';
@@ -64,7 +64,14 @@ export default function RentabilityTrackingSection() {
     if (e.status === 'Cancelado') return false;
     if (filterStatus === 'Todos') return true;
     return e.status === filterStatus;
-  });
+  }).sort((a, b) => new Date(a.endDate).getTime() - new Date(b.endDate).getTime());
+
+  // 1. Obtener todos los meses únicos para armar las columnas cronológicamente
+  const allDates = trackings
+    .filter(t => filteredEvents.some(e => e.id === t.eventId))
+    .map(t => new Date(t.monthDate));
+    
+  const uniqueMonths = Array.from(new Set(allDates.map(d => format(d, 'yyyy-MM')))).sort();
 
   // Calculate the total table width to fake the top scrollbar length
   useEffect(() => {
@@ -115,15 +122,15 @@ export default function RentabilityTrackingSection() {
   };
 
   if (isLoading) {
-    return <div className="flex justify-center p-12 text-gray-400">Cargando métricas de rentabilidad...</div>;
+    return <div className="flex justify-center p-12 text-gray-400">Cargando métricas de efectividad operativa...</div>;
   }
 
   return (
     <div className="w-full px-4 mx-auto space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-[#00205B]">Seguimiento de Rentabilidad</h1>
-          <p className="text-gray-500 text-sm mt-1">Rentabilidad y captaciones post-operativo</p>
+          <h1 className="text-2xl font-bold text-[#00205B]">Seguimiento de Efectividad Operativa</h1>
+          <p className="text-gray-500 text-sm mt-1">Efectividad operativa y captaciones post-operativo</p>
         </div>
         <div className="flex items-center gap-3">
           <label className="text-sm font-semibold text-gray-700">Mostrar:</label>
@@ -142,18 +149,18 @@ export default function RentabilityTrackingSection() {
 
       {/* Leyenda de Indicadores */}
       <div className="flex flex-wrap items-center gap-4 bg-white p-4 rounded-xl border border-gray-200 shadow-sm text-sm">
-        <span className="font-bold text-gray-700">Indicadores de Rentabilidad (Margen Neto):</span>
+        <span className="font-bold text-gray-700">Estado de Rentabilidad (Crecimiento Mensual):</span>
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded-full bg-[#009639]"></div>
-          <span className="text-gray-600 font-medium">Rentable (&ge; 60%)</span>
+          <span className="text-gray-600 font-medium">Crecimiento Positivo</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-          <span className="text-gray-600 font-medium">Al Límite (20% - 59%)</span>
+          <div className="w-3 h-3 rounded-full bg-[#D92D20]"></div>
+          <span className="text-gray-600 font-medium">Decrecimiento</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-red-500"></div>
-          <span className="text-gray-600 font-medium">No Rentable (&lt; 20%)</span>
+          <div className="w-3 h-3 rounded-full bg-gray-300"></div>
+          <span className="text-gray-600 font-medium">Pendiente / Sin Movimiento</span>
         </div>
       </div>
 
@@ -174,13 +181,22 @@ export default function RentabilityTrackingSection() {
           onScroll={handleTableScroll}
         >
           <table ref={tableInnerRef} className="w-full text-sm text-left">
-            <thead className="text-xs text-gray-500 uppercase bg-gray-50 border-b border-gray-100">
+            <thead className="text-xs text-gray-500 uppercase bg-gray-50 border-b border-gray-200">
               <tr>
-                <th className="px-6 py-4 font-bold text-[#00205B] sticky left-0 bg-gray-50 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">Operativo</th>
-                {[1, 2, 3, 4, 5, 6].map(m => (
-                  <th key={m} className="px-6 py-4 text-center font-bold min-w-[240px]">Mes {m}</th>
-                ))}
-                <th className="px-6 py-4 text-right font-bold text-[#009639] min-w-[200px]">Margen Neto</th>
+                <th className="px-6 py-4 font-bold text-[#00205B] sticky left-0 bg-gray-50 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] min-w-[280px]">
+                  Operativo
+                </th>
+                {uniqueMonths.map(monthStr => {
+                  const d = new Date(`${monthStr}-02`);
+                  return (
+                    <th key={monthStr} className="px-6 py-4 text-center font-bold text-[#00205B] min-w-[240px]">
+                      {format(d, 'MMM yyyy', { locale: es })}
+                    </th>
+                  );
+                })}
+                <th className="px-6 py-4 text-right font-bold text-[#00205B] min-w-[200px] bg-gray-50/50">
+                  Rentabilidad Final
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -191,49 +207,46 @@ export default function RentabilityTrackingSection() {
                 const tasaBcv = event.gastos?.tasaBcv || 1;
                 const initialGastosUsd = event.gastos?.totalUsd || 0;
                 
-                // Using saldoActivo as the metric for rentability instead of ingresos
                 const totalIncomeBs = eventTrackings.reduce((sum, t) => sum + (t.saldoActivo || 0), 0);
                 const totalIncomeUsd = totalIncomeBs / tasaBcv;
                 
                 const netMarginUsd = totalIncomeUsd - initialGastosUsd;
                 const netMarginBs = netMarginUsd * tasaBcv;
                 
-                // Calculate percentage (ROI) based on initial cost
-                const marginPct = initialGastosUsd > 0 ? (netMarginUsd / initialGastosUsd) * 100 : 0;
-                const colorClass = getRentabilityColor(marginPct);
-                
+                const colorClass = netMarginUsd >= 0 ? 'text-[#009639]' : 'text-[#D92D20]';
                 const nextPendingTracking = eventTrackings.find(t => t.status === 'Pendiente');
 
                 return (
-                  <tr key={event.id} className="hover:bg-gray-50/50 transition-colors">
-                    <td className="px-6 py-4 border-r border-gray-100 align-top sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
-                      <div className="font-bold text-gray-900">{event.eventName}</div>
-                      <div className="text-xs text-gray-500 mt-1">{event.agencyCode}</div>
-                      <div className="text-[10px] text-gray-400 mt-1 uppercase">Inicio: {event.endDate}</div>
-                      {nextPendingTracking && (
-                        <button 
-                          onClick={() => handleEditClick(nextPendingTracking)}
-                          className="mt-3 w-full bg-blue-50 hover:bg-[#00205B] text-[#00205B] hover:text-white border border-blue-200 hover:border-[#00205B] transition-colors py-1.5 px-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1 shadow-sm"
-                        >
-                          <TrendingUp className="w-3.5 h-3.5" />
-                          Registrar Métrica
-                        </button>
-                      )}
+                  <tr key={event.id} className="hover:bg-gray-50/30 transition-colors group/row">
+                    <td className="px-6 py-5 border-r border-gray-100 align-top sticky left-0 bg-white group-hover/row:bg-gray-50/30 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
+                      <div className="flex flex-col h-full justify-between">
+                        <div>
+                          <div className="font-bold text-[#00205B] text-[15px] leading-tight">{event.eventName}</div>
+                          <div className="text-xs text-gray-500 mt-1.5 flex items-center gap-1.5 font-medium">
+                            <Building2 className="w-3.5 h-3.5 opacity-70" /> {event.agencyCode}
+                          </div>
+                          <div className="text-[10px] font-bold text-gray-400 mt-2 uppercase tracking-wider">Inicio: {event.endDate}</div>
+                        </div>
+                        {nextPendingTracking && (
+                          <button 
+                            onClick={() => handleEditClick(nextPendingTracking)}
+                            className="mt-4 w-full bg-white hover:bg-[#00205B] text-[#00205B] hover:text-white border border-gray-200 hover:border-[#00205B] transition-all duration-200 py-1.5 px-3 rounded-lg text-[11px] font-bold flex items-center justify-center gap-1.5 shadow-sm group/btn"
+                          >
+                            <TrendingUp className="w-3.5 h-3.5 group-hover/btn:text-white" />
+                            Registrar Métrica
+                          </button>
+                        )}
+                      </div>
                     </td>
                     
-                    {[1, 2, 3, 4, 5, 6].map(monthIndex => {
-                      const t = eventTrackings.find(track => track.monthIndex === monthIndex);
+                    {uniqueMonths.map(monthStr => {
+                      const t = eventTrackings.find(track => format(new Date(track.monthDate), 'yyyy-MM') === monthStr);
                       
                       if (!t) {
                         return (
-                          <td key={`empty-${monthIndex}`} className="px-3 py-4 align-top border-r border-gray-100 min-w-[240px]">
-                            <div className="p-2 rounded-xl border bg-gray-50 border-dashed border-gray-200 opacity-50">
-                              <div className="text-[10px] font-bold text-gray-400 uppercase text-center mb-2">
-                                Sin Generar
-                              </div>
-                              <div className="text-xs text-center py-2 text-gray-400">
-                                Ejecute Script SQL
-                              </div>
+                          <td key={`empty-${monthStr}`} className="px-3 py-5 align-middle border-r border-gray-100 min-w-[240px]">
+                            <div className="text-center text-gray-300">
+                              <span className="block w-4 h-px bg-gray-200 mx-auto"></span>
                             </div>
                           </td>
                         );
@@ -247,75 +260,82 @@ export default function RentabilityTrackingSection() {
                       let diff = 0;
                       let showDiff = false;
                       if (!isPending && t.monthIndex > 1) {
-                        const prevT = eventTrackings.find(track => track.monthIndex === monthIndex - 1);
+                        const prevT = eventTrackings.find(track => track.monthIndex === t.monthIndex - 1);
                         if (prevT && prevT.status === 'Cerrado') {
                           diff = t.saldoActivo - prevT.saldoActivo;
                           showDiff = true;
                         }
                       }
 
+                      const cellStatusColor = isPending ? (isOverdue ? 'bg-red-400' : 'bg-gray-300') : (diff >= 0 ? 'bg-[#009639]' : 'bg-[#D92D20]');
+
                       return (
-                        <td key={t.id} className="px-3 py-4 align-top border-r border-gray-100 min-w-[240px]">
+                        <td key={t.id} className="px-3 py-5 align-top border-r border-gray-100 min-w-[240px]">
                             <div 
                               onClick={() => handleEditClick(t)}
-                              className={`group p-2 rounded-xl border transition-all cursor-pointer ${
+                              className={`group relative overflow-hidden p-3.5 rounded-xl border transition-all cursor-pointer ${
                                 isPending 
-                                  ? isOverdue ? 'bg-red-50/50 border-red-200 hover:border-red-400' : 'bg-gray-50 border-dashed border-gray-200 hover:border-[#00205B]' 
-                                  : 'bg-white border-gray-100 shadow-sm hover:border-[#009639]'
+                                  ? isOverdue ? 'bg-red-50/40 border-red-100 hover:border-red-300' : 'bg-gray-50/50 border-gray-200 hover:border-gray-300' 
+                                  : 'bg-white border-gray-200 shadow-sm hover:shadow-md hover:border-[#00205B]/30'
                               }`}
                             >
-                              <div className="flex items-center justify-between mb-2">
-                                <span className="text-[10px] font-bold text-gray-500 uppercase">
+                              {/* Línea indicadora de estado lateral */}
+                              <div className={`absolute left-0 top-0 bottom-0 w-1 ${cellStatusColor}`} />
+                              
+                              <div className="flex items-center justify-between mb-2.5 pl-1.5">
+                                <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">
                                   {format(cellDate, 'MMM yyyy', { locale: es })}
                                 </span>
                                 {isPending ? (
-                                  isOverdue ? <AlertCircle className="w-3.5 h-3.5 text-red-500" /> : <div className="w-1.5 h-1.5 bg-gray-300 rounded-full"></div>
+                                  isOverdue ? <AlertCircle className="w-4 h-4 text-red-500" /> : <div className="w-1.5 h-1.5 bg-gray-300 rounded-full"></div>
                                 ) : (
-                                  <CheckCircle2 className="w-3.5 h-3.5 text-[#009639]" />
+                                  <CheckCircle2 className="w-4 h-4 text-[#009639]" />
                                 )}
                               </div>
                               
-                              {isPending ? (
-                                <div className="text-xs text-center py-2 text-gray-400 group-hover:text-[#00205B] font-medium transition-colors">
-                                  Registrar Cierre
-                                </div>
-                              ) : (
-                                <div className="space-y-1">
-                                  <div className="flex flex-col justify-end">
-                                    <span className="text-[10px] text-gray-500 mb-0.5">Saldo Mes:</span>
-                                    <div className="flex items-end justify-between">
-                                      <span className="text-sm font-bold text-gray-900">{formatCurrency(t.saldoActivo)}</span>
+                              <div className="pl-1.5">
+                                {isPending ? (
+                                  <div className="text-xs text-left py-2 text-gray-400 group-hover:text-[#00205B] font-medium transition-colors flex items-center gap-1.5">
+                                    <div className="w-6 h-px bg-gray-300"></div>
+                                    Registrar Cierre
+                                  </div>
+                                ) : (
+                                  <div className="space-y-1.5">
+                                    <div className="flex flex-col">
+                                      <span className="text-[10px] text-gray-400 font-medium mb-0.5 uppercase tracking-wide">Saldo Mes</span>
+                                      <div className="flex items-end justify-between gap-2">
+                                        <span className="text-[15px] font-bold text-gray-900 truncate">
+                                          Bs. {new Intl.NumberFormat('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(t.saldoActivo)}
+                                        </span>
+                                      </div>
                                       {showDiff && (
-                                        <div className={`flex items-center gap-0.5 text-[10px] font-bold ${diff >= 0 ? 'text-[#009639]' : 'text-red-500'}`}>
-                                          {diff >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
-                                          {formatCurrency(Math.abs(diff)).replace('VES', '').trim()}
+                                        <div className="flex items-center justify-between mt-1">
+                                          <div className="text-[9px] text-gray-400 uppercase font-medium">Vs Mes Ant.</div>
+                                          <div className={`flex items-center gap-0.5 text-[11px] font-bold ${diff >= 0 ? 'text-[#009639]' : 'text-[#D92D20]'}`}>
+                                            {diff >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+                                            {new Intl.NumberFormat('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Math.abs(diff))}
+                                          </div>
                                         </div>
                                       )}
                                     </div>
-                                    {showDiff && (
-                                      <div className="text-[9px] text-gray-400 text-right uppercase mt-0.5">Vs Mes Anterior</div>
-                                    )}
                                   </div>
-                                </div>
-                              )}
+                                )}
+                              </div>
                             </div>
                         </td>
                       );
                     })}
 
-                    <td className="px-6 py-4 text-right align-middle">
-                      <div className="flex flex-col items-end gap-1">
-                        <div className={`text-sm font-black ${colorClass}`}>
-                          Bs. {formatCurrency(netMarginBs).replace('VES', '').trim()}
+                    <td className="px-6 py-5 text-right align-middle bg-gray-50/50">
+                      <div className="flex flex-col items-end gap-1.5">
+                        <div className={`text-[15px] font-bold ${colorClass}`}>
+                          Bs. {new Intl.NumberFormat('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(netMarginBs)}
                         </div>
-                        <div className={`text-lg font-black ${colorClass} flex items-center gap-2 justify-end`}>
+                        <div className={`text-xl font-black ${colorClass}`}>
                           $ {new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(netMarginUsd)}
-                          <span className={`text-[10px] px-1.5 py-0.5 rounded-full text-white ${getRentabilityBg(marginPct)}`}>
-                            {marginPct.toFixed(0)}%
-                          </span>
                         </div>
+                        <div className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mt-1">Margen Neto</div>
                       </div>
-                      <div className="text-[10px] text-gray-400 mt-1 uppercase">Margen (Vs Costo Inicial)</div>
                     </td>
                   </tr>
                 );

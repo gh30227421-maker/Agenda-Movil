@@ -80,7 +80,7 @@ export default function RentabilidadVsCostosChart({ events }: RentabilidadVsCost
         <div className="flex items-center justify-between mb-3 px-2 hide-on-download">
           <span className="text-xs text-gray-500 font-medium">
             {viewMode === 'comparativo' 
-              ? 'Comparativa de Gasto Operativo vs. Rentabilidad Neta' 
+              ? 'Comparativa de Gasto Operativo vs. Efectividad Operativa Neta' 
               : 'Matriz de Dispersión (Gasto en Eje X vs Retorno en Eje Y)'}
           </span>
           <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-xl">
@@ -150,7 +150,7 @@ export default function RentabilidadVsCostosChart({ events }: RentabilidadVsCost
                     <div key="tooltip-content" className="space-y-1 text-xs">
                       <p className="font-bold text-white border-b border-blue-900 pb-1 mb-1">{p.eventName} ({p.state})</p>
                       <p><span className="text-gray-300">Gasto Operativo:</span> <span className="font-bold text-[#FFA07A]">${p.gastoUsd.toLocaleString('en-US')}</span></p>
-                      <p><span className="text-gray-300">Rentabilidad Neta:</span> <span className="font-bold text-[#A7F3D0]">${p.rentabilidadUsd.toLocaleString('en-US')}</span></p>
+                      <p><span className="text-gray-300">Efectividad Operativa Neta:</span> <span className="font-bold text-[#A7F3D0]">${p.rentabilidadUsd.toLocaleString('en-US')}</span></p>
                       <p><span className="text-gray-300">Saldo Captado:</span> <span className="font-bold text-white">${p.saldoUsd.toLocaleString('en-US')}</span></p>
                       <p><span className="text-gray-300">Margen Neto:</span> <span className="font-bold text-white">{p.margenPct}%</span></p>
                     </div>,
@@ -187,7 +187,7 @@ export default function RentabilidadVsCostosChart({ events }: RentabilidadVsCost
               {/* Barra 2: Rentabilidad Neta (Azul BNC Primario) */}
               <Bar 
                 dataKey="rentabilidadUsd" 
-                name="Rentabilidad Neta ($ USD)" 
+                name="Efectividad Operativa Neta ($ USD)" 
                 fill="#00205C" 
                 radius={[0, 4, 4, 0]} 
                 barSize={14}
@@ -222,12 +222,12 @@ export default function RentabilidadVsCostosChart({ events }: RentabilidadVsCost
                 <YAxis 
                   type="number" 
                   dataKey="rentabilidadUsd" 
-                  name="Rentabilidad Neta" 
+                  name="Efectividad Operativa Neta" 
                   unit="$" 
                   tick={{ fontSize: 12, fill: '#6B7280' }}
                   tickFormatter={(v) => `$${v}`}
                 >
-                  <Label value="Rentabilidad Neta ($ USD)" angle={-90} position="insideLeft" fill="#6B7280" fontSize={12} />
+                  <Label value="Efectividad Operativa Neta ($ USD)" angle={-90} position="insideLeft" fill="#6B7280" fontSize={12} />
                 </YAxis>
                 <ZAxis type="number" dataKey="cuentas" range={[80, 450]} name="Cuentas" />
                 <ReferenceLine y={0} stroke="#9CA3AF" strokeDasharray="4 4" label="Equilibrio ($0)" />
@@ -243,7 +243,7 @@ export default function RentabilidadVsCostosChart({ events }: RentabilidadVsCost
                         <div className="bg-[#00205C] text-white p-3 rounded-xl shadow-xl text-xs space-y-1 border border-blue-900">
                           <p className="font-bold border-b border-blue-800 pb-1 mb-1">{d.eventName} ({d.state})</p>
                           <p><span className="text-gray-300">Gasto Operativo:</span> <span className="font-bold text-[#FFA07A]">${d.gastoUsd.toLocaleString('en-US')}</span></p>
-                          <p><span className="text-gray-300">Rentabilidad Neta:</span> <span className="font-bold text-[#A7F3D0]">${d.rentabilidadUsd.toLocaleString('en-US')}</span></p>
+                          <p><span className="text-gray-300">Efectividad Operativa Neta:</span> <span className="font-bold text-[#A7F3D0]">${d.rentabilidadUsd.toLocaleString('en-US')}</span></p>
                           <p><span className="text-gray-300">Saldo Captado:</span> <span className="font-bold text-white">${d.saldoUsd.toLocaleString('en-US')}</span></p>
                           <p><span className="text-gray-300">Retorno (ROI):</span> <span className="font-bold text-[#A7F3D0]">{d.roiRatio}x ({d.margenPct}%)</span></p>
                           <p><span className="text-gray-300">Cuentas Abiertas:</span> <span className="font-bold text-white">{d.cuentas}</span></p>

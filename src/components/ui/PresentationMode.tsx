@@ -59,48 +59,85 @@ export default function PresentationMode() {
 
       // Auto-scroll logic (State-Driven Scrolling)
       let tvScrollInterval: NodeJS.Timeout;
-      
-      const container = document.getElementById('tv-scroll-container') || document.querySelector('main');
 
       const startScrolling = () => {
-        if (!container) return;
-        
-        let scrollSpeed = 1; // Velocidad del desplazamiento en píxeles
-        let intervalTime = 30; // Frecuencia en milisegundos
+        let isResetting = false;
+        let animationFrameId: number;
+        let lastTime = performance.now();
+        let scrollAccumulator = 0;
+        const speedPxPerSec = 15; // Velocidad muy suave y pausada para lectura
 
-        tvScrollInterval = setInterval(() => {
-          if (isPausedRef.current || !container) return;
+        const loop = (currentTime: number) => {
+          const deltaTime = currentTime - lastTime;
+          lastTime = currentTime;
+
+          if (isPausedRef.current || isResetting) {
+            animationFrameId = requestAnimationFrame(loop);
+            return;
+          }
+
+          // Desplazamiento fluido usando tiempo
+          scrollAccumulator += (speedPxPerSec * deltaTime) / 1000;
+          if (scrollAccumulator >= 1) {
+            const pixelsToScroll = Math.floor(scrollAccumulator);
+            window.scrollBy({ top: pixelsToScroll });
+            scrollAccumulator -= pixelsToScroll;
+          }
 
           // Update progress bar
           if (progressBarRef.current) {
-            const maxScroll = container.scrollHeight - container.clientHeight;
-            const currentProgress = maxScroll > 0 ? (container.scrollTop / maxScroll) * 100 : 0;
+            const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+            const currentProgress = maxScroll > 0 ? (window.scrollY / maxScroll) * 100 : 0;
             progressBarRef.current.style.width = `${currentProgress}%`;
           }
 
-          // Desplazar hacia abajo
-          container.scrollTop += scrollSpeed;
-
-          // Validar si llegó al final del scroll
-          const reachedBottom = container.scrollTop + container.clientHeight >= container.scrollHeight - 5;
+          // Validar si llegó al final del scroll con un buffer
+          const buffer = 5;
+          const reachedBottom = window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - buffer;
 
           if (reachedBottom) {
-            // Pausa pequeña opcional antes de reiniciar o salto directo al inicio
+            isResetting = true;
+            // Pausa breve de lectura al llegar al final
             setTimeout(() => {
-              if (container) {
-                container.scrollTop = 0; // Reinicia al principio de forma limpia
-              }
-            }, 1000); // 1 segundo de pausa al llegar al final antes de volver arriba
+              // Retorno suave hacia la parte superior
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+              
+              // Dar tiempo a la animación de retorno para que termine antes de continuar
+              setTimeout(() => {
+                isResetting = false;
+                lastTime = performance.now();
+                scrollAccumulator = 0;
+              }, 1500); 
+            }, 2500); // Pausa al final
           }
-        }, intervalTime);
+
+          animationFrameId = requestAnimationFrame(loop);
+        };
+
+        animationFrameId = requestAnimationFrame(loop);
+
+        // Se retorna función de limpieza que será interceptada al salir del modo
+        return () => {
+          cancelAnimationFrame(animationFrameId);
+        };
       };
 
       // Start scrolling after a brief pause
-      const initialPause = setTimeout(startScrolling, 3000);
+      const initialPause = setTimeout(() => {
+        const cleanup = startScrolling();
+        if (cleanup) {
+          // Asignar al cleanup del effect
+          tvScrollInterval = cleanup as any; 
+        }
+      }, 3000);
 
       return () => {
         document.body.classList.remove('presentation-mode-active');
-        clearInterval(tvScrollInterval);
+        if (typeof tvScrollInterval === 'function') {
+          (tvScrollInterval as unknown as Function)();
+        } else {
+          clearInterval(tvScrollInterval);
+        }
         clearTimeout(initialPause);
         try {
           if (document.fullscreenElement && document.exitFullscreen) {
@@ -202,7 +239,7 @@ export default function PresentationMode() {
                 isPausedRef.current = false;
               }}
               className="flex items-center gap-2 bg-[#FE5000]/90 text-white px-4 py-2 rounded-full hover:bg-[#FE5000] transition-all duration-500 font-bold text-sm shadow-[0_0_15px_rgba(254,80,0,0.3)]"
-              title="Salir del Modo TV"
+              title="Salir del Modo Presentación"
             >
               <X className="w-5 h-5" />
               <span className="hidden md:inline-block tracking-wide">
@@ -222,7 +259,7 @@ export default function PresentationMode() {
         >
           <Tv className="w-5 h-5" />
           <span className="hidden md:inline-block tracking-wide">
-            MODO TV
+            MODO PRESENTACIÓN
           </span>
         </button>
       )}

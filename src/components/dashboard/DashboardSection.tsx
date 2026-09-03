@@ -187,8 +187,8 @@ export default function DashboardSection() {
       <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 pb-4">
           <div>
-            <h1 className="text-2xl font-bold text-[#00205B]">Panel de Control Operativo y Financiero</h1>
-            <p className="text-sm text-gray-500">Gestión de jornadas, despliegue de unidades y control de rentabilidad a nivel nacional</p>
+            <h1 className="text-2xl font-bold text-[#00205B]">Panel Operativo Financiero</h1>
+            <p className="text-sm text-gray-500">Gestión de jornadas, despliegue de unidades y control de efectividad operativa a nivel nacional</p>
           </div>
           
           <div className="flex items-center gap-4 overflow-x-auto pb-2 sm:pb-0">
@@ -369,9 +369,9 @@ export default function DashboardSection() {
         </div>
       </div>
 
-      {/* SECCIÓN: Análisis de Rentabilidad y Retorno Financiero */}
+      {/* SECCIÓN: Análisis de Efectividad Operativa */}
       <div className="pt-6 mt-6 border-t border-gray-200">
-        <h2 className="text-xl font-black text-[#00205B] mb-6">Análisis de Rentabilidad y Retorno Financiero</h2>
+        <h2 className="text-xl font-black text-[#00205B] mb-6">Análisis de Efectividad Operativa</h2>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           <RentabilidadRegionChart events={filteredEvents} agencies={agencies} />
           <RentabilidadTopEventosChart events={filteredEvents} />

@@ -23,7 +23,7 @@ export default function NotificationsDropdown() {
   const { events } = useAgenda();
   const { trackings } = useRentability();
 
-  // Generar notificaciones dinámicas basadas en los eventos y rentabilidad
+  // Generar notificaciones dinámicas basadas en los eventos y efectividad operativa
   useEffect(() => {
     if (!events.length) return;
     
@@ -72,7 +72,7 @@ export default function NotificationsDropdown() {
       }
     });
 
-    // Añadir notificaciones de rentabilidad pendiente
+    // Añadir notificaciones de efectividad operativa pendiente
     trackings.forEach(t => {
       if (t.status === 'Pendiente') {
         const cellDate = new Date(t.monthDate);
@@ -81,7 +81,7 @@ export default function NotificationsDropdown() {
           newNotifs.push({
             id: `notif-rent-${t.id}`,
             type: 'expense',
-            title: 'Rentabilidad Pendiente',
+            title: 'Efectividad Operativa Pendiente',
             message: `Registra el Mes ${t.monthIndex} del operativo ${ev?.eventName || 'desconocido'}.`,
             date: new Date().toISOString(),
             read: false

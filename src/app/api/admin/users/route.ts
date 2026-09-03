@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { createClient } from '@supabase/supabase-js';
 
+export const dynamic = 'force-dynamic';
+
 // Cliente normal para verificar el token JWT de la petición
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -36,7 +38,7 @@ export async function GET(request: Request) {
     id: u.id,
     email: u.email,
     created_at: u.created_at,
-    last_sign_in_at: u.last_sign_in_at,
+    last_sign_in_at: u.user_metadata?.ultimo_acceso || u.last_sign_in_at,
     role: u.user_metadata?.role || 'user',
   }));
 

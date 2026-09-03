@@ -5,11 +5,13 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
-import { Lock, Mail, ArrowRight, Truck, Wifi } from 'lucide-react';
+import { Lock, Mail, ArrowRight, Truck, Wifi, Unlock, AlertCircle, X } from 'lucide-react';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
   const { user } = useAuth();
@@ -24,8 +26,10 @@ export default function LoginPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMessage(''); // Limpiar errores previos
+    
     if (!email || !password) {
-      showToast('Por favor, ingresa tu correo y contraseña.', 'info');
+      setErrorMessage('Por favor, ingresa tu correo y contraseña.');
       return;
     }
 
@@ -41,12 +45,35 @@ export default function LoginPage() {
       }
 
       if (data.user) {
+        // ACTUALIZACIÓN AUTOMÁTICA DEL ÚLTIMO ACCESO
+        await supabase.auth.updateUser({
+          data: { ultimo_acceso: new Date().toISOString() }
+        });
+
+        // El éxito se puede mantener en el toast normal ya que es una transición positiva
         showToast('Inicio de sesión exitoso', 'success');
         router.push('/');
       }
     } catch (error: any) {
       console.error('Error logging in:', error);
-      showToast(error.message || 'Credenciales inválidas', 'error');
+      
+      let msg = error.message;
+      // Mapeo de errores de Supabase al español
+      if (msg === 'Invalid login credentials') {
+        msg = 'Correo o contraseña incorrectos.';
+      } else if (msg === 'Email not confirmed') {
+        msg = 'Por favor, confirma tu correo electrónico antes de iniciar sesión.';
+      } else if (msg === 'User not found' || msg?.includes('not found')) {
+        msg = 'Usuario no encontrado.';
+      } else if (msg?.includes('fetch') || msg?.includes('network')) {
+        msg = 'Error de conexión. Verifica tu internet e intenta de nuevo.';
+      } else if (msg) {
+        msg = 'Credenciales inválidas o acceso denegado.';
+      } else {
+        msg = 'Ocurrió un error al intentar iniciar sesión.';
+      }
+      
+      setErrorMessage(msg);
     } finally {
       setIsSubmitting(false);
     }
@@ -57,7 +84,26 @@ export default function LoginPage() {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#001A45] p-4 sm:p-8">
-      <div className="w-full max-w-md bg-[#001A45] md:bg-[#00205B] rounded-3xl shadow-2xl overflow-hidden border border-white/10">
+      
+      {/* Mensaje de Error Centralizado Flotante */}
+      {errorMessage && (
+        <div className="fixed top-8 left-1/2 -translate-x-1/2 z-[100] w-[90%] max-w-md animate-in fade-in slide-in-from-top-4 duration-300">
+          <div className="bg-red-500/95 backdrop-blur-md text-white px-6 py-4 rounded-2xl shadow-2xl shadow-red-500/20 border border-red-400/50 flex items-center gap-4">
+            <AlertCircle className="w-6 h-6 shrink-0 text-white" />
+            <p className="font-bold text-sm flex-1 tracking-wide leading-tight">{errorMessage}</p>
+            <button 
+              type="button"
+              onClick={() => setErrorMessage('')}
+              className="p-1 hover:bg-red-600/80 rounded-full transition-colors shrink-0"
+              title="Cerrar mensaje"
+            >
+              <X className="w-5 h-5 text-white/90" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className="w-full max-w-md bg-[#001A45] md:bg-[#00205B] rounded-3xl shadow-2xl overflow-hidden border border-white/10 relative z-10">
         
         {/* Header Decorativo */}
         <div className="bg-[#00205B] p-10 text-center relative overflow-hidden border-b-4 border-[#FE5000]">
@@ -103,13 +149,25 @@ export default function LoginPage() {
             <div>
               <label className="block text-sm font-semibold text-blue-100 mb-2">Contraseña</label>
               <div className="relative">
-                <div className="absolute inset-y-0 start-0 flex items-center ps-3.5 pointer-events-none">
-                  <Lock className="w-5 h-5 text-blue-300/70" />
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 start-0 flex items-center ps-3.5 cursor-pointer group z-10"
+                  title={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                >
+                  {showPassword ? (
+                    <Unlock className="w-5 h-5 text-blue-300/70 group-hover:text-[#FE5000] transition-colors" />
+                  ) : (
+                    <Lock className="w-5 h-5 text-blue-300/70 group-hover:text-[#FE5000] transition-colors" />
+                  )}
+                </button>
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    if (errorMessage) setErrorMessage('');
+                  }}
                   className="bg-[#00153B] border border-white/10 text-white text-sm rounded-xl focus:ring-[#FE5000] focus:border-[#FE5000] block w-full ps-11 p-3.5 transition-colors placeholder-blue-300/40"
                   placeholder="••••••••"
                   required

@@ -142,7 +142,7 @@ export default function RutasUnidadMovil() {
   };
   
 
-  const [tooltip, setTooltip] = useState<{ content: string; x: number; y: number } | null>(null);
+  const [tooltip, setTooltip] = useState<{ stateName: string; x: number; y: number } | null>(null);
 
   useEffect(() => {
     const fetchPhotos = async () => {
@@ -354,7 +354,7 @@ export default function RutasUnidadMovil() {
             <div className="flex-grow h-px bg-slate-200"></div>
           </div>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 w-full relative z-20">
-            {/* KPI: Ciudadanos Atendidos */}
+            {/* KPI 2: Clientes Atendidos */}
             <div ref={kpiCiudadanosRef} id="kpi-ciudadanos-atendidos-unidad" className="group flex flex-col backdrop-blur-md bg-white/90 p-4 rounded-xl shadow-xl shadow-slate-200/50 border border-slate-200 hover:shadow-[0_15px_40px_rgba(254,80,0,0.12)] transition-all duration-500 relative overflow-hidden">
               <button
                 onClick={() => downloadImage(kpiCiudadanosRef, 'KPI_Ciudadanos_Atendidos')}
@@ -366,7 +366,7 @@ export default function RutasUnidadMovil() {
               <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-[#FE5000] to-[#FF8A50]" />
               <svg className="absolute bottom-0 left-0 w-full h-1/2 object-cover opacity-30 pointer-events-none text-slate-200" viewBox="0 0 100 30" preserveAspectRatio="none"><path d="M0,30 Q20,15 50,25 T100,10" fill="none" stroke="currentColor" strokeWidth="1.5" vectorEffect="non-scaling-stroke" /></svg>
               <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-                <Users className="w-3.5 h-3.5 text-[#FE5000]" /> Ciudadanos Atendidos
+                <Users className="w-3.5 h-3.5 text-[#FE5000]" /> Clientes Atendidos
               </p>
               <div className="flex flex-wrap items-end gap-2 justify-between">
                 <p className="text-xl lg:text-2xl font-black text-[#00205B] tracking-tight">
@@ -420,7 +420,7 @@ export default function RutasUnidadMovil() {
               </div>
             </div>
 
-            {/* KPI: Logística Recorrida */}
+            {/* KPI 5: Kilómetros Recorridos */}
             <div ref={kpiLogisticaRef} id="kpi-logistica-recorrida-unidad" className="group flex flex-col backdrop-blur-md bg-white/90 p-4 rounded-xl shadow-xl shadow-slate-200/50 border border-slate-200 hover:shadow-[0_15px_40px_rgba(100,116,139,0.12)] transition-all duration-500 relative overflow-hidden">
               <button
                 onClick={() => downloadImage(kpiLogisticaRef, 'KPI_Logistica_Recorrida')}
@@ -432,7 +432,7 @@ export default function RutasUnidadMovil() {
               <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-slate-400 to-slate-600" />
               <svg className="absolute bottom-0 left-0 w-full h-1/2 object-cover opacity-30 pointer-events-none text-slate-200" viewBox="0 0 100 30" preserveAspectRatio="none"><path d="M0,30 Q40,5 70,25 T100,10" fill="none" stroke="currentColor" strokeWidth="1.5" vectorEffect="non-scaling-stroke" /></svg>
               <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-                <Navigation className="w-3.5 h-3.5 text-slate-500" /> Logística Recorrida
+                <Navigation className="w-3.5 h-3.5 text-slate-500" /> Kilómetros Recorridos
               </p>
               <div className="flex flex-wrap items-end gap-2 justify-between relative z-10">
                 <p className="text-xl lg:text-2xl font-black text-[#00205B] tracking-tight flex items-center gap-2">
@@ -508,7 +508,7 @@ export default function RutasUnidadMovil() {
                       onMouseEnter={(e: any) => {
                         if (isActive) {
                           setTooltip({
-                            content: `Operativo en ${geoName}`,
+                            stateName: geoName,
                             x: e.clientX,
                             y: e.clientY
                           });
@@ -650,15 +650,39 @@ export default function RutasUnidadMovil() {
 
       </div>
 
-      {tooltip && (
-        <div 
-          className="fixed z-50 bg-slate-900/90 backdrop-blur-sm text-white text-xs font-bold px-4 py-2 rounded-lg shadow-2xl shadow-slate-900/50 pointer-events-none transform -translate-x-1/2 -translate-y-full mt-[-15px] border border-white/10"
-          style={{ top: tooltip.y, left: tooltip.x }}
-        >
-          {tooltip.content}
-          <div className="absolute left-1/2 bottom-0 w-2.5 h-2.5 bg-slate-900/90 backdrop-blur-sm border-b border-r border-white/10 transform -translate-x-1/2 translate-y-1/2 rotate-45"></div>
-        </div>
-      )}
+      {tooltip && (() => {
+        const normHover = normalizeStateName(tooltip.stateName);
+        const stateEvents = events.filter(e => normalizeStateName(e.estadoOperativo || e.state) === normHover);
+        const eventNames = stateEvents.map(e => e.eventName).filter(Boolean).join(' | ') || 'Operativo Oficial';
+        const totalCuentas = stateEvents.reduce((acc, curr) => acc + (curr.cifras?.cuentasAbiertas || 0), 0);
+        
+        return (
+          <div 
+            className="fixed z-50 bg-[#00153B]/95 backdrop-blur-md text-white px-4 py-3 rounded-xl shadow-[0_20px_40px_rgba(0,0,0,0.5)] pointer-events-none transform -translate-x-1/2 -translate-y-full mt-[-15px] border border-white/20 min-w-[200px] max-w-[260px] animate-in fade-in zoom-in-95 duration-200"
+            style={{ top: tooltip.y, left: tooltip.x }}
+          >
+            <div className="flex items-center gap-2 mb-2 border-b border-white/10 pb-2">
+              <div className="w-2 h-2 rounded-full bg-[#FE5000] animate-pulse shadow-[0_0_8px_rgba(254,80,0,0.8)] shrink-0" />
+              <span className="font-black tracking-widest uppercase text-sm drop-shadow-md truncate">
+                {tooltip.stateName}
+              </span>
+            </div>
+            
+            <div className="flex flex-col gap-2 mt-2">
+               <div className="flex flex-col">
+                 <span className="text-[9px] text-blue-200 uppercase tracking-widest font-semibold flex items-center gap-1.5 mb-0.5"><Truck className="w-3 h-3" /> Evento Activo</span>
+                 <span className="font-bold text-xs leading-tight text-white/90">{eventNames}</span>
+               </div>
+               <div className="flex items-center justify-between gap-4 border-t border-white/5 pt-1.5">
+                 <span className="text-[9px] text-blue-200 uppercase tracking-widest font-semibold flex items-center gap-1.5"><Users className="w-3 h-3" /> Cuentas Abiertas</span>
+                 <span className="font-black text-[#FE5000]">{totalCuentas > 0 ? `+${totalCuentas.toLocaleString('es-VE')}` : 'N/A'}</span>
+               </div>
+            </div>
+
+            <div className="absolute left-1/2 bottom-0 w-3 h-3 bg-[#00153B]/95 backdrop-blur-md border-b border-r border-white/20 transform -translate-x-1/2 translate-y-[5px] rotate-45"></div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

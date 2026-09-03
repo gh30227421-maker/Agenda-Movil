@@ -4,6 +4,7 @@ import RutasAgenciaMovil from '@/components/rutas/RutasAgenciaMovil';
 import { Truck, Building2, Radar } from 'lucide-react';
 import PresentationMode from '@/components/ui/PresentationMode';
 import SystemStatus from '@/components/ui/SystemStatus';
+import GlobalMonitoreoKPIs from '@/components/rutas/GlobalMonitoreoKPIs';
 
 export const metadata = {
   title: 'Monitoreo Territorial | Impacto Corporativo',
@@ -33,9 +34,11 @@ export default function RutasPage() {
             </h1>
           </div>
           
-          <div className="md:ml-auto bg-slate-900/5 rounded-full px-4 py-1.5 flex items-center gap-2 border border-slate-200/50 shadow-sm">
-            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.8)]" />
-            <SystemStatus />
+          <div className="md:ml-auto flex items-center gap-4">
+            <div className="bg-slate-900/5 rounded-full px-4 py-1.5 flex items-center gap-2 border border-slate-200/50 shadow-sm">
+              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.8)]" />
+              <SystemStatus />
+            </div>
           </div>
         </div>
       </div>
@@ -43,8 +46,11 @@ export default function RutasPage() {
       {/* Secciones Continuas */}
       <div 
         id="tv-scroll-container" 
-        className="w-full flex flex-col relative z-10 gap-6 [.presentation-mode-active_&]:pt-[100px] [.presentation-mode-active_&]:h-full [.presentation-mode-active_&]:overflow-y-auto hide-scrollbar"
+        className="w-full flex flex-col relative z-10 gap-6 [.presentation-mode-active_&]:pt-[100px]"
       >
+        
+        {/* KPIs Globales Consolidados */}
+        <GlobalMonitoreoKPIs />
         
         {/* Bloque 1: Unidad Móvil */}
         <section className="w-full pt-4 relative">

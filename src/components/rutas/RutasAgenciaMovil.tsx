@@ -46,7 +46,11 @@ const geoUrl = '/venezuela.json';
 
 export default function RutasAgenciaMovil() {
   const { events: allEvents, isLoading: isEventsLoading } = useAgenda();
-  const events = useMemo(() => allEvents.filter(e => e.type === 'Agencia Móvil'), [allEvents]);
+  const [isCombinado, setIsCombinado] = useState(false);
+  
+  const events = useMemo(() => {
+    return allEvents.filter(e => e.type === 'Agencia Móvil' || (isCombinado && e.type === 'Red de Agencias'));
+  }, [allEvents, isCombinado]);
   
   const [photos, setPhotos] = useState<any[]>([]);
   const [loadingPhotos, setLoadingPhotos] = useState(true);
@@ -84,13 +88,22 @@ export default function RutasAgenciaMovil() {
       setCurrentVideoIndex((prev) => (prev + 1) % playlist.length);
     }
   };
+
   useEffect(() => {
     const fetchKilometros = async () => {
       try {
-        const { data, error } = await supabase
+        setLoadingKm(true);
+        const query = supabase
           .from('event_expenses')
-          .select('distancia_km, events!inner(event_type)')
-          .eq('events.event_type', 'Agencia Móvil');
+          .select('distancia_km, events!inner(event_type)');
+          
+        if (isCombinado) {
+          query.in('events.event_type', ['Agencia Móvil', 'Red de Agencias']);
+        } else {
+          query.eq('events.event_type', 'Agencia Móvil');
+        }
+
+        const { data, error } = await query;
 
         if (error) throw error;
 
@@ -110,7 +123,7 @@ export default function RutasAgenciaMovil() {
     if (!isEventsLoading) {
       fetchKilometros();
     }
-  }, [isEventsLoading]);
+  }, [isEventsLoading, isCombinado]);
   
   // Referencias para la exportación a PNG
   const kpiProximaParadaRef = useRef<HTMLDivElement>(null);
@@ -287,9 +300,9 @@ export default function RutasAgenciaMovil() {
                         <span className="text-[9px] font-bold text-[#009639] bg-green-50 px-1.5 py-0.5 rounded uppercase tracking-wider">{event.estadoOperativo || event.state}</span>
                       </div>
                     </div>
-                    {((event.cifras?.cuentasAbiertas || 0) + (event.cifras?.atendidos || 0)) > 0 && (
+                    {(event.cifras?.cuentasAbiertas || 0) > 0 && (
                       <div className="bg-green-50 text-green-700 px-2 py-1 rounded-md text-[10px] font-bold shrink-0 ml-2 shadow-sm border border-green-100 whitespace-nowrap">
-                        👥 {(event.cifras?.cuentasAbiertas || 0) + (event.cifras?.atendidos || 0)} Atendidos
+                        👥 {event.cifras?.cuentasAbiertas || 0} Atendidos
                       </div>
                     )}
                   </div>
@@ -306,11 +319,28 @@ export default function RutasAgenciaMovil() {
           <div className="flex flex-col w-full relative z-20">
             <div className="flex items-center gap-4 mb-4">
               <h3 className="text-lg md:text-xl font-black text-slate-900 uppercase tracking-widest m-0">Indicadores Operativos - Agencia Móvil</h3>
+              
+              {/* Micro-Switch de Fuente de Datos */}
+              <div className="flex bg-slate-100/80 backdrop-blur rounded-full p-0.5 border border-slate-200/60 shadow-inner">
+                <button 
+                  onClick={() => setIsCombinado(false)}
+                  className={`px-3 py-1 text-[9px] font-bold uppercase tracking-wider rounded-full transition-all duration-300 ${!isCombinado ? 'bg-white text-[#00205B] shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                >
+                  Solo Agencia
+                </button>
+                <button 
+                  onClick={() => setIsCombinado(true)}
+                  className={`px-3 py-1 text-[9px] font-bold uppercase tracking-wider rounded-full transition-all duration-300 ${isCombinado ? 'bg-[#00205B] text-white shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                >
+                  Agencia + Red
+                </button>
+              </div>
+
               <div className="flex-grow h-px bg-slate-200"></div>
             </div>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 w-full">
               
-              {/* KPI 1: Ciudadanos Atendidos */}
+              {/* KPI 1: Clientes Atendidos */}
               <div ref={kpiCiudadanosRef} id="kpi-ciudadanos-atendidos-agencia" className="group flex flex-col backdrop-blur-md bg-white/90 p-4 rounded-xl shadow-xl shadow-slate-200/50 border border-slate-200 hover:shadow-[0_15px_40px_rgba(254,80,0,0.12)] transition-all duration-500 relative overflow-hidden">
                 <button
                   onClick={() => downloadImage(kpiCiudadanosRef, 'KPI_Ciudadanos_Atendidos')}
@@ -322,7 +352,7 @@ export default function RutasAgenciaMovil() {
                 <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-[#FE5000] to-[#FF8A50]" />
                 <svg className="absolute bottom-0 left-0 w-full h-1/2 object-cover opacity-30 pointer-events-none text-slate-200" viewBox="0 0 100 30" preserveAspectRatio="none"><path d="M0,30 Q20,15 50,25 T100,10" fill="none" stroke="currentColor" strokeWidth="1.5" vectorEffect="non-scaling-stroke" /></svg>
                 <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-                  <Users className="w-3.5 h-3.5 text-[#FE5000]" /> Ciudadanos Atendidos
+                  <Users className="w-3.5 h-3.5 text-[#FE5000]" /> Clientes Atendidos
                 </p>
                 <div className="flex flex-wrap items-end gap-2 justify-between">
                   <p className="text-xl lg:text-2xl font-black text-[#00205B] tracking-tight">
@@ -376,7 +406,7 @@ export default function RutasAgenciaMovil() {
                 </div>
               </div>
 
-              {/* KPI 4: Logística Recorrida */}
+              {/* KPI 4: Kilómetros Recorridos */}
               <div ref={kpiLogisticaRef} id="kpi-logistica-recorrida-agencia" className="group flex flex-col backdrop-blur-md bg-white/90 p-4 rounded-xl shadow-xl shadow-slate-200/50 border border-slate-200 hover:shadow-[0_15px_40px_rgba(100,116,139,0.12)] transition-all duration-500 relative overflow-hidden">
                 <button
                   onClick={() => downloadImage(kpiLogisticaRef, 'KPI_Logistica_Recorrida')}
@@ -388,7 +418,7 @@ export default function RutasAgenciaMovil() {
                 <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-slate-400 to-slate-600" />
                 <svg className="absolute bottom-0 left-0 w-full h-1/2 object-cover opacity-30 pointer-events-none text-slate-200" viewBox="0 0 100 30" preserveAspectRatio="none"><path d="M0,30 Q40,5 70,25 T100,10" fill="none" stroke="currentColor" strokeWidth="1.5" vectorEffect="non-scaling-stroke" /></svg>
                 <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-                  <Activity className="w-3.5 h-3.5 text-slate-500" /> Logística Recorrida
+                  <Activity className="w-3.5 h-3.5 text-slate-500" /> Kilómetros Recorridos
                 </p>
                 <div className="flex flex-wrap items-end gap-2 justify-between relative z-10">
                   <p className="text-xl lg:text-2xl font-black text-[#00205B] tracking-tight flex items-center gap-2">

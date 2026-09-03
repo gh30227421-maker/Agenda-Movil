@@ -371,7 +371,7 @@ export default function RentabilidadSection() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex flex-col xl:flex-row xl:items-center gap-4">
           <div>
-            <h2 className="text-2xl font-bold text-[#00205B]">Rentabilidad y Cierre Financiero</h2>
+            <h2 className="text-2xl font-bold text-[#00205B]">Efectividad Operativa y Cierre Financiero</h2>
             <p className="text-gray-500 text-sm mt-1">
               Resumen contable de Saldos Fin de Mes (Bs. y USD) vs. Costos Operativos (Bs. y USD).
             </p>
@@ -572,7 +572,7 @@ export default function RentabilidadSection() {
                 {estadoGlobal}
               </span>
             </div>
-            <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">RENTABILIDAD GLOBAL (%)</p>
+            <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">EFECTIVIDAD OPERATIVA GLOBAL (%)</p>
             <h3 className={`text-2xl font-bold mt-1 tracking-tight ${colorPalette[estadoGlobal].text}`}>
               {fmtVE(rentabilidadGlobal)}%
             </h3>
@@ -758,7 +758,7 @@ export default function RentabilidadSection() {
               Margen Final: <span className="text-sm">{totMargenUsd >= 0 ? '+' : ''}${fmtVE(totMargenUsd)}</span>
             </span>
             <span className={colorPalette[estadoGlobal].text}>
-              Rentabilidad: <span className="text-sm">{fmtVE(rentabilidadGlobal)}%</span>
+              Efectividad Operativa: <span className="text-sm">{fmtVE(rentabilidadGlobal)}%</span>
             </span>
           </div>
         )}
