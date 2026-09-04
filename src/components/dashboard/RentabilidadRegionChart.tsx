@@ -50,35 +50,53 @@ export default function RentabilidadRegionChart({ events, agencies = [] }: Renta
       cuentas: number;
     }> = {};
 
-    events.forEach(ev => {
-      // Determinar región
-      let reg = ev.region;
-      if (!reg && agencies.length > 0 && ev.state) {
-        const ag = agencies.find(a => a.state === ev.state);
-        if (ag && ag.region) reg = ag.region;
-      }
-      if (!reg) reg = 'Otras Regiones';
+    if (!events || !Array.isArray(events)) {
+      console.warn('RentabilidadRegionChart: events no es un arreglo válido', events);
+      return [];
+    }
 
-      // Normalizar nombre de región para presentación uniforme y limpia
+    events.forEach(ev => {
+      // 1. Determinar y limpiar la región
+      let reg = ev?.region?.trim();
+      if (!reg && agencies && Array.isArray(agencies) && ev?.state) {
+        const ag = agencies.find(a => a?.state === ev.state);
+        if (ag && ag.region) reg = ag.region.trim();
+      }
+      
+      // Si la región sigue vacía o es numéricamente inválida, agrupar en OTRAS REGIONES
+      if (!reg || /^\d+$/.test(reg)) {
+        reg = 'OTRAS REGIONES';
+      }
+
+      // Normalizar nombre
       let regName = reg.toUpperCase().replace(/^REGI[OÓ]N\s+/i, '');
 
-      // Calcular montos USD
-      const tasaBcv = ev.gastos?.tasaBcv || 1;
-      const saldosBs = ev.cifras?.saldosCaptadosBs || 0;
-      const saldoDivisas = ev.cifras?.saldoCierreDivisas || 0;
+      // 2. Extracción segura de cifras monetarias
+      const tasaBcv = Number(ev?.gastos?.tasaBcv) || 1;
+      const saldosBs = Number(ev?.cifras?.saldosCaptadosBs) || 0;
+      const saldoDivisas = Number(ev?.cifras?.saldoCierreDivisas) || 0;
       const saldoUsd = (tasaBcv > 0 ? saldosBs / tasaBcv : 0) + saldoDivisas;
 
+      // 3. Extracción segura de gastos
       let gastoUsd = 0;
-      if (ev.gastos) {
+      if (ev?.gastos) {
         const g = ev.gastos;
-        const totalCostosBs = (g.alimentacionBs || 0) + (g.transporteBs || 0) + (g.hospedajeBs || 0) + 
-                              (g.soporteTecnicoBs || 0) + (g.bancaElectronicaBs || 0) + (g.gastosTributariosBs || 0) + 
-                              (g.conductorAyudanteBs || 0) + (g.mantenimientoLimpiezaBs || 0) + (g.gastoCombustibleBs || 0);
-        gastoUsd = tasaBcv > 0 ? totalCostosBs / tasaBcv : (g.totalUsd || 0);
+        const totalCostosBs = (Number(g.alimentacionBs) || 0) + 
+                              (Number(g.transporteBs) || 0) + 
+                              (Number(g.hospedajeBs) || 0) + 
+                              (Number(g.soporteTecnicoBs) || 0) + 
+                              (Number(g.bancaElectronicaBs) || 0) + 
+                              (Number(g.gastosTributariosBs) || 0) + 
+                              (Number(g.conductorAyudanteBs) || 0) + 
+                              (Number(g.mantenimientoLimpiezaBs) || 0) + 
+                              (Number(g.gastoCombustibleBs) || 0);
+                              
+        gastoUsd = tasaBcv > 0 ? totalCostosBs / tasaBcv : (Number(g.totalUsd) || 0);
       }
 
       const rentabilidadUsd = saldoUsd - gastoUsd;
 
+      // 4. Agrupación por región
       if (!regionMap[regName]) {
         regionMap[regName] = {
           region: regName,
@@ -94,9 +112,10 @@ export default function RentabilidadRegionChart({ events, agencies = [] }: Renta
       regionMap[regName].gastoUsd += gastoUsd;
       regionMap[regName].rentabilidadUsd += rentabilidadUsd;
       regionMap[regName].eventCount += 1;
-      regionMap[regName].cuentas += (ev.cifras?.cuentasAbiertas || 0);
+      regionMap[regName].cuentas += (Number(ev?.cifras?.cuentasAbiertas) || 0);
     });
 
+    // 5. Mapeo final y cálculo de margen
     const list = Object.values(regionMap).map(r => {
       const margen = r.saldoUsd > 0 ? Math.round((r.rentabilidadUsd / r.saldoUsd) * 100) : 0;
       return {
@@ -105,14 +124,25 @@ export default function RentabilidadRegionChart({ events, agencies = [] }: Renta
       };
     });
 
-    return list.sort((a, b) => b.rentabilidadUsd - a.rentabilidadUsd);
+    const finalData = list.sort((a, b) => b.rentabilidadUsd - a.rentabilidadUsd);
+    
+    // Log de auditoría requerido
+    console.log('📉 Datos de Rentabilidad por Región listos para graficar:', finalData);
+    
+    return finalData;
   }, [events, agencies]);
 
   // Cálculos dinámicos de dominio para que los números respiren
-  const maxRentabilidad = useMemo(() => {
-    if (data.length === 0) return 10000;
+  const { minRentabilidad, maxRentabilidad } = useMemo(() => {
+    if (data.length === 0) return { minRentabilidad: 0, maxRentabilidad: 10000 };
     const maxVal = Math.max(...data.map(d => d.rentabilidadUsd), 0);
-    return Math.ceil((maxVal * 1.25) / 1000) * 1000;
+    const minVal = Math.min(...data.map(d => d.rentabilidadUsd), 0);
+    
+    // Si hay valores negativos, dar espacio extra hacia abajo para que la barra no colisione con el eje
+    const minDomain = minVal < 0 ? Math.floor((minVal * 1.35) / 1000) * 1000 : 0;
+    const maxDomain = Math.ceil((maxVal * 1.25) / 1000) * 1000;
+    
+    return { minRentabilidad: minDomain, maxRentabilidad: maxDomain };
   }, [data]);
 
   const maxOperativos = useMemo(() => {
@@ -131,15 +161,19 @@ export default function RentabilidadRegionChart({ events, agencies = [] }: Renta
           <ResponsiveContainer width="100%" height={440}>
             <ComposedChart 
               data={data} 
-              margin={{ top: 35, right: 30, left: 15, bottom: 25 }}
+              margin={{ top: 35, right: 30, left: 15, bottom: 60 }}
             >
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F3F4F6" />
               
               {/* Eje X: Regiones */}
               <XAxis 
                 dataKey="region" 
-                tick={{ fontSize: 12, fontWeight: 700, fill: '#1F2937' }} 
+                tick={{ fontSize: 11, fontWeight: 700, fill: '#1F2937' }} 
                 interval={0}
+                angle={-30}
+                textAnchor="end"
+                height={80}
+                dy={10}
                 tickLine={false}
                 axisLine={{ stroke: '#E5E7EB' }}
               />
@@ -148,9 +182,9 @@ export default function RentabilidadRegionChart({ events, agencies = [] }: Renta
               <YAxis 
                 yAxisId="left"
                 type="number" 
-                domain={[0, maxRentabilidad]}
+                domain={[minRentabilidad, maxRentabilidad]}
                 tick={{ fontSize: 12, fill: '#6B7280' }} 
-                tickFormatter={(val) => `$${val >= 1000 ? `${(val / 1000).toFixed(0)}k` : val}`}
+                tickFormatter={(val) => `$${val >= 1000 ? `${(val / 1000).toFixed(0)}k` : val <= -1000 ? `${(val / 1000).toFixed(0)}k` : val}`}
                 axisLine={false}
                 tickLine={false}
               />
@@ -168,23 +202,28 @@ export default function RentabilidadRegionChart({ events, agencies = [] }: Renta
               />
 
               <Tooltip 
-                formatter={(val: any, name: any, item: any) => {
-                  const p = item.payload;
-                  if (name === 'Operativos Realizados') {
-                    return [`${val} jornadas`, 'Operativos'];
+                cursor={{ fill: 'transparent' }}
+                content={({ active, payload }) => {
+                  if (active && payload && payload.length) {
+                    const p = payload[0].payload;
+                    return (
+                      <div className="bg-[#00205C] p-3.5 rounded-xl text-white shadow-lg min-w-[200px] border-none">
+                        <p className="font-bold text-sm uppercase mb-2.5 border-b border-white/20 pb-1.5">{p.region}</p>
+                        <div className="space-y-2 text-xs">
+                          <div className="flex justify-between items-center gap-4">
+                            <span className="text-gray-300">Saldo Captado:</span> 
+                            <span className="font-bold text-white text-[13px]">${p.saldoUsd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                          </div>
+                          <div className="flex justify-between items-center gap-4">
+                            <span className="text-gray-300">Gasto Total:</span> 
+                            <span className="font-bold text-[#FFA07A] text-[13px]">${p.gastoUsd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
                   }
-                  return [
-                    <div key="tooltip-content" className="space-y-1 text-xs">
-                      <p><span className="text-gray-300">Efectividad Operativa Neta:</span> <span className="font-bold text-[#A7F3D0]">${p.rentabilidadUsd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></p>
-                      <p><span className="text-gray-300">Saldo Captado:</span> <span className="font-bold text-white">${p.saldoUsd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></p>
-                      <p><span className="text-gray-300">Gasto Total:</span> <span className="font-bold text-[#FFA07A]">${p.gastoUsd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></p>
-                      <p><span className="text-gray-300">Margen Neto:</span> <span className="font-bold text-white">{p.margenPct}%</span></p>
-                      <p><span className="text-gray-300">Operativos Realizados:</span> <span className="font-bold text-[#FFA07A]">{p.eventCount}</span></p>
-                    </div>,
-                    'Detalle Regional'
-                  ];
+                  return null;
                 }}
-                contentStyle={{ backgroundColor: '#00205C', borderRadius: '12px', color: '#FFF', border: 'none', padding: '12px' }}
               />
 
               <Legend 

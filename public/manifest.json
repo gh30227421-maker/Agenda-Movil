@@ -1,0 +1,17 @@
+{
+  "name": "Agenda Móvil",
+  "short_name": "Agenda Móvil",
+  "description": "Gestión en Vivo de la Unidad Móvil BNC",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#00205B",
+  "theme_color": "#00205B",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "48x48 64x64 128x128 192x192 256x256 512x512 any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

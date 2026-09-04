@@ -7,6 +7,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useRentability } from '@/context/RentabilityContext';
 import { isPast, isSameMonth } from 'date-fns';
 import NotificationsDropdown from './NotificationsDropdown';
+import PWAInstallButton from './PWAInstallButton';
 
 export default function Header() {
   const pathname = usePathname();
@@ -147,6 +148,7 @@ export default function Header() {
                       </Link>
                     );
                   })}
+                  {group.name === 'Administración' && <PWAInstallButton />}
                 </div>
               </div>
             </div>
@@ -156,11 +158,12 @@ export default function Header() {
       </div>
 
       {/* Perfil y Notificaciones - Derecha */}
-      <div id="header-user-menu" className="flex items-center gap-3 md:gap-6 flex-nowrap shrink-0">
+      <div id="header-user-menu" className="flex items-center gap-2 md:gap-4 flex-nowrap shrink-0">
+        
         {/* Módulo de Notificaciones Oculto Temporalmente */}
         {/* <NotificationsDropdown /> */}
         
-        <div className="flex items-center gap-3 pl-4 border-l border-white/10">
+        <div className="flex items-center gap-3 pl-2 md:pl-4 border-l border-white/10">
           <div className="flex flex-col text-right hidden sm:flex">
             <span className="text-base font-bold truncate max-w-[150px] text-white">{user.email}</span>
             <span className="text-[12px] text-[#FE5000] font-bold uppercase tracking-wider">{isAdmin ? 'Administrador' : 'Usuario Activo'}</span>

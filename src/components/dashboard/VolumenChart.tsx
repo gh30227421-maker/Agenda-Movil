@@ -14,7 +14,7 @@ export default function VolumenChart({ events }: VolumenChartProps) {
   const canalColors: Record<string, string> = {
     'Agencia Móvil': '#00205C',   // Azul BNC Profundo
     'Red de Agencias': '#FE5000',  // Naranja BNC Institucional
-    'Unidad Móvil': '#0284C7',    // Azul Zafiro BNC
+    'Unidad Móvil': '#009639',    // Verde BNC Corporativo
   };
 
   // Calcular métricas dinámicas para todas las operaciones

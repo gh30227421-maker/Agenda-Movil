@@ -8,16 +8,19 @@ import { AuthProvider } from "@/context/AuthContext";
 import { RentabilityProvider } from "@/context/RentabilityContext";
 import AuthGuard from "@/components/layout/AuthGuard";
 import EventManagementModal from "@/components/agenda/EventManagementModal";
+import PWARegister from "@/components/layout/PWARegister";
 
 export const metadata: Metadata = {
   title: "Gestión BNC Móvil",
   description: "Sistema de gestión para jornadas bancarias de BNC",
+  manifest: "/manifest.json",
 };
 
 export const viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
+  themeColor: "#00205B",
 };
 
 const montserrat = Montserrat({ subsets: ["latin"], variable: "--font-montserrat" });
@@ -69,6 +72,7 @@ export default function RootLayout({
             </AuthGuard>
           </AuthProvider>
         </ToastProvider>
+        <PWARegister />
       </body>
     </html>
   );
