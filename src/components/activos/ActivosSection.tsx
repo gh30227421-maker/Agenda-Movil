@@ -16,7 +16,7 @@ export default function ActivosSection() {
   
   // Filtros
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterEstado, setFilterEstado] = useState('all');
+  const [filterEstados, setFilterEstados] = useState<string[]>([]);
 
   const handleOpenNew = () => {
     setAssetToEdit(null);
@@ -42,11 +42,11 @@ export default function ActivosSection() {
         (asset.serial && asset.serial.toLowerCase().includes(searchTerm.toLowerCase())) ||
         asset.tipo_equipo.toLowerCase().includes(searchTerm.toLowerCase());
         
-      const matchEstado = filterEstado === 'all' || asset.estado_operativo === filterEstado;
+      const matchEstado = filterEstados.length === 0 || filterEstados.includes(asset.estado_operativo);
       
       return matchSearch && matchEstado;
     });
-  }, [assets, searchTerm, filterEstado]);
+  }, [assets, searchTerm, filterEstados]);
 
   // KPIs
   const totalAssets = assets.length;
@@ -140,6 +140,7 @@ export default function ActivosSection() {
 
           <div className="w-full md:w-1/4">
             <ComboBox
+              multiple
               options={[
                 { value: 'all', label: 'Todos los Estados' },
                 { value: 'Operativo', label: 'Operativos' },
@@ -148,8 +149,8 @@ export default function ActivosSection() {
                 { value: 'Dañado', label: 'Dañados' },
                 { value: 'Desincorporado', label: 'Desincorporados' }
               ]}
-              value={filterEstado}
-              onChange={setFilterEstado}
+              value={filterEstados}
+              onChange={(val: string[]) => setFilterEstados(val)}
               icon={<Filter className="w-4 h-4" />}
             />
           </div>

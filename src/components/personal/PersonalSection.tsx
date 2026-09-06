@@ -16,7 +16,7 @@ export default function PersonalSection() {
 
   // Event selector state
   const currentMonth = new Date().getMonth();
-  const [selectedMonth, setSelectedMonth] = useState<number | 'all'>(currentMonth);
+  const [selectedMonths, setSelectedMonths] = useState<string[]>([currentMonth.toString()]);
   const [selectedEventId, setSelectedEventId] = useState<string>('');
   const [isEventDropdownOpen, setIsEventDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -77,13 +77,15 @@ export default function PersonalSection() {
       if (['Culminado', 'Cerrado', 'Cancelado'].includes(ev.status || ev.state || '')) return false;
       
       // Filtro por mes
-      if (selectedMonth !== 'all' && ev.startDate) {
-        const evMonth = parseInt(ev.startDate.split('-')[1], 10) - 1;
-        if (evMonth !== selectedMonth) return false;
+      if (selectedMonths.length > 0 && ev.startDate) {
+        const evMonth = (parseInt(ev.startDate.split('-')[1], 10) - 1).toString();
+        if (!selectedMonths.includes(evMonth)) return false;
+      } else if (selectedMonths.length > 0 && !ev.startDate) {
+        return false;
       }
       return true;
     });
-  }, [events, selectedMonth]);
+  }, [events, selectedMonths]);
 
   useEffect(() => {
     if (!selectedEventId || !availableEventsForDropdown.find(e => e.id === selectedEventId)) {
@@ -262,11 +264,11 @@ export default function PersonalSection() {
             {/* Filtro de Meses */}
             <div className="w-full md:w-64 z-20 relative">
               <ComboBox
+                multiple
                 options={[{ value: 'all', label: 'Todos los Meses' }, ...months.map((m, i) => ({ value: i.toString(), label: m }))]}
-                value={selectedMonth === 'all' ? 'all' : selectedMonth.toString()}
-                onChange={(val) => {
-                  const numVal = val === 'all' ? 'all' : Number(val);
-                  setSelectedMonth(numVal);
+                value={selectedMonths}
+                onChange={(val: string[]) => {
+                  setSelectedMonths(val);
                 }}
                 icon={<CalendarIcon className="w-4 h-4" />}
                 emptyText="No hay meses"

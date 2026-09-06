@@ -11,12 +11,13 @@ interface Option {
 
 interface ComboBoxProps {
   options: Option[];
-  value: string;
-  onChange: (value: string) => void;
+  value: string | string[];
+  onChange: (value: any) => void;
   placeholder?: string;
   icon?: React.ReactNode;
   emptyText?: string;
   disabled?: boolean;
+  multiple?: boolean;
 }
 
 export default function ComboBox({
@@ -27,6 +28,7 @@ export default function ComboBox({
   icon,
   emptyText = 'No hay opciones',
   disabled = false,
+  multiple = false,
 }: ComboBoxProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -57,9 +59,23 @@ export default function ComboBox({
 
   // Find the selected option's label
   const selectedLabel = useMemo(() => {
+    if (multiple && Array.isArray(value)) {
+      if (value.length === 0 || (value.length === 1 && value[0] === 'all')) {
+        return placeholder;
+      }
+      if (value.length === 1) {
+        const opt = options.find(o => o.value === value[0]);
+        return opt ? opt.label : placeholder;
+      }
+      const totalOptions = options.filter(o => o.value !== 'all').length;
+      if (value.length === totalOptions && totalOptions > 0) {
+        return 'Todos seleccionados';
+      }
+      return `${value.length} seleccionados`;
+    }
     const opt = options.find(o => o.value === value);
     return opt ? opt.label : placeholder;
-  }, [options, value, placeholder]);
+  }, [options, value, placeholder, multiple]);
 
   return (
     <div className="relative w-full text-sm" ref={containerRef}>
@@ -79,7 +95,7 @@ export default function ComboBox({
       >
         <div className="flex items-center gap-2 truncate">
           {icon && <span className="text-gray-500 shrink-0">{icon}</span>}
-          <span className={`truncate font-medium ${value === 'todos' || !value ? 'text-gray-600' : 'text-gray-900'}`}>
+          <span className={`truncate font-medium ${value === 'all' || value === 'todos' || (Array.isArray(value) && value.length === 0) ? 'text-gray-600' : 'text-gray-900'}`}>
             {selectedLabel}
           </span>
         </div>
@@ -115,6 +131,10 @@ export default function ComboBox({
               filteredOptions.map((opt, index) => {
                 const showGroupHeader = opt.group && (index === 0 || filteredOptions[index - 1].group !== opt.group);
                 
+                const isSelected = multiple && Array.isArray(value) 
+                  ? (opt.value === 'all' ? value.length === 0 || value.includes('all') : value.includes(opt.value))
+                  : value === opt.value;
+
                 return (
                   <React.Fragment key={opt.value}>
                     {showGroupHeader && (
@@ -125,17 +145,40 @@ export default function ComboBox({
                     <button
                       type="button"
                       onClick={() => {
-                        onChange(opt.value);
-                        setIsOpen(false);
+                        if (multiple && Array.isArray(value)) {
+                          if (opt.value === 'all') {
+                            onChange([]);
+                          } else {
+                            const currentVals = value.filter(v => v !== 'all');
+                            const newValue = currentVals.includes(opt.value)
+                              ? currentVals.filter(v => v !== opt.value)
+                              : [...currentVals, opt.value];
+                            onChange(newValue);
+                          }
+                        } else {
+                          onChange(opt.value);
+                          setIsOpen(false);
+                        }
                       }}
                       className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-left text-xs transition-colors ${
-                        value === opt.value
+                        isSelected
                           ? 'bg-blue-50 text-[#00205B] font-semibold'
                           : 'text-gray-700 hover:bg-gray-100'
                       }`}
                     >
-                      <span className="truncate">{opt.label}</span>
-                      {value === opt.value && <Check className="w-4 h-4 text-[#00205B] shrink-0" />}
+                      {multiple ? (
+                        <div className="flex items-center gap-2">
+                           <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${isSelected ? 'bg-[#00205B] border-[#00205B]' : 'border-gray-300'}`}>
+                             {isSelected && <Check className="w-3 h-3 text-white" />}
+                           </div>
+                           <span className="truncate">{opt.label}</span>
+                        </div>
+                      ) : (
+                        <>
+                          <span className="truncate">{opt.label}</span>
+                          {isSelected && <Check className="w-4 h-4 text-[#00205B] shrink-0" />}
+                        </>
+                      )}
                     </button>
                   </React.Fragment>
                 );

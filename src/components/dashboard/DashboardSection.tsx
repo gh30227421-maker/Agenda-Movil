@@ -19,46 +19,48 @@ import RentabilidadRegionChart from './RentabilidadRegionChart';
 import RentabilidadTopEventosChart from './RentabilidadTopEventosChart';
 import RentabilidadVsCostosChart from './RentabilidadVsCostosChart';
 
-const isEventInPeriod = (evStartDate: string | undefined, period: string) => {
-  if (period === 'todos') return true;
+const isEventInPeriod = (evStartDate: string | undefined, periods: string[]) => {
+  if (periods.length === 0 || periods.includes('todos')) return true;
   if (!evStartDate) return false;
   
-  const [evYear, evMonthStr] = evStartDate.split('-');
-  const evMonth = parseInt(evMonthStr, 10);
-  const [selYear, selPeriod] = period.split('-');
-  
-  if (evYear !== selYear) return false;
-  
-  if (selPeriod === 'H1') return evMonth >= 1 && evMonth <= 6;
-  if (selPeriod === 'H2') return evMonth >= 7 && evMonth <= 12;
-  
-  if (selPeriod === 'Q1') return evMonth >= 1 && evMonth <= 3;
-  if (selPeriod === 'Q2') return evMonth >= 4 && evMonth <= 6;
-  if (selPeriod === 'Q3') return evMonth >= 7 && evMonth <= 9;
-  if (selPeriod === 'Q4') return evMonth >= 10 && evMonth <= 12;
-  
-  return selPeriod === evMonthStr;
+  return periods.some(period => {
+    const [evYear, evMonthStr] = evStartDate.split('-');
+    const evMonth = parseInt(evMonthStr, 10);
+    const [selYear, selPeriod] = period.split('-');
+    
+    if (evYear !== selYear) return false;
+    
+    if (selPeriod === 'H1') return evMonth >= 1 && evMonth <= 6;
+    if (selPeriod === 'H2') return evMonth >= 7 && evMonth <= 12;
+    
+    if (selPeriod === 'Q1') return evMonth >= 1 && evMonth <= 3;
+    if (selPeriod === 'Q2') return evMonth >= 4 && evMonth <= 6;
+    if (selPeriod === 'Q3') return evMonth >= 7 && evMonth <= 9;
+    if (selPeriod === 'Q4') return evMonth >= 10 && evMonth <= 12;
+    
+    return selPeriod === evMonthStr;
+  });
 };
 
 export default function DashboardSection() {
   const { events, agencies } = useAgenda();
 
   // Estados de filtros
-  const [selectedEventId, setSelectedEventId] = useState<string>('todos');
-  const [selectedMonth, setSelectedMonth] = useState<string>('todos');
-  const [selectedRegionFilter, setSelectedRegionFilter] = useState<string>('todos');
-  const [selectedStateFilter, setSelectedStateFilter] = useState<string>('todos');
+  const [selectedEventIds, setSelectedEventIds] = useState<string[]>([]);
+  const [selectedMonths, setSelectedMonths] = useState<string[]>([]);
+  const [selectedRegionFilters, setSelectedRegionFilters] = useState<string[]>([]);
+  const [selectedStateFilters, setSelectedStateFilters] = useState<string[]>([]);
 
   // Lógica de cascada reactiva para opciones
   const availableMonths = useMemo(() => {
     const rawMonths = new Set<string>();
     events.forEach(ev => {
-      if (selectedEventId !== 'todos' && ev.id !== selectedEventId) return;
-      if (selectedRegionFilter !== 'todos') {
+      if (selectedEventIds.length > 0 && !selectedEventIds.includes(ev.id)) return;
+      if (selectedRegionFilters.length > 0) {
         const ag = agencies.find(a => a.state === ev.state);
-        if (!ag || ag.region !== selectedRegionFilter) return;
+        if (!ag || !selectedRegionFilters.includes(ag.region)) return;
       }
-      if (selectedStateFilter !== 'todos' && ev.state !== selectedStateFilter) return;
+      if (selectedStateFilters.length > 0 && !selectedStateFilters.includes(ev.state || '')) return;
       
       if (ev.startDate) rawMonths.add(ev.startDate.substring(0, 7));
     });
@@ -101,76 +103,76 @@ export default function DashboardSection() {
     });
 
     return [...semestres, ...trimestres, ...meses];
-  }, [events, agencies, selectedEventId, selectedRegionFilter, selectedStateFilter]);
+  }, [events, agencies, selectedEventIds, selectedRegionFilters, selectedStateFilters]);
 
   const availableRegions = useMemo(() => {
     const regions = new Set<string>();
     events.forEach(ev => {
-      if (selectedEventId !== 'todos' && ev.id !== selectedEventId) return;
-      if (!isEventInPeriod(ev.startDate, selectedMonth)) return;
-      if (selectedStateFilter !== 'todos' && ev.state !== selectedStateFilter) return;
+      if (selectedEventIds.length > 0 && !selectedEventIds.includes(ev.id)) return;
+      if (!isEventInPeriod(ev.startDate, selectedMonths)) return;
+      if (selectedStateFilters.length > 0 && !selectedStateFilters.includes(ev.state || '')) return;
       
       const ag = agencies.find(a => a.state === ev.state);
       if (ag && ag.region) regions.add(ag.region);
     });
     return Array.from(regions).sort().map(r => ({ value: r, label: r }));
-  }, [events, agencies, selectedEventId, selectedMonth, selectedStateFilter]);
+  }, [events, agencies, selectedEventIds, selectedMonths, selectedStateFilters]);
 
   const availableStates = useMemo(() => {
     const states = new Set<string>();
     events.forEach(ev => {
-      if (selectedEventId !== 'todos' && ev.id !== selectedEventId) return;
-      if (!isEventInPeriod(ev.startDate, selectedMonth)) return;
-      if (selectedRegionFilter !== 'todos') {
+      if (selectedEventIds.length > 0 && !selectedEventIds.includes(ev.id)) return;
+      if (!isEventInPeriod(ev.startDate, selectedMonths)) return;
+      if (selectedRegionFilters.length > 0) {
         const ag = agencies.find(a => a.state === ev.state);
-        if (!ag || ag.region !== selectedRegionFilter) return;
+        if (!ag || !selectedRegionFilters.includes(ag.region)) return;
       }
       
       if (ev.state) states.add(ev.state);
     });
     return Array.from(states).sort().map(s => ({ value: s, label: s }));
-  }, [events, agencies, selectedEventId, selectedMonth, selectedRegionFilter]);
+  }, [events, agencies, selectedEventIds, selectedMonths, selectedRegionFilters]);
 
   const availableEvents = useMemo(() => {
     const evs: { value: string, label: string }[] = [];
     events.forEach(ev => {
-      if (!isEventInPeriod(ev.startDate, selectedMonth)) return;
-      if (selectedRegionFilter !== 'todos') {
+      if (!isEventInPeriod(ev.startDate, selectedMonths)) return;
+      if (selectedRegionFilters.length > 0) {
         const ag = agencies.find(a => a.state === ev.state);
-        if (!ag || ag.region !== selectedRegionFilter) return;
+        if (!ag || !selectedRegionFilters.includes(ag.region)) return;
       }
-      if (selectedStateFilter !== 'todos' && ev.state !== selectedStateFilter) return;
+      if (selectedStateFilters.length > 0 && !selectedStateFilters.includes(ev.state || '')) return;
       
       evs.push({ value: ev.id, label: `${ev.eventName} (${ev.state || 'N/A'})` });
     });
     return evs;
-  }, [events, agencies, selectedMonth, selectedRegionFilter, selectedStateFilter]);
+  }, [events, agencies, selectedMonths, selectedRegionFilters, selectedStateFilters]);
 
   // Filtrado reactivo de eventos
   const filteredEvents = useMemo(() => {
     return events.filter(ev => {
       // Filtro por Operativo específico
-      if (selectedEventId !== 'todos' && ev.id !== selectedEventId) {
+      if (selectedEventIds.length > 0 && !selectedEventIds.includes(ev.id)) {
         return false;
       }
       // Filtro por Mes / Periodo (Jerárquico)
-      if (!isEventInPeriod(ev.startDate, selectedMonth)) {
+      if (!isEventInPeriod(ev.startDate, selectedMonths)) {
         return false;
       }
       // Filtro por Región
-      if (selectedRegionFilter !== 'todos') {
+      if (selectedRegionFilters.length > 0) {
         const agencyMatch = agencies.find(a => a.state === ev.state);
-        if (!agencyMatch || agencyMatch.region !== selectedRegionFilter) {
+        if (!agencyMatch || !selectedRegionFilters.includes(agencyMatch.region)) {
           return false;
         }
       }
       // Filtro por Estado
-      if (selectedStateFilter !== 'todos' && ev.state !== selectedStateFilter) {
+      if (selectedStateFilters.length > 0 && !selectedStateFilters.includes(ev.state || '')) {
         return false;
       }
       return true;
     });
-  }, [events, agencies, selectedEventId, selectedMonth, selectedRegionFilter, selectedStateFilter]);
+  }, [events, agencies, selectedEventIds, selectedMonths, selectedRegionFilters, selectedStateFilters]);
 
   const formatNumber = (num: number) => num.toLocaleString('es-VE');
 
@@ -224,19 +226,21 @@ export default function DashboardSection() {
               Operativo / Evento:
             </label>
             <ComboBox
+              multiple
               options={[{ value: 'todos', label: 'Todos los Operativos' }, ...availableEvents]}
-              value={selectedEventId}
-              onChange={(val) => {
-                setSelectedEventId(val);
-                // Si eligen un operativo específico, forzamos los otros filtros para que coincidan (opcional, pero mejora UX)
-                if (val !== 'todos') {
-                  const ev = events.find(e => e.id === val);
+              value={selectedEventIds}
+              onChange={(val: string[]) => {
+                setSelectedEventIds(val);
+                // Si eligen un operativo específico, forzamos los otros filtros (solo tomamos el último seleccionado como referencia opcional)
+                if (val.length > 0 && !val.includes('todos')) {
+                  const lastVal = val[val.length - 1];
+                  const ev = events.find(e => e.id === lastVal);
                   if (ev) {
-                    if (ev.startDate) setSelectedMonth(ev.startDate.substring(0, 7));
-                    if (ev.state) {
-                      setSelectedStateFilter(ev.state);
+                    if (ev.startDate && selectedMonths.length === 0) setSelectedMonths([ev.startDate.substring(0, 7)]);
+                    if (ev.state && selectedStateFilters.length === 0) {
+                      setSelectedStateFilters([ev.state]);
                       const ag = agencies.find(a => a.state === ev.state);
-                      if (ag && ag.region) setSelectedRegionFilter(ag.region);
+                      if (ag && ag.region) setSelectedRegionFilters([ag.region]);
                     }
                   }
                 }
@@ -252,16 +256,14 @@ export default function DashboardSection() {
               Mes / Periodo:
             </label>
             <ComboBox
+              multiple
               options={[{ value: 'todos', label: 'Todos los Meses' }, ...availableMonths]}
-              value={selectedMonth}
-              onChange={(val) => {
-                setSelectedMonth(val);
-                // Limpiar operativo si no está en este mes
-                if (val !== 'todos' && selectedEventId !== 'todos') {
-                  const ev = events.find(e => e.id === selectedEventId);
-                  if (ev && (!ev.startDate || !ev.startDate.startsWith(val))) {
-                    setSelectedEventId('todos');
-                  }
+              value={selectedMonths}
+              onChange={(val: string[]) => {
+                setSelectedMonths(val);
+                // Limpiar operativo si se cambia mes (opcional)
+                if (selectedEventIds.length > 0) {
+                   setSelectedEventIds([]);
                 }
               }}
               icon={<Calendar className="w-3.5 h-3.5" />}
@@ -275,13 +277,13 @@ export default function DashboardSection() {
               Región:
             </label>
             <ComboBox
+              multiple
               options={[{ value: 'todos', label: 'Todas las Regiones' }, ...availableRegions]}
-              value={selectedRegionFilter}
-              onChange={(val) => {
-                setSelectedRegionFilter(val);
-                // Reset state and event when region changes to avoid orphaned selections
-                setSelectedStateFilter('todos');
-                setSelectedEventId('todos');
+              value={selectedRegionFilters}
+              onChange={(val: string[]) => {
+                setSelectedRegionFilters(val);
+                setSelectedStateFilters([]);
+                setSelectedEventIds([]);
               }}
               icon={<MapPin className="w-3.5 h-3.5" />}
               emptyText="No hay regiones"
@@ -294,11 +296,12 @@ export default function DashboardSection() {
               Estado:
             </label>
             <ComboBox
+              multiple
               options={[{ value: 'todos', label: 'Todos los Estados' }, ...availableStates]}
-              value={selectedStateFilter}
-              onChange={(val) => {
-                setSelectedStateFilter(val);
-                setSelectedEventId('todos'); // Limpiar operativo específico
+              value={selectedStateFilters}
+              onChange={(val: string[]) => {
+                setSelectedStateFilters(val);
+                setSelectedEventIds([]); // Limpiar operativo específico
               }}
               icon={<MapPin className="w-3.5 h-3.5 text-[#00205B]" />}
               emptyText="No hay estados"
@@ -311,10 +314,10 @@ export default function DashboardSection() {
           <button
             type="button"
             onClick={() => {
-              setSelectedEventId('todos');
-              setSelectedMonth('todos');
-              setSelectedRegionFilter('todos');
-              setSelectedStateFilter('todos');
+              setSelectedEventIds([]);
+              setSelectedMonths([]);
+              setSelectedRegionFilters([]);
+              setSelectedStateFilters([]);
             }}
             className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-[#FE5000] transition-colors"
           >
@@ -332,9 +335,13 @@ export default function DashboardSection() {
         <VenezuelaMap 
           events={filteredEvents} 
           agencies={agencies}
-          selectedState={selectedStateFilter}
+          selectedState={selectedStateFilters.length > 0 ? selectedStateFilters[0] : 'todos'}
           onStateClick={(stateName) => {
-            setSelectedStateFilter(selectedStateFilter === stateName ? 'todos' : stateName);
+            if (selectedStateFilters.includes(stateName)) {
+               setSelectedStateFilters(selectedStateFilters.filter(s => s !== stateName));
+            } else {
+               setSelectedStateFilters([...selectedStateFilters, stateName]);
+            }
           }}
         />
         <VolumenChart events={filteredEvents} />

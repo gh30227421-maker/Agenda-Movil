@@ -15,60 +15,62 @@ import { exportToExcel, exportToPDF } from '@/utils/exportUtils';
 export default function GastosSection() {
   const { events, openModal } = useAgenda();
   
-  const [selectedMonth, setSelectedMonth] = useState<number | 'all'>('all');
-  const [selectedEventId, setSelectedEventId] = useState<string | 'all'>('all');
-  const [selectedStatus, setSelectedStatus] = useState<'all' | 'registered' | 'pending'>('all');
-  const [selectedUnitType, setSelectedUnitType] = useState<'all' | 'Agencia Móvil' | 'Unidad Móvil'>('all');
+  const [selectedMonths, setSelectedMonths] = useState<string[]>([]);
+  const [selectedEventIds, setSelectedEventIds] = useState<string[]>([]);
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
+  const [selectedUnitTypes, setSelectedUnitTypes] = useState<string[]>([]);
 
   const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
   const availableMonths = useMemo(() => {
     const validMonths = new Set<number>();
     events.forEach(ev => {
-      if (selectedUnitType !== 'all' && ev.type !== selectedUnitType) return;
-      if (selectedEventId !== 'all' && ev.id !== selectedEventId) return;
+      if (selectedUnitTypes.length > 0 && !selectedUnitTypes.includes(ev.type)) return;
+      if (selectedEventIds.length > 0 && !selectedEventIds.includes(ev.id)) return;
       if (ev.startDate) {
         const evMonth = parseInt(ev.startDate.split('-')[1], 10) - 1;
         validMonths.add(evMonth);
       }
     });
     return Array.from(validMonths).sort((a, b) => a - b).map(m => ({ value: m.toString(), label: months[m] }));
-  }, [events, selectedEventId]);
+  }, [events, selectedEventIds, selectedUnitTypes]);
 
   const availableEvents = useMemo(() => {
     const evs: { value: string, label: string }[] = [];
     events.forEach(ev => {
-      if (selectedUnitType !== 'all' && ev.type !== selectedUnitType) return;
-      if (selectedMonth !== 'all' && ev.startDate) {
-        const evMonth = parseInt(ev.startDate.split('-')[1], 10) - 1;
-        if (evMonth !== selectedMonth) return;
+      if (selectedUnitTypes.length > 0 && !selectedUnitTypes.includes(ev.type)) return;
+      if (selectedMonths.length > 0 && ev.startDate) {
+        const evMonth = (parseInt(ev.startDate.split('-')[1], 10) - 1).toString();
+        if (!selectedMonths.includes(evMonth)) return;
       }
       evs.push({ value: ev.id, label: `${ev.eventName} - ${ev.agencyCode}` });
     });
     return evs;
-  }, [events, selectedMonth]);
+  }, [events, selectedMonths, selectedUnitTypes]);
 
   const filteredEvents = useMemo(() => {
     return events.filter(ev => {
-      const matchEvent = selectedEventId === 'all' || ev.id === selectedEventId;
+      const matchEvent = selectedEventIds.length === 0 || selectedEventIds.includes(ev.id);
+      
       let matchMonth = true;
-      if (selectedMonth !== 'all' && ev.startDate) {
-        const evMonth = parseInt(ev.startDate.split('-')[1], 10) - 1;
-        matchMonth = evMonth === selectedMonth;
+      if (selectedMonths.length > 0 && ev.startDate) {
+        const evMonth = (parseInt(ev.startDate.split('-')[1], 10) - 1).toString();
+        matchMonth = selectedMonths.includes(evMonth);
+      } else if (selectedMonths.length > 0 && !ev.startDate) {
+        matchMonth = false;
       }
       
       let matchStatus = true;
-      if (selectedStatus === 'registered') {
-        matchStatus = !!ev.gastos;
-      } else if (selectedStatus === 'pending') {
-        matchStatus = !ev.gastos;
+      if (selectedStatuses.length > 0) {
+        const statusVal = ev.gastos ? 'registered' : 'pending';
+        matchStatus = selectedStatuses.includes(statusVal);
       }
 
-      const matchUnit = selectedUnitType === 'all' || ev.type === selectedUnitType;
+      const matchUnit = selectedUnitTypes.length === 0 || selectedUnitTypes.includes(ev.type);
       
       return matchEvent && matchMonth && matchStatus && matchUnit;
     });
-  }, [events, selectedEventId, selectedMonth, selectedStatus, selectedUnitType]);
+  }, [events, selectedEventIds, selectedMonths, selectedStatuses, selectedUnitTypes]);
 
   // Totales
   const totales = filteredEvents.reduce((acc, ev) => {
@@ -112,9 +114,9 @@ export default function GastosSection() {
     });
 
     const filterText = [
-      selectedMonth !== 'all' ? `Mes: ${months[Number(selectedMonth)]}` : '',
-      selectedUnitType !== 'all' ? `Tipo: ${selectedUnitType}` : '',
-      selectedStatus !== 'all' ? `Estado: ${selectedStatus}` : ''
+      selectedMonths.length > 0 ? `Meses: ${selectedMonths.map(m => months[Number(m)]).join(', ')}` : '',
+      selectedUnitTypes.length > 0 ? `Tipos: ${selectedUnitTypes.join(', ')}` : '',
+      selectedStatuses.length > 0 ? `Estados: ${selectedStatuses.join(', ')}` : ''
     ].filter(Boolean).join(' | ');
 
     const config = {
@@ -168,18 +170,12 @@ export default function GastosSection() {
         <div className="flex-1 w-full flex flex-col md:flex-row gap-4 items-center">
           <div className="w-full md:w-64">
             <ComboBox
+              multiple
               options={[{ value: 'all', label: 'Todos los Meses' }, ...availableMonths]}
-              value={selectedMonth === 'all' ? 'all' : selectedMonth.toString()}
-              onChange={(val) => {
-                const numVal = val === 'all' ? 'all' : Number(val);
-                setSelectedMonth(numVal);
-                if (numVal !== 'all' && selectedEventId !== 'all') {
-                  const ev = events.find(e => e.id === selectedEventId);
-                  if (ev && ev.startDate) {
-                    const evMonth = parseInt(ev.startDate.split('-')[1], 10) - 1;
-                    if (evMonth !== numVal) setSelectedEventId('all');
-                  }
-                }
+              value={selectedMonths}
+              onChange={(val: string[]) => {
+                setSelectedMonths(val);
+                if (selectedEventIds.length > 0) setSelectedEventIds([]);
               }}
               icon={<Calendar className="w-4 h-4" />}
               emptyText="No hay meses"
@@ -188,13 +184,14 @@ export default function GastosSection() {
 
           <div className="w-full md:w-48">
             <ComboBox
+              multiple
               options={[
                 { value: 'all', label: 'Todos los Estatus' },
                 { value: 'registered', label: 'Registrados' },
                 { value: 'pending', label: 'Pendientes' }
               ]}
-              value={selectedStatus}
-              onChange={(val) => setSelectedStatus(val as 'all' | 'registered' | 'pending')}
+              value={selectedStatuses}
+              onChange={(val: string[]) => setSelectedStatuses(val)}
               icon={<Filter className="w-4 h-4" />}
               emptyText="No hay estatus"
             />
@@ -202,15 +199,16 @@ export default function GastosSection() {
 
           <div className="w-full md:w-48">
             <ComboBox
+              multiple
               options={[
                 { value: 'all', label: 'Todas las Unidades' },
                 { value: 'Agencia Móvil', label: 'Agencia Móvil' },
                 { value: 'Unidad Móvil', label: 'Unidad Móvil' }
               ]}
-              value={selectedUnitType}
-              onChange={(val) => {
-                setSelectedUnitType(val as 'all' | 'Agencia Móvil' | 'Unidad Móvil');
-                setSelectedEventId('all'); // Reset event if type changes
+              value={selectedUnitTypes}
+              onChange={(val: string[]) => {
+                setSelectedUnitTypes(val);
+                if (selectedEventIds.length > 0) setSelectedEventIds([]);
               }}
               icon={<Truck className="w-4 h-4" />}
               emptyText="No hay tipos"
@@ -219,18 +217,10 @@ export default function GastosSection() {
 
           <div className="w-full md:flex-1">
             <ComboBox
+              multiple
               options={[{ value: 'all', label: 'Todos los Eventos / Agencias' }, ...availableEvents]}
-              value={selectedEventId}
-              onChange={(val) => {
-                setSelectedEventId(val);
-                if (val !== 'all') {
-                  const ev = events.find(e => e.id === val);
-                  if (ev && ev.startDate) {
-                    const evMonth = parseInt(ev.startDate.split('-')[1], 10) - 1;
-                    setSelectedMonth(evMonth);
-                  }
-                }
-              }}
+              value={selectedEventIds}
+              onChange={(val: string[]) => setSelectedEventIds(val)}
               icon={<Search className="w-4 h-4" />}
               emptyText="No hay operativos"
             />
@@ -239,9 +229,10 @@ export default function GastosSection() {
           <button
             type="button"
             onClick={() => {
-              setSelectedMonth('all');
-              setSelectedEventId('all');
-              setSelectedStatus('all');
+              setSelectedMonths([]);
+              setSelectedEventIds([]);
+              setSelectedStatuses([]);
+              setSelectedUnitTypes([]);
             }}
             className="shrink-0 flex items-center justify-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-[#FE5000] transition-colors"
           >

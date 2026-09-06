@@ -13,52 +13,56 @@ export default function CifrasSection() {
   const { events, openModal } = useAgenda();
   const { showToast } = useToast();
 
-  const [selectedMonth, setSelectedMonth] = useState<number | 'all'>('all');
-  const [selectedEventId, setSelectedEventId] = useState<string | 'all'>('all');
-  const [selectedUnitType, setSelectedUnitType] = useState<'all' | 'Agencia Móvil' | 'Unidad Móvil'>('all');
+  const currentMonth = new Date().getMonth().toString();
+  const [selectedMonths, setSelectedMonths] = useState<string[]>([currentMonth]);
+  const [selectedEventIds, setSelectedEventIds] = useState<string[]>([]);
+  const [selectedUnitTypes, setSelectedUnitTypes] = useState<string[]>([]);
 
   const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
   const availableMonths = useMemo(() => {
     const validMonths = new Set<number>();
     events.forEach(ev => {
-      if (selectedUnitType !== 'all' && ev.type !== selectedUnitType) return;
-      if (selectedEventId !== 'all' && ev.id !== selectedEventId) return;
+      if (selectedUnitTypes.length > 0 && !selectedUnitTypes.includes(ev.type)) return;
+      if (selectedEventIds.length > 0 && !selectedEventIds.includes(ev.id)) return;
       if (ev.startDate) {
         const evMonth = parseInt(ev.startDate.split('-')[1], 10) - 1;
         validMonths.add(evMonth);
       }
     });
     return Array.from(validMonths).sort((a, b) => a - b).map(m => ({ value: m.toString(), label: months[m] }));
-  }, [events, selectedEventId]);
+  }, [events, selectedEventIds, selectedUnitTypes]);
 
   const availableEvents = useMemo(() => {
     const evs: { value: string, label: string }[] = [];
     events.forEach(ev => {
-      if (selectedUnitType !== 'all' && ev.type !== selectedUnitType) return;
-      if (selectedMonth !== 'all' && ev.startDate) {
-        const evMonth = parseInt(ev.startDate.split('-')[1], 10) - 1;
-        if (evMonth !== selectedMonth) return;
+      if (selectedUnitTypes.length > 0 && !selectedUnitTypes.includes(ev.type)) return;
+      if (selectedMonths.length > 0 && ev.startDate) {
+        const evMonth = (parseInt(ev.startDate.split('-')[1], 10) - 1).toString();
+        if (!selectedMonths.includes(evMonth)) return;
       }
       evs.push({ value: ev.id, label: `${ev.eventName} - ${ev.agencyCode}` });
     });
     return evs;
-  }, [events, selectedMonth]);
+  }, [events, selectedMonths, selectedUnitTypes]);
 
   const filteredEvents = useMemo(() => {
     return events.filter(ev => {
-      const matchEvent = selectedEventId === 'all' || ev.id === selectedEventId;
+      const matchEvent = selectedEventIds.length === 0 || selectedEventIds.includes(ev.id);
+      
       let matchMonth = true;
-      if (selectedMonth !== 'all' && ev.startDate) {
-        const evMonth = parseInt(ev.startDate.split('-')[1], 10) - 1;
-        matchMonth = evMonth === selectedMonth;
+      if (selectedMonths.length > 0 && ev.startDate) {
+        const evMonth = (parseInt(ev.startDate.split('-')[1], 10) - 1).toString();
+        matchMonth = selectedMonths.includes(evMonth);
+      } else if (selectedMonths.length > 0 && !ev.startDate) {
+        matchMonth = false;
       }
       
-      const matchUnit = selectedUnitType === 'all' || ev.type === selectedUnitType;
+      const matchUnit = selectedUnitTypes.length === 0 || selectedUnitTypes.includes(ev.type);
       
       return matchEvent && matchMonth && matchUnit;
     });
-  }, [events, selectedEventId, selectedMonth, selectedUnitType]);
+  }, [events, selectedEventIds, selectedMonths, selectedUnitTypes]);
 
   const totales = filteredEvents.reduce((acc, ev) => {
     if (ev.cifras) {
@@ -73,9 +77,18 @@ export default function CifrasSection() {
     return num.toLocaleString('es-VE');
   };
 
-  const eventosConCifras = filteredEvents.filter(e => e.cifras);
+  const eventosConCifras = filteredEvents.filter(e => e.cifras).length;
+  const eventosSinCifras = filteredEvents.length - eventosConCifras;
   const totalOperaciones = totales.cuentasAbiertas + totales.tdd + totales.reclamos;
-  const totalJornadas = eventosConCifras.length;
+  const totalJornadas = filteredEvents.length;
+
+  const sortedEvents = useMemo(() => {
+    return [...filteredEvents].sort((a, b) => {
+      if (!a.startDate) return 1;
+      if (!b.startDate) return -1;
+      return new Date(b.startDate).getTime() - new Date(a.startDate).getTime();
+    });
+  }, [filteredEvents]);
 
   const handleExport = (type: 'pdf' | 'excel') => {
     const data = filteredEvents.filter(e => e.cifras).map(ev => {
@@ -93,8 +106,8 @@ export default function CifrasSection() {
     });
     
     const filterText = [
-      selectedMonth !== 'all' ? `Mes: ${months[Number(selectedMonth)]}` : '',
-      selectedUnitType !== 'all' ? `Tipo: ${selectedUnitType}` : ''
+      selectedMonths.length > 0 ? `Meses: ${selectedMonths.map(m => months[Number(m)]).join(', ')}` : '',
+      selectedUnitTypes.length > 0 ? `Tipos: ${selectedUnitTypes.join(', ')}` : ''
     ].filter(Boolean).join(' | ');
 
     const config = {
@@ -139,18 +152,13 @@ export default function CifrasSection() {
         <div className="flex-1 w-full flex flex-col md:flex-row gap-4 items-center">
           <div className="w-full md:w-64">
             <ComboBox
+              multiple
               options={[{ value: 'all', label: 'Todos los Meses' }, ...availableMonths]}
-              value={selectedMonth === 'all' ? 'all' : selectedMonth.toString()}
-              onChange={(val) => {
-                const numVal = val === 'all' ? 'all' : Number(val);
-                setSelectedMonth(numVal);
-                if (numVal !== 'all' && selectedEventId !== 'all') {
-                  const ev = events.find(e => e.id === selectedEventId);
-                  if (ev && ev.startDate) {
-                    const evMonth = parseInt(ev.startDate.split('-')[1], 10) - 1;
-                    if (evMonth !== numVal) setSelectedEventId('all');
-                  }
-                }
+              value={selectedMonths}
+              onChange={(val: string[]) => {
+                setSelectedMonths(val);
+                // Si cambiamos meses y hay eventos seleccionados, limpiamos por simplicidad
+                if (selectedEventIds.length > 0) setSelectedEventIds([]);
               }}
               icon={<Calendar className="w-4 h-4" />}
               emptyText="No hay meses"
@@ -159,15 +167,17 @@ export default function CifrasSection() {
 
           <div className="w-full md:w-48">
             <ComboBox
+              multiple
               options={[
                 { value: 'all', label: 'Todas las Unidades' },
                 { value: 'Agencia Móvil', label: 'Agencia Móvil' },
-                { value: 'Unidad Móvil', label: 'Unidad Móvil' }
+                { value: 'Unidad Móvil', label: 'Unidad Móvil' },
+                { value: 'Red de Agencias', label: 'Red de Agencias' }
               ]}
-              value={selectedUnitType}
-              onChange={(val) => {
-                setSelectedUnitType(val as 'all' | 'Agencia Móvil' | 'Unidad Móvil');
-                setSelectedEventId('all'); // Reset event if type changes
+              value={selectedUnitTypes}
+              onChange={(val: string[]) => {
+                setSelectedUnitTypes(val);
+                if (selectedEventIds.length > 0) setSelectedEventIds([]); // Reset event si type cambia
               }}
               icon={<Truck className="w-4 h-4" />}
               emptyText="No hay tipos"
@@ -176,18 +186,10 @@ export default function CifrasSection() {
 
           <div className="w-full md:flex-1">
             <ComboBox
+              multiple
               options={[{ value: 'all', label: 'Todos los Eventos / Agencias' }, ...availableEvents]}
-              value={selectedEventId}
-              onChange={(val) => {
-                setSelectedEventId(val);
-                if (val !== 'all') {
-                  const ev = events.find(e => e.id === val);
-                  if (ev && ev.startDate) {
-                    const evMonth = parseInt(ev.startDate.split('-')[1], 10) - 1;
-                    setSelectedMonth(evMonth);
-                  }
-                }
-              }}
+              value={selectedEventIds}
+              onChange={(val: string[]) => setSelectedEventIds(val)}
               icon={<Filter className="w-4 h-4" />}
               emptyText="No hay operativos"
             />
@@ -196,9 +198,9 @@ export default function CifrasSection() {
           <button
             type="button"
             onClick={() => {
-              setSelectedMonth('all');
-              setSelectedUnitType('all');
-              setSelectedEventId('all');
+              setSelectedMonths([new Date().getMonth().toString()]);
+              setSelectedUnitTypes([]);
+              setSelectedEventIds([]);
             }}
             className="shrink-0 flex items-center justify-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-[#FE5000] transition-colors"
           >
@@ -211,25 +213,32 @@ export default function CifrasSection() {
         <div className="flex items-center gap-6 md:border-l md:border-gray-200 md:pl-6 md:ml-2 w-full md:w-auto justify-around md:justify-start pt-4 md:pt-0 border-t md:border-t-0 border-gray-100">
           <div className="flex flex-col items-center">
             <div className="flex items-center gap-1.5 mb-1">
-              <BarChart3 className="w-3.5 h-3.5 text-[#FE5000]" />
-              <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Total Ops</span>
-            </div>
-            <span className="text-xl font-black text-[#00205B]">{formatNumber(totalOperaciones)}</span>
-          </div>
-          <div className="flex flex-col items-center">
-            <div className="flex items-center gap-1.5 mb-1">
               <CalendarRange className="w-3.5 h-3.5 text-[#009639]" />
               <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Jornadas</span>
             </div>
             <span className="text-xl font-black text-[#00205B]">{formatNumber(totalJornadas)}</span>
           </div>
+          <div className="flex flex-col items-center">
+            <div className="flex items-center gap-1 mb-1">
+               <span className="w-2 h-2 rounded-full bg-green-500"></span>
+               <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Registradas</span>
+            </div>
+            <span className="text-lg font-bold text-green-600">{eventosConCifras}</span>
+          </div>
+          <div className="flex flex-col items-center">
+            <div className="flex items-center gap-1 mb-1">
+               <span className="w-2 h-2 rounded-full bg-orange-400"></span>
+               <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Pendientes</span>
+            </div>
+            <span className="text-lg font-bold text-orange-500">{eventosSinCifras}</span>
+          </div>
         </div>
       </div>
 
       {/* Tarjetas de Resumen Global */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mt-6">
         <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-200 flex flex-col justify-center">
-          <p className="text-gray-500 text-xs font-semibold uppercase tracking-wide mb-2">Total Cuentas Abiertas</p>
+          <p className="text-gray-500 text-xs font-semibold uppercase tracking-wide mb-2">Cuentas Abiertas</p>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-[#00205B]">
               <PiggyBank className="w-5 h-5" />
@@ -239,7 +248,7 @@ export default function CifrasSection() {
         </div>
 
         <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-200 flex flex-col justify-center">
-          <p className="text-gray-500 text-xs font-semibold uppercase tracking-wide mb-2">Total TDD Entregadas</p>
+          <p className="text-gray-500 text-xs font-semibold uppercase tracking-wide mb-2">TDD Entregadas</p>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center text-[#009639]">
               <CreditCard className="w-5 h-5" />
@@ -249,7 +258,7 @@ export default function CifrasSection() {
         </div>
 
         <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-200 flex flex-col justify-center">
-          <p className="text-gray-500 text-xs font-semibold uppercase tracking-wide mb-2">Otras Ops y Reclamos</p>
+          <p className="text-gray-500 text-xs font-semibold uppercase tracking-wide mb-2">Otras Operaciones</p>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-gray-600">
               <Users className="w-5 h-5" />
@@ -258,14 +267,24 @@ export default function CifrasSection() {
           </div>
         </div>
 
+        <div className="bg-[#00205B] rounded-2xl p-4 shadow-sm border border-[#00205B] flex flex-col justify-center text-white">
+          <p className="text-blue-100 text-xs font-semibold uppercase tracking-wide mb-2">Total Consolidado</p>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-blue-500/20 rounded-xl flex items-center justify-center text-white">
+              <BarChart3 className="w-5 h-5" />
+            </div>
+            <h3 className="text-3xl font-bold text-white">{formatNumber(totalOperaciones)}</h3>
+          </div>
+        </div>
+
         <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-200 flex flex-col justify-center">
-          <p className="text-gray-500 text-xs font-semibold uppercase tracking-wide mb-2">TDD Promedio / Jornada</p>
+          <p className="text-gray-500 text-xs font-semibold uppercase tracking-wide mb-2">TDD Prom. / Jornada</p>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
               <CreditCard className="w-5 h-5" />
             </div>
             <h3 className="text-3xl font-bold text-gray-900">
-              {filteredEvents.length > 0 ? formatNumber(Math.round(totales.tdd / filteredEvents.length)) : 0}
+              {eventosConCifras > 0 ? formatNumber(Math.round(totales.tdd / eventosConCifras)) : 0}
             </h3>
           </div>
         </div>
@@ -281,6 +300,7 @@ export default function CifrasSection() {
             <thead className="bg-gray-50 text-gray-700 font-semibold border-b border-gray-200 text-xs uppercase tracking-wide">
               <tr>
                 <th className="px-6 py-4">Evento / C.C.</th>
+                <th className="px-6 py-4">Fecha</th>
                 <th className="px-6 py-4">Tipo</th>
                 <th className="px-6 py-4 text-center">Cuentas Abiertas</th>
                 <th className="px-6 py-4 text-center text-[#009639]">BNC TDD</th>
@@ -289,36 +309,51 @@ export default function CifrasSection() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {filteredEvents.filter(e => e.cifras).map(ev => {
-                const c = ev.cifras!;
-                const totalOps = c.cuentasAbiertas + c.tdd + c.reclamos;
+              {sortedEvents.map(ev => {
+                const c = ev.cifras;
+                const totalOps = c ? c.cuentasAbiertas + c.tdd + c.reclamos : 0;
+                
+                // Formato de fecha básico YYYY-MM-DD a DD/MM/YYYY si existe
+                let displayDate = 'N/A';
+                if (ev.startDate) {
+                  const parts = ev.startDate.split('-');
+                  if (parts.length === 3) {
+                    displayDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
+                  } else {
+                    displayDate = ev.startDate;
+                  }
+                }
+
                 return (
                   <tr key={ev.id} className="hover:bg-blue-50/30 transition-colors">
                     <td className="px-6 py-4 font-medium text-gray-900">
                       {ev.eventName} <br/>
                       <span className="text-xs text-gray-500 font-normal">{ev.agencyCode}</span>
                     </td>
+                    <td className="px-6 py-4 text-xs font-medium text-gray-600 whitespace-nowrap">{displayDate}</td>
                     <td className="px-6 py-4 text-xs font-medium">{ev.type}</td>
-                    <td className="px-6 py-4 text-center font-semibold text-gray-800">{formatNumber(c.cuentasAbiertas)}</td>
-                    <td className="px-6 py-4 text-center font-bold text-[#009639] bg-green-50/30">{formatNumber(c.tdd)}</td>
-                    <td className="px-6 py-4 text-center font-bold text-[#00205B]">{formatNumber(totalOps)}</td>
+                    <td className="px-6 py-4 text-center font-semibold text-gray-800">{c ? formatNumber(c.cuentasAbiertas) : '-'}</td>
+                    <td className="px-6 py-4 text-center font-bold text-[#009639] bg-green-50/30">{c ? formatNumber(c.tdd) : '-'}</td>
+                    <td className="px-6 py-4 text-center font-bold text-[#00205B]">{c ? formatNumber(totalOps) : '-'}</td>
                     <td className="px-6 py-4 text-center">
                       <button
                         onClick={() => openModal('cifras', true, ev.id)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-gray-100 hover:bg-[#00205B] hover:text-white text-gray-700 transition-colors shadow-sm"
-                        title="Editar cifras de este evento"
+                        className={`inline-flex items-center justify-center w-24 gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors shadow-sm ${
+                          c ? 'bg-gray-100 hover:bg-[#00205B] hover:text-white text-gray-700' : 'bg-orange-100 hover:bg-orange-600 hover:text-white text-orange-700'
+                        }`}
+                        title={c ? 'Editar cifras' : 'Registrar cifras'}
                       >
-                        <Edit2 className="w-3.5 h-3.5" />
-                        Editar
+                        {c ? <Edit2 className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
+                        {c ? 'Editar' : 'Registrar'}
                       </button>
                     </td>
                   </tr>
                 );
               })}
-              {filteredEvents.filter(e => e.cifras).length === 0 && (
+              {sortedEvents.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
-                    No hay cifras registradas. Presiona "Añadir Cifras" para comenzar.
+                  <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
+                    No hay eventos en este mes o con los filtros seleccionados.
                   </td>
                 </tr>
               )}

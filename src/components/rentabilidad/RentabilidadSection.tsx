@@ -26,7 +26,7 @@ import {
   Calendar,
   Truck
 } from 'lucide-react';
-import { useAgenda, type EventRow } from '@/context/AgendaContext';
+import { useAgenda } from '@/context/AgendaContext';
 import { useToast } from '@/context/ToastContext';
 import ComboBox from '@/components/ui/ComboBox';
 import CierresImport from './CierresImport';
@@ -109,10 +109,10 @@ export default function RentabilidadSection() {
   const { events, updateEvent } = useAgenda();
   const { showToast } = useToast();
 
-  const [selectedMonth, setSelectedMonth] = useState<number | 'all'>('all');
-  const [filterEventId, setFilterEventId] = useState<string | 'all'>('all');
-  const [filterStatus, setFilterStatus] = useState<'all' | 'Sin Datos' | 'Rentable' | 'No Rentable'>('all');
-  const [filterUnitType, setFilterUnitType] = useState<'all' | 'Agencia Móvil' | 'Unidad Móvil'>('all');
+  const [selectedMonths, setSelectedMonths] = useState<string[]>([]);
+  const [filterEventIds, setFilterEventIds] = useState<string[]>([]);
+  const [filterStatuses, setFilterStatuses] = useState<string[]>([]);
+  const [filterUnitTypes, setFilterUnitTypes] = useState<string[]>([]);
 
   const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
@@ -120,42 +120,44 @@ export default function RentabilidadSection() {
     const validMonths = new Set<number>();
     events.forEach(ev => {
       if (ev.type === 'Red de Agencias') return;
-      if (filterUnitType !== 'all' && ev.type !== filterUnitType) return;
-      if (filterEventId !== 'all' && ev.id !== filterEventId) return;
+      if (filterUnitTypes.length > 0 && !filterUnitTypes.includes(ev.type)) return;
+      if (filterEventIds.length > 0 && !filterEventIds.includes(ev.id)) return;
       if (ev.startDate) {
         const evMonth = parseInt(ev.startDate.split('-')[1], 10) - 1;
         validMonths.add(evMonth);
       }
     });
     return Array.from(validMonths).sort((a, b) => a - b).map(m => ({ value: m.toString(), label: months[m] }));
-  }, [events, filterEventId]);
+  }, [events, filterEventIds, filterUnitTypes]);
 
   const availableEvents = useMemo(() => {
     const evs: { value: string, label: string }[] = [];
     events.forEach(ev => {
       if (ev.type === 'Red de Agencias') return;
-      if (filterUnitType !== 'all' && ev.type !== filterUnitType) return;
-      if (selectedMonth !== 'all' && ev.startDate) {
-        const evMonth = parseInt(ev.startDate.split('-')[1], 10) - 1;
-        if (evMonth !== selectedMonth) return;
+      if (filterUnitTypes.length > 0 && !filterUnitTypes.includes(ev.type)) return;
+      if (selectedMonths.length > 0 && ev.startDate) {
+        const evMonth = (parseInt(ev.startDate.split('-')[1], 10) - 1).toString();
+        if (!selectedMonths.includes(evMonth)) return;
       }
       evs.push({ value: ev.id, label: `${ev.eventName} - ${ev.agencyCode}` });
     });
     return evs;
-  }, [events, selectedMonth]);
+  }, [events, selectedMonths, filterUnitTypes]);
 
   const filteredEvents = useMemo(() => {
     return events.filter(ev => {
       if (ev.type === 'Red de Agencias') return false; // Excluir Red de Agencias de módulos financieros
 
-      const matchEvent = filterEventId === 'all' || ev.id === filterEventId;
+      const matchEvent = filterEventIds.length === 0 || filterEventIds.includes(ev.id);
       let matchMonth = true;
-      if (selectedMonth !== 'all' && ev.startDate) {
-        const evMonth = parseInt(ev.startDate.split('-')[1], 10) - 1;
-        matchMonth = evMonth === selectedMonth;
+      if (selectedMonths.length > 0 && ev.startDate) {
+        const evMonth = (parseInt(ev.startDate.split('-')[1], 10) - 1).toString();
+        matchMonth = selectedMonths.includes(evMonth);
+      } else if (selectedMonths.length > 0 && !ev.startDate) {
+        matchMonth = false;
       }
       
-      const matchUnit = filterUnitType === 'all' || ev.type === filterUnitType;
+      const matchUnit = filterUnitTypes.length === 0 || filterUnitTypes.includes(ev.type);
       
       return matchEvent && matchMonth && matchUnit;
     }).sort((a, b) => {
@@ -167,7 +169,7 @@ export default function RentabilidadSection() {
       
       return new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
     });
-  }, [events, filterEventId, selectedMonth, filterUnitType]);
+  }, [events, filterEventIds, selectedMonths, filterUnitTypes]);
 
   const [isSaldoModalOpen, setIsSaldoModalOpen] = useState(false);
   const [selectedEventId, setSelectedEventId] = useState<string>('');
@@ -290,9 +292,9 @@ export default function RentabilidadSection() {
   });
 
   const filas = filasRaw.filter(f => {
-    if (filterStatus === 'all') return true;
-    if (filterStatus === 'Rentable') return f.estado === 'Rentable' || f.estado === 'Al Límite';
-    return f.estado === filterStatus;
+    if (filterStatuses.length === 0) return true;
+    if (filterStatuses.includes('Rentable') && (f.estado === 'Rentable' || f.estado === 'Al Límite')) return true;
+    return filterStatuses.includes(f.estado);
   });
 
   const mobileEvents = filteredEvents.filter(e => e.type === 'Agencia Móvil' || e.type === 'Unidad Móvil');
@@ -347,9 +349,9 @@ export default function RentabilidadSection() {
     });
 
     const filterText = [
-      selectedMonth !== 'all' ? `Mes: ${months[Number(selectedMonth)]}` : '',
-      filterUnitType !== 'all' ? `Tipo: ${filterUnitType}` : '',
-      filterStatus !== 'all' ? `Estado: ${filterStatus}` : ''
+      selectedMonths.length > 0 ? `Meses: ${selectedMonths.map(m => months[Number(m)]).join(', ')}` : '',
+      filterUnitTypes.length > 0 ? `Tipos: ${filterUnitTypes.join(', ')}` : '',
+      filterStatuses.length > 0 ? `Estados: ${filterStatuses.join(', ')}` : ''
     ].filter(Boolean).join(' | ');
 
     const config = {
@@ -415,18 +417,12 @@ export default function RentabilidadSection() {
         <div className="flex-1 w-full flex flex-col md:flex-row gap-4 items-center">
           <div className="w-full md:w-64">
             <ComboBox
+              multiple
               options={[{ value: 'all', label: 'Todos los Meses' }, ...availableMonths]}
-              value={selectedMonth === 'all' ? 'all' : selectedMonth.toString()}
-              onChange={(val) => {
-                const numVal = val === 'all' ? 'all' : Number(val);
-                setSelectedMonth(numVal);
-                if (numVal !== 'all' && filterEventId !== 'all') {
-                  const ev = events.find(e => e.id === filterEventId);
-                  if (ev && ev.startDate) {
-                    const evMonth = parseInt(ev.startDate.split('-')[1], 10) - 1;
-                    if (evMonth !== numVal) setFilterEventId('all');
-                  }
-                }
+              value={selectedMonths}
+              onChange={(val: string[]) => {
+                setSelectedMonths(val);
+                if (filterEventIds.length > 0) setFilterEventIds([]);
               }}
               icon={<Calendar className="w-4 h-4" />}
               emptyText="No hay meses"
@@ -435,14 +431,15 @@ export default function RentabilidadSection() {
 
           <div className="w-full md:w-48">
             <ComboBox
+              multiple
               options={[
                 { value: 'all', label: 'Todos los Estatus' },
                 { value: 'Sin Datos', label: 'Sin Datos' },
                 { value: 'Rentable', label: 'Rentable' },
                 { value: 'No Rentable', label: 'No Rentable' }
               ]}
-              value={filterStatus}
-              onChange={(val) => setFilterStatus(val as 'all' | 'Sin Datos' | 'Rentable' | 'No Rentable')}
+              value={filterStatuses}
+              onChange={(val: string[]) => setFilterStatuses(val)}
               icon={<Filter className="w-4 h-4" />}
               emptyText="No hay estatus"
             />
@@ -450,15 +447,16 @@ export default function RentabilidadSection() {
 
           <div className="w-full md:w-48">
             <ComboBox
+              multiple
               options={[
                 { value: 'all', label: 'Todas las Unidades' },
                 { value: 'Agencia Móvil', label: 'Agencia Móvil' },
                 { value: 'Unidad Móvil', label: 'Unidad Móvil' }
               ]}
-              value={filterUnitType}
-              onChange={(val) => {
-                setFilterUnitType(val as 'all' | 'Agencia Móvil' | 'Unidad Móvil');
-                setFilterEventId('all'); // Reset event if type changes
+              value={filterUnitTypes}
+              onChange={(val: string[]) => {
+                setFilterUnitTypes(val);
+                if (filterEventIds.length > 0) setFilterEventIds([]); // Reset event if type changes
               }}
               icon={<Truck className="w-4 h-4" />}
               emptyText="No hay tipos"
@@ -467,18 +465,10 @@ export default function RentabilidadSection() {
 
           <div className="w-full md:flex-1">
             <ComboBox
+              multiple
               options={[{ value: 'all', label: 'Todos los Eventos / Agencias' }, ...availableEvents]}
-              value={filterEventId}
-              onChange={(val) => {
-                setFilterEventId(val);
-                if (val !== 'all') {
-                  const ev = events.find(e => e.id === val);
-                  if (ev && ev.startDate) {
-                    const evMonth = parseInt(ev.startDate.split('-')[1], 10) - 1;
-                    setSelectedMonth(evMonth);
-                  }
-                }
-              }}
+              value={filterEventIds}
+              onChange={(val: string[]) => setFilterEventIds(val)}
               icon={<Filter className="w-4 h-4" />}
               emptyText="No hay operativos"
             />
@@ -487,10 +477,10 @@ export default function RentabilidadSection() {
           <button
             type="button"
             onClick={() => {
-              setSelectedMonth('all');
-              setFilterUnitType('all');
-              setFilterEventId('all');
-              setFilterStatus('all');
+              setSelectedMonths([]);
+              setFilterUnitTypes([]);
+              setFilterEventIds([]);
+              setFilterStatuses([]);
             }}
             className="shrink-0 flex items-center justify-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-[#FE5000] transition-colors"
           >
