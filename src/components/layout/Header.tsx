@@ -71,13 +71,10 @@ export default function Header() {
           <Wifi className="absolute -top-1 w-7 h-7 md:w-8 md:h-8 text-[#FE5000] animate-pulse drop-shadow-md" />
           <Truck className="absolute bottom-0 w-12 h-12 text-[#FE5000] drop-shadow-md" />
         </div>
-        <div className="flex flex-col">
-          <h1 className="text-2xl md:text-[28px] font-black tracking-tighter text-white font-[family-name:var(--font-montserrat)] uppercase leading-none drop-shadow-sm whitespace-nowrap">
+        <div className="flex flex-col justify-center">
+          <h1 className="text-3xl md:text-[34px] font-black tracking-tighter text-white font-[family-name:var(--font-montserrat)] uppercase leading-none drop-shadow-sm whitespace-nowrap mt-2">
             Agenda Móvil
           </h1>
-          <span className="text-[#FE5000] font-bold text-base md:text-lg tracking-[0.2em] uppercase font-[family-name:var(--font-montserrat)] mt-0.5">
-            Gestión en Vivo
-          </span>
         </div>
         </div>
 

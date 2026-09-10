@@ -57,7 +57,8 @@ export default function CifrasImport() {
         throw new Error('El archivo está vacío.');
       }
 
-      const parsedRecords: any[] = [];
+      const parsedOperativas: any[] = [];
+      const parsedSaldos: any[] = [];
       const errors: string[] = [];
 
       for (let index = 0; index < jsonData.length; index++) {
@@ -82,11 +83,16 @@ export default function CifrasImport() {
           const reclamosKey = Object.keys(row).find(k => k.toLowerCase().includes('reclamos')) || 'Reclamos';
           const saldosKey = Object.keys(row).find(k => k.toLowerCase().includes('saldos')) || 'Saldos Captados (Bs)';
 
-          parsedRecords.push({
-            event_id: id, // Usamos Upsert sobre event_id (usualmente es único o 1:1)
+          parsedOperativas.push({
+            event_id: id,
             cuentas_abiertas: parseNumber(row[cuentasKey]),
             tdd: parseNumber(row[tddKey]),
             reclamos: parseNumber(row[reclamosKey]),
+            updated_at: new Date().toISOString()
+          });
+
+          parsedSaldos.push({
+            event_id: id,
             saldos_captados_bs: parseNumber(row[saldosKey]),
             updated_at: new Date().toISOString()
           });
@@ -98,27 +104,24 @@ export default function CifrasImport() {
         }
       }
 
-      if (parsedRecords.length === 0) {
+      if (parsedOperativas.length === 0) {
         throw new Error(`No se pudo procesar ninguna cifra. Errores: ${errors.join(' | ')}`);
       }
 
-      // Upsert requiere un match por llave primaria o unique constraint
-      // Revisaremos si el event_metrics tiene id como PK. Si es así, upsert con onConflict 'event_id' requiere que event_id sea UNIQUE en DB.
-      // Si falla onConflict, supabase lanzará error. En events_metrics, usualmente event_id es UNIQUE.
-      const { error } = await supabase.from('event_metrics').upsert(parsedRecords as any, { onConflict: 'event_id' });
+      const { error: errorOp } = await supabase.from('cifras_operativas').upsert(parsedOperativas as any, { onConflict: 'event_id' });
+      if (errorOp) throw new Error(errorOp.message || JSON.stringify(errorOp));
 
-      if (error) {
-        throw new Error(error.message || JSON.stringify(error));
-      }
+      const { error: errorSal } = await supabase.from('saldos_financieros_cierre').upsert(parsedSaldos as any, { onConflict: 'event_id' });
+      if (errorSal) throw new Error(errorSal.message || JSON.stringify(errorSal));
 
       // Refrescar el estado global (Dashboard)
       await fetchData();
 
       setImportStatus({ 
         type: 'success', 
-        message: `Se actualizaron las cifras de ${parsedRecords.length} eventos.`
+        message: `Se actualizaron las cifras de ${parsedOperativas.length} eventos.`
       });
-      showToast(`${parsedRecords.length} cifras procesadas exitosamente`, 'success');
+      showToast(`${parsedOperativas.length} cifras procesadas exitosamente`, 'success');
       
       if (fileInputRef.current) fileInputRef.current.value = '';
 

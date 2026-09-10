@@ -332,6 +332,70 @@ export interface Database {
           created_at?: string
         }
       }
+      cifras_operativas: {
+        Row: {
+          id: string
+          event_id: string
+          cuentas_abiertas: number | null
+          tdd: number | null
+          reclamos: number | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          event_id: string
+          cuentas_abiertas?: number | null
+          tdd?: number | null
+          reclamos?: number | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          event_id?: string
+          cuentas_abiertas?: number | null
+          tdd?: number | null
+          reclamos?: number | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      saldos_financieros_cierre: {
+        Row: {
+          id: string
+          event_id: string
+          saldos_captados_bs: number | null
+          saldo_cierre_divisas: number | null
+          atm_consultas: number | null
+          atm_retiros: number | null
+          atm_cambio_clave: number | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          event_id: string
+          saldos_captados_bs?: number | null
+          saldo_cierre_divisas?: number | null
+          atm_consultas?: number | null
+          atm_retiros?: number | null
+          atm_cambio_clave?: number | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          event_id?: string
+          saldos_captados_bs?: number | null
+          saldo_cierre_divisas?: number | null
+          atm_consultas?: number | null
+          atm_retiros?: number | null
+          atm_cambio_clave?: number | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never

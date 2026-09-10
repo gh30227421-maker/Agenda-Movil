@@ -64,12 +64,19 @@ export async function seedDatabase() {
 
       // Seed Cifras
       if (mockEv.cifras) {
-        await (supabase as any).from('event_metrics').insert(<any>{
+        await (supabase as any).from('cifras_operativas').insert(<any>{
           event_id: evData.id,
           cuentas_abiertas: mockEv.cifras.cuentasAbiertas,
           tdd: mockEv.cifras.tdd,
-          reclamos: mockEv.cifras.reclamos,
-          saldos_captados_bs: mockEv.cifras.saldosCaptadosBs
+          reclamos: mockEv.cifras.reclamos
+        });
+        await (supabase as any).from('saldos_financieros_cierre').insert(<any>{
+          event_id: evData.id,
+          saldos_captados_bs: mockEv.cifras.saldosCaptadosBs,
+          saldo_cierre_divisas: mockEv.cifras.saldoCierreDivisas || 0,
+          atm_consultas: mockEv.cifras.atmConsultas || 0,
+          atm_retiros: mockEv.cifras.atmRetiros || 0,
+          atm_cambio_clave: mockEv.cifras.atmCambioClave || 0
         });
       }
 

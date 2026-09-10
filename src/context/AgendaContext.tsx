@@ -105,7 +105,8 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
       const { data: dbEvents } = (await (supabase as any).from('events').select(`
         *,
         agencies (*),
-        event_metrics (*),
+        cifras_operativas (*),
+        saldos_financieros_cierre (*),
         event_expenses (*),
         event_closings (*)
       `)) as { data: any[] | null; error: any };
@@ -113,7 +114,8 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
       if (dbEvents) {
         setEvents(dbEvents.map(ev => {
           const agency = ev.agencies;
-          const metric = Array.isArray(ev.event_metrics) ? ev.event_metrics[0] : ev.event_metrics;
+          const operativas = Array.isArray(ev.cifras_operativas) ? ev.cifras_operativas[0] : ev.cifras_operativas;
+          const financieras = Array.isArray(ev.saldos_financieros_cierre) ? ev.saldos_financieros_cierre[0] : ev.saldos_financieros_cierre;
           const expense = Array.isArray(ev.event_expenses) ? ev.event_expenses[0] : ev.event_expenses;
           const closing = Array.isArray(ev.event_closings) ? ev.event_closings[0] : ev.event_closings;
 
@@ -133,15 +135,15 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
             status: ev.status as EventStatus,
             vpSolicitante: ev.vp_solicitante || undefined,
             responsable: ev.responsable || undefined,
-            cifras: metric ? {
-              cuentasAbiertas: metric.cuentas_abiertas || 0,
-              tdd: metric.tdd || 0,
-              reclamos: metric.reclamos || 0,
-              saldosCaptadosBs: metric.saldos_captados_bs || 0,
-              atmConsultas: metric.atm_consultas || 0,
-              atmRetiros: metric.atm_retiros || 0,
-              atmCambioClave: metric.atm_cambio_clave || 0,
-              saldoCierreDivisas: metric.saldo_cierre_divisas || 0
+            cifras: (operativas || financieras) ? {
+              cuentasAbiertas: operativas?.cuentas_abiertas || 0,
+              tdd: operativas?.tdd || 0,
+              reclamos: operativas?.reclamos || 0,
+              saldosCaptadosBs: financieras?.saldos_captados_bs || 0,
+              atmConsultas: financieras?.atm_consultas || 0,
+              atmRetiros: financieras?.atm_retiros || 0,
+              atmCambioClave: financieras?.atm_cambio_clave || 0,
+              saldoCierreDivisas: financieras?.saldo_cierre_divisas || 0
             } : undefined,
             gastos: expense ? {
               alimentacionBs: expense.alimentacion_bs || 0,
@@ -220,12 +222,27 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
       }
 
       if (data.cifras) {
-        const { data: existingMetric } = await (supabase as any).from('event_metrics').select('id').eq('event_id', id).maybeSingle() as { data: any | null; error: any };
-        if (existingMetric) {
-          await (supabase as any).from('event_metrics').update({
+        // Cifras Operativas
+        const { data: existingOp } = await (supabase as any).from('cifras_operativas').select('id').eq('event_id', id).maybeSingle() as { data: any | null; error: any };
+        if (existingOp) {
+          await (supabase as any).from('cifras_operativas').update({
             cuentas_abiertas: data.cifras.cuentasAbiertas,
             tdd: data.cifras.tdd,
-            reclamos: data.cifras.reclamos,
+            reclamos: data.cifras.reclamos
+          }).eq('event_id', id);
+        } else {
+          await (supabase as any).from('cifras_operativas').insert({
+            event_id: id,
+            cuentas_abiertas: data.cifras.cuentasAbiertas,
+            tdd: data.cifras.tdd,
+            reclamos: data.cifras.reclamos
+          });
+        }
+
+        // Saldos Financieros
+        const { data: existingFin } = await (supabase as any).from('saldos_financieros_cierre').select('id').eq('event_id', id).maybeSingle() as { data: any | null; error: any };
+        if (existingFin) {
+          await (supabase as any).from('saldos_financieros_cierre').update({
             saldos_captados_bs: data.cifras.saldosCaptadosBs,
             atm_consultas: data.cifras.atmConsultas,
             atm_retiros: data.cifras.atmRetiros,
@@ -233,11 +250,8 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
             saldo_cierre_divisas: data.cifras.saldoCierreDivisas
           }).eq('event_id', id);
         } else {
-          await (supabase as any).from('event_metrics').insert({
+          await (supabase as any).from('saldos_financieros_cierre').insert({
             event_id: id,
-            cuentas_abiertas: data.cifras.cuentasAbiertas,
-            tdd: data.cifras.tdd,
-            reclamos: data.cifras.reclamos,
             saldos_captados_bs: data.cifras.saldosCaptadosBs,
             atm_consultas: data.cifras.atmConsultas,
             atm_retiros: data.cifras.atmRetiros,

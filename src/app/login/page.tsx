@@ -116,12 +116,9 @@ export default function LoginPage() {
               <Truck className="absolute bottom-0 w-16 h-16 text-[#FE5000] drop-shadow-md" />
             </div>
             <div className="flex flex-col text-center">
-              <h1 className="text-4xl font-black tracking-tighter text-white font-[family-name:var(--font-montserrat)] uppercase leading-none drop-shadow-sm">
+              <h1 className="text-5xl font-black tracking-tighter text-white font-[family-name:var(--font-montserrat)] uppercase leading-none drop-shadow-sm">
                 Agenda Móvil
               </h1>
-              <span className="text-[#FE5000] font-bold text-sm tracking-[0.2em] uppercase font-[family-name:var(--font-montserrat)] mt-2">
-                Gestión en Vivo
-              </span>
             </div>
           </div>
         </div>
