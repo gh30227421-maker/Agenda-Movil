@@ -310,12 +310,14 @@ export default function EventManagementModal() {
       atmCambioClave: isUnidadMovil ? Math.max(0, parseInt(formData.get('atmCambioClave') as string) || 0) : 0,
     };
     try {
-        updateEvent(event.id, { cifras, status: 'Culminado' }).catch(console.error);
-        showToast('Cifras guardadas y evento culminado', 'success');
-        if (modalState.isGlobal) closeModal(); else setModalMode('menu');
-      } finally {
-        setIsSubmitting(false);
-      }
+      await updateEvent(event.id, { cifras, status: 'Culminado' });
+      // Toast is handled in updateEvent
+      if (modalState.isGlobal) closeModal(); else setModalMode('menu');
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleSaveGastos = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -345,12 +347,14 @@ export default function EventManagementModal() {
     };
     
     try {
-        updateEvent(event.id, { gastos }).catch(console.error);
-        showToast(`Gastos guardados. Equivalente: $${totalUsd.toFixed(2)}`, 'success');
-        if (modalState.isGlobal) closeModal(); else setModalMode('menu');
-      } finally {
-        setIsSubmitting(false);
-      }
+      await updateEvent(event.id, { gastos });
+      // Toast handled in updateEvent
+      if (modalState.isGlobal) closeModal(); else setModalMode('menu');
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -523,14 +527,15 @@ export default function EventManagementModal() {
 
                   try {
                     if (modalState.mode === 'create') {
-                      addEvent(payload).catch(console.error);
-                      showToast('Evento creado correctamente', 'success');
+                      await addEvent(payload);
                       closeModal();
                     } else if (event) {
-                      updateEvent(event.id, payload).catch(console.error);
-                      showToast('Evento actualizado correctamente', 'success');
+                      await updateEvent(event.id, payload);
                       setModalMode('menu');
                     }
+                  } catch (e) {
+                    // El error ya es manejado y notificado en AgendaContext
+                    console.error('Error in modal form:', e);
                   } finally {
                     setIsSubmitting(false);
                   }

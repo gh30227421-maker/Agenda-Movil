@@ -206,18 +206,29 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
 
   const updateEvent = async (id: string, data: Partial<AgendaEvent>) => {
     try {
-      if (data.status !== undefined || data.eventName !== undefined || data.startDate !== undefined || data.endDate !== undefined || data.location !== undefined || data.estadoOperativo !== undefined || data.vpSolicitante !== undefined || data.responsable !== undefined || data.segments !== undefined) {
-        const { error } = await (supabase as any).from('events').update({
-          event_name: data.eventName,
-          start_date: data.startDate,
-          end_date: data.endDate,
-          segments: data.segments,
-          location: data.location,
-          estado_operativo: data.estadoOperativo,
-          status: data.status,
-          vp_solicitante: data.vpSolicitante,
-          responsable: data.responsable
-        }).eq('id', id);
+      const isCoreEventUpdate = data.status !== undefined || data.eventName !== undefined || data.startDate !== undefined || data.endDate !== undefined || data.location !== undefined || data.estadoOperativo !== undefined || data.vpSolicitante !== undefined || data.responsable !== undefined || data.segments !== undefined || data.type !== undefined || data.agencyCode !== undefined;
+      
+      if (isCoreEventUpdate) {
+        let agencyId = data.agencyCode;
+        if (data.agencyCode) {
+           const agencyMatch = agencies.find(a => `${a.code} - ${a.name}` === data.agencyCode || a.code === data.agencyCode);
+           if (agencyMatch) agencyId = agencyMatch.id;
+        }
+
+        const updatePayload: any = {};
+        if (data.eventName !== undefined) updatePayload.event_name = data.eventName;
+        if (data.startDate !== undefined) updatePayload.start_date = data.startDate;
+        if (data.endDate !== undefined) updatePayload.end_date = data.endDate;
+        if (data.segments !== undefined) updatePayload.segments = data.segments;
+        if (data.location !== undefined) updatePayload.location = data.location;
+        if (data.estadoOperativo !== undefined) updatePayload.estado_operativo = data.estadoOperativo;
+        if (data.status !== undefined) updatePayload.status = data.status;
+        if (data.vpSolicitante !== undefined) updatePayload.vp_solicitante = data.vpSolicitante;
+        if (data.responsable !== undefined) updatePayload.responsable = data.responsable;
+        if (data.type !== undefined) updatePayload.event_type = data.type;
+        if (agencyId !== undefined) updatePayload.agency_id = agencyId;
+
+        const { error } = await (supabase as any).from('events').update(updatePayload).eq('id', id);
         if (error) throw error;
       }
 
@@ -318,6 +329,7 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
     } catch (error: any) {
       console.error(error);
       showToast(error.message || 'Error al actualizar evento', 'error');
+      throw error;
     }
   };
 

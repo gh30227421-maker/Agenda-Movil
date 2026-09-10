@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from 'react';
-import { Filter, Calendar, MapPin, BarChart3, CalendarRange, XCircle } from 'lucide-react';
+import { Filter, Calendar, MapPin, BarChart3, CalendarRange, XCircle, Grid, Truck, Building2, Store } from 'lucide-react';
 import { useAgenda } from '@/context/AgendaContext';
 import ComboBox from '@/components/ui/ComboBox';
 import KpiCards from './KpiCards';
@@ -46,7 +46,14 @@ export default function DashboardSection() {
   const { events, agencies } = useAgenda();
 
   // Estados de filtros
+  const [selectedEventType, setSelectedEventType] = useState<string>('Todas');
   const [selectedEventIds, setSelectedEventIds] = useState<string[]>([]);
+
+  const getButtonClass = (type: string, activeClass: string, inactiveClass: string) => {
+    return `flex items-center gap-2 px-4 py-2 rounded-lg text-sm transition-all whitespace-nowrap ${
+      selectedEventType === type ? activeClass : inactiveClass
+    }`;
+  };
   const [selectedMonths, setSelectedMonths] = useState<string[]>([]);
   const [selectedRegionFilters, setSelectedRegionFilters] = useState<string[]>([]);
   const [selectedStateFilters, setSelectedStateFilters] = useState<string[]>([]);
@@ -55,6 +62,7 @@ export default function DashboardSection() {
   const availableMonths = useMemo(() => {
     const rawMonths = new Set<string>();
     events.forEach(ev => {
+      if (selectedEventType !== 'Todas' && ev.type !== selectedEventType) return;
       if (selectedEventIds.length > 0 && !selectedEventIds.includes(ev.id)) return;
       if (selectedRegionFilters.length > 0) {
         const ag = agencies.find(a => a.state === ev.state);
@@ -103,11 +111,12 @@ export default function DashboardSection() {
     });
 
     return [...semestres, ...trimestres, ...meses];
-  }, [events, agencies, selectedEventIds, selectedRegionFilters, selectedStateFilters]);
+  }, [events, agencies, selectedEventType, selectedEventIds, selectedRegionFilters, selectedStateFilters]);
 
   const availableRegions = useMemo(() => {
     const regions = new Set<string>();
     events.forEach(ev => {
+      if (selectedEventType !== 'Todas' && ev.type !== selectedEventType) return;
       if (selectedEventIds.length > 0 && !selectedEventIds.includes(ev.id)) return;
       if (!isEventInPeriod(ev.startDate, selectedMonths)) return;
       if (selectedStateFilters.length > 0 && !selectedStateFilters.includes(ev.state || '')) return;
@@ -116,11 +125,12 @@ export default function DashboardSection() {
       if (ag && ag.region) regions.add(ag.region);
     });
     return Array.from(regions).sort().map(r => ({ value: r, label: r }));
-  }, [events, agencies, selectedEventIds, selectedMonths, selectedStateFilters]);
+  }, [events, agencies, selectedEventType, selectedEventIds, selectedMonths, selectedStateFilters]);
 
   const availableStates = useMemo(() => {
     const states = new Set<string>();
     events.forEach(ev => {
+      if (selectedEventType !== 'Todas' && ev.type !== selectedEventType) return;
       if (selectedEventIds.length > 0 && !selectedEventIds.includes(ev.id)) return;
       if (!isEventInPeriod(ev.startDate, selectedMonths)) return;
       if (selectedRegionFilters.length > 0) {
@@ -131,11 +141,12 @@ export default function DashboardSection() {
       if (ev.state) states.add(ev.state);
     });
     return Array.from(states).sort().map(s => ({ value: s, label: s }));
-  }, [events, agencies, selectedEventIds, selectedMonths, selectedRegionFilters]);
+  }, [events, agencies, selectedEventType, selectedEventIds, selectedMonths, selectedRegionFilters]);
 
   const availableEvents = useMemo(() => {
     const evs: { value: string, label: string }[] = [];
     events.forEach(ev => {
+      if (selectedEventType !== 'Todas' && ev.type !== selectedEventType) return;
       if (!isEventInPeriod(ev.startDate, selectedMonths)) return;
       if (selectedRegionFilters.length > 0) {
         const ag = agencies.find(a => a.state === ev.state);
@@ -146,11 +157,13 @@ export default function DashboardSection() {
       evs.push({ value: ev.id, label: `${ev.eventName} (${ev.state || 'N/A'})` });
     });
     return evs;
-  }, [events, agencies, selectedMonths, selectedRegionFilters, selectedStateFilters]);
+  }, [events, agencies, selectedEventType, selectedMonths, selectedRegionFilters, selectedStateFilters]);
 
   // Filtrado reactivo de eventos
   const filteredEvents = useMemo(() => {
     return events.filter(ev => {
+      // Filtro por Tipo
+      if (selectedEventType !== 'Todas' && ev.type !== selectedEventType) return false;
       // Filtro por Operativo específico
       if (selectedEventIds.length > 0 && !selectedEventIds.includes(ev.id)) {
         return false;
@@ -172,7 +185,7 @@ export default function DashboardSection() {
       }
       return true;
     });
-  }, [events, agencies, selectedEventIds, selectedMonths, selectedRegionFilters, selectedStateFilters]);
+  }, [events, agencies, selectedEventType, selectedEventIds, selectedMonths, selectedRegionFilters, selectedStateFilters]);
 
   const formatNumber = (num: number) => num.toLocaleString('es-VE');
 
@@ -216,6 +229,38 @@ export default function DashboardSection() {
               Mostrando {filteredEvents.length} de {events.length} jornadas
             </span>
           </div>
+        </div>
+
+        {/* Filtro Tipo de Evento */}
+        <div className="flex bg-gray-100 p-1 rounded-xl shrink-0 overflow-x-auto max-w-fit hide-scrollbar mb-4 shadow-sm border border-gray-200">
+            <button 
+              onClick={() => setSelectedEventType('Todas')}
+              className={getButtonClass('Todas', 'bg-white text-gray-800 shadow-sm font-bold', 'hover:text-gray-900 hover:bg-gray-200/50')}
+            >
+              <Grid className="w-4 h-4" />
+              <span className="hidden sm:inline">Todas</span>
+            </button>
+            <button 
+              onClick={() => setSelectedEventType('Unidad Móvil')}
+              className={getButtonClass('Unidad Móvil', 'bg-[#FE5000] text-white font-bold shadow-sm', 'hover:text-[#FE5000] hover:bg-orange-50')}
+            >
+              <Truck className="w-4 h-4" />
+              <span className="hidden sm:inline">Unidad Móvil</span>
+            </button>
+            <button 
+              onClick={() => setSelectedEventType('Agencia Móvil')}
+              className={getButtonClass('Agencia Móvil', 'bg-[#00205B] text-white font-bold shadow-sm', 'hover:text-[#00205B] hover:bg-blue-50')}
+            >
+              <Building2 className="w-4 h-4" />
+              <span className="hidden sm:inline">Agencia Móvil</span>
+            </button>
+            <button 
+              onClick={() => setSelectedEventType('Red de Agencias')}
+              className={getButtonClass('Red de Agencias', 'bg-[#009639] text-white font-bold shadow-sm', 'hover:text-[#009639] hover:bg-green-50')}
+            >
+              <Store className="w-4 h-4" />
+              <span className="hidden sm:inline">Red de Agencias</span>
+            </button>
         </div>
 
         {/* Barra de Filtros */}
@@ -314,6 +359,7 @@ export default function DashboardSection() {
           <button
             type="button"
             onClick={() => {
+              setSelectedEventType('Todas');
               setSelectedEventIds([]);
               setSelectedMonths([]);
               setSelectedRegionFilters([]);
