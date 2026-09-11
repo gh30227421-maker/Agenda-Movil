@@ -267,11 +267,11 @@ export default function VenezuelaMap({ events, agencies = [], selectedState = 't
 
   return (
     <ChartModalWrapper 
-      title="Despliegue y Cobertura Regional"
-      subtitle="Distribución Geográfica y Análisis de Captación"
+      title="Despliegue y Captación de Cuentas"
+      subtitle="Distribución geográfica y volumen de cuentas abiertas por entidad"
     >
-      <div className="flex flex-col w-full h-[470px] bg-transparent rounded-2xl overflow-hidden relative">
-        
+      {(isExpanded) => (
+        <div className={`flex flex-col w-full ${isExpanded ? 'h-full min-h-[600px]' : 'h-[470px]'} bg-transparent rounded-2xl overflow-hidden relative`}>
         {/* Barra superior con Toggle de Estados / Regiones */}
         <div className="flex items-center justify-between mb-3 px-1 hide-on-download">
           <span className="text-xs text-gray-500 font-medium">
@@ -317,7 +317,7 @@ export default function VenezuelaMap({ events, agencies = [], selectedState = 't
                 scale: 2500,
                 center: [-66, 7.5]
               }}
-              className="w-full h-full max-h-[400px]"
+              className={`w-full h-full ${isExpanded ? '' : 'max-h-[400px]'}`}
             >
               <Geographies geography={geoUrl}>
                 {({ geographies }: { geographies: any[] }) =>
@@ -450,40 +450,41 @@ export default function VenezuelaMap({ events, agencies = [], selectedState = 't
             )}
 
             {/* Leyenda Dinámica del Mapa */}
-            <div className="absolute bottom-0 left-0 bg-white/95 backdrop-blur-sm p-3 rounded-xl shadow-sm border border-gray-200 text-[10px] space-y-1.5 pointer-events-none max-w-[175px]">
-              <h4 className="font-bold text-gray-700 mb-1">
+            <div className={`absolute ${isExpanded ? 'bottom-4 left-4 p-4 text-sm max-w-[220px]' : 'bottom-0 left-0 p-3 text-[10px] max-w-[175px]'} bg-white/95 backdrop-blur-sm rounded-xl shadow-md border border-gray-200 space-y-1.5 pointer-events-none min-w-[160px]`}>
+              <h4 className={`font-bold text-gray-800 ${isExpanded ? 'mb-1.5 text-sm' : 'mb-1 text-[11px]'}`}>
                 {viewMode === 'estados' ? 'Mapa de Captación' : 'Leyenda de Regiones'}
               </h4>
               {viewMode === 'estados' ? (
                 <>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded bg-[#FE5000]"></div>
-                    <span className="text-gray-600">Top 3 Estados</span>
+                  <div className="flex items-center gap-2.5">
+                    <div className={`${isExpanded ? 'w-4 h-4' : 'w-3 h-3'} rounded bg-[#FE5000]`}></div>
+                    <span className="text-gray-700 font-medium">Top 3 Estados</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded bg-[#00205B]"></div>
-                    <span className="text-gray-600">Otros Activos</span>
+                  <div className="flex items-center gap-2.5">
+                    <div className={`${isExpanded ? 'w-4 h-4' : 'w-3 h-3'} rounded bg-[#00205B]`}></div>
+                    <span className="text-gray-700 font-medium">Otros Activos</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded bg-[#E2E8F0]"></div>
-                    <span className="text-gray-600">Sin Operativos</span>
+                  <div className="flex items-center gap-2.5">
+                    <div className={`${isExpanded ? 'w-4 h-4' : 'w-3 h-3'} border border-gray-200 rounded bg-[#E2E8F0]`}></div>
+                    <span className="text-gray-600 font-medium">Sin Operativos</span>
                   </div>
                 </>
               ) : (
                 <>
                   {regionData.ranking.slice(0, 5).map((reg, idx) => (
-                    <div key={reg.name} className="flex items-center gap-2">
+                    <div key={reg.name} className="flex items-center gap-2.5">
                       <div 
-                        className="w-3 h-3 rounded shadow-xs shrink-0" 
+                        className={`${isExpanded ? 'w-4 h-4' : 'w-3 h-3'} rounded shadow-xs shrink-0`}
                         style={{ backgroundColor: REGION_PALETTE[idx] || '#426095' }}
                       />
                       <span className="text-gray-700 font-medium truncate">{reg.name}</span>
                     </div>
                   ))}
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded bg-[#E2E8F0] shrink-0"></div>
-                    <span className="text-gray-500">Sin Operativos</span>
-                  </div>
+                  {regionData.ranking.length > 5 && (
+                    <div className={`text-gray-500 italic pt-1 text-center ${isExpanded ? 'text-xs' : 'text-[10px]'}`}>
+                      + otras regiones
+                    </div>
+                  )}
                 </>
               )}
             </div>
@@ -581,6 +582,7 @@ export default function VenezuelaMap({ events, agencies = [], selectedState = 't
 
         </div>
       </div>
+      )}
     </ChartModalWrapper>
   );
 }

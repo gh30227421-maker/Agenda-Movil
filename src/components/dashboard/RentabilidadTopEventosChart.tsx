@@ -156,10 +156,11 @@ export default function RentabilidadTopEventosChart({ events }: RentabilidadTopE
         ) : (
           /* Vista de Ranking para Múltiples Eventos (Top 8-10) */
           <ResponsiveContainer width="100%" height={440}>
-            <BarChart layout="vertical" data={ranking.slice(0, 10)} margin={{ top: 10, right: 130, left: 200, bottom: 15 }}>
+            <BarChart layout="vertical" data={ranking.slice(0, 10)} margin={{ top: 10, right: 60, left: 20, bottom: 15 }}>
               <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#F3F4F6" />
               <XAxis 
                 type="number" 
+                domain={[0, (dataMax: number) => Math.ceil(dataMax * 1.15)]}
                 tick={{ fontSize: 13, fill: '#6B7280' }} 
                 tickFormatter={(val) => `$${val >= 1000 ? `${(val / 1000).toFixed(0)}k` : val}`} 
               />

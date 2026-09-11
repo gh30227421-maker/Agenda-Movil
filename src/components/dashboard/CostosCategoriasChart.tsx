@@ -76,15 +76,15 @@ export default function CostosCategoriasChart({ events }: CostosCategoriasChartP
       <div className="w-full h-full min-h-[350px]">
         <h4 className="text-sm font-bold text-gray-700 mb-4 text-center lg:text-left">Distribución de Gastos Totales por Categoría</h4>
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart layout="vertical" data={barData} margin={{ top: 0, right: 120, left: 20, bottom: 0 }}>
+          <BarChart layout="vertical" data={barData} margin={{ top: 10, right: 60, left: 20, bottom: 20 }}>
             <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#F3F4F6" />
-            <XAxis type="number" tick={{ fontSize: 15, fill: '#6B7280' }} tickFormatter={(val) => `$${val}`} />
+            <XAxis type="number" domain={[0, (dataMax: number) => Math.ceil(dataMax * 1.25)]} tick={{ fontSize: 15, fill: '#6B7280' }} tickFormatter={(val) => `$${val}`} />
             <YAxis type="category" dataKey="categoria" tick={{ fontSize: 15, fontWeight: 'bold', fill: '#1F2937' }} width={100} />
             <Tooltip 
               formatter={(val: any, name: any) => [`$${Number(val).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, name]}
               contentStyle={{ backgroundColor: '#00205C', borderRadius: '12px', color: '#FFF', border: 'none' }}
             />
-            <Legend verticalAlign="top" align="right" wrapperStyle={{ fontSize: '15px', paddingBottom: '15px' }} />
+            <Legend verticalAlign="top" align="right" wrapperStyle={{ fontSize: '15px', paddingBottom: '20px' }} />
             <Bar dataKey="Agencia Móvil" stackId="a" fill="#00205C" radius={[0, 0, 0, 0]} barSize={24}>
               <LabelList dataKey="Agencia Móvil" content={(props: any) => {
                 const { x, y, width, height, value } = props;

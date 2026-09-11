@@ -65,7 +65,7 @@ export default function AgenciaRankingChart({ events }: AgenciaRankingChartProps
         'Hospedaje': hospedaje > 0 ? hospedaje : undefined,
         'Otros (TI, Trib.)': otros > 0 ? otros : undefined,
       };
-    }).sort((a, b) => b.gastoUsd - a.gastoUsd).slice(0, 10);
+    }).filter(stat => stat.gastoUsd > 0).sort((a, b) => b.gastoUsd - a.gastoUsd).slice(0, 10);
 
     return { ranking: rankingData, activeCategories: activeCats, categoryColors: colorsMap };
   }, [events]);
@@ -78,9 +78,9 @@ export default function AgenciaRankingChart({ events }: AgenciaRankingChartProps
       <div className="w-full h-full min-h-[480px] flex flex-col justify-center py-2">
         {ranking.length > 0 ? (
           <ResponsiveContainer width="100%" height={460}>
-            <ComposedChart layout="vertical" data={ranking} margin={{ top: 10, right: 120, left: 220, bottom: 15 }}>
+            <ComposedChart layout="vertical" data={ranking} margin={{ top: 10, right: 60, left: 20, bottom: 15 }}>
               <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#F3F4F6" />
-              <XAxis type="number" tick={{ fontSize: 13, fill: '#6B7280' }} tickFormatter={(val) => `$${val}`} />
+              <XAxis type="number" domain={[0, (dataMax: number) => Math.ceil(dataMax * 1.15)]} tick={{ fontSize: 13, fill: '#6B7280' }} tickFormatter={(val) => `$${val}`} />
               <YAxis type="category" dataKey="evento" tick={{ fontSize: 12, fontWeight: 600, fill: '#1F2937' }} width={230} />
               <Tooltip 
                 formatter={(val: any, name: any) => [

@@ -7,7 +7,7 @@ import { toPng } from 'html-to-image';
 interface ChartModalWrapperProps {
   title: string;
   subtitle?: string;
-  children: React.ReactNode;
+  children: React.ReactNode | ((isExpanded: boolean) => React.ReactNode);
   variant?: 'default' | 'bare';
 }
 
@@ -81,7 +81,7 @@ export default function ChartModalWrapper({ title, subtitle, children, variant =
         
         {/* Contenido (Gráfico/Mapa) */}
         <div className={`flex-1 w-full h-full relative ${isBare ? 'min-h-[200px]' : 'min-h-[300px]'} flex items-center justify-center`}>
-          {children}
+          {typeof children === 'function' ? children(false) : children}
         </div>
       </div>
 
@@ -113,7 +113,7 @@ export default function ChartModalWrapper({ title, subtitle, children, variant =
             </div>
             
             <div className="flex-1 w-full h-full min-h-[600px] p-6 overflow-hidden flex flex-col items-center justify-center bg-white rounded-b-3xl">
-              {children}
+              {typeof children === 'function' ? children(true) : children}
             </div>
           </div>
         </div>
