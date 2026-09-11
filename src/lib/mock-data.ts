@@ -86,6 +86,7 @@ export interface RentabilityTracking {
   ingresos: number;
   costos: number;
   status: 'Pendiente' | 'Cerrado';
+  tasaBcv?: number;
 }
 const formatMonth = String(currentMonth + 1).padStart(2, '0');
 

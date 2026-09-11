@@ -12,7 +12,7 @@ export default function KpiCards({ events }: KpiCardsProps) {
   const totalTdd = events.reduce((acc, ev) => acc + (ev.cifras?.tdd || 0), 0);
   
   const totalSaldoUsd = events.reduce((acc, ev) => {
-    const tasaBcv = ev.gastos?.tasaBcv || 1;
+    const tasaBcv = ev.gastos?.tasaBcv || ev.tasaBcvRentabilidad || 0;
     const saldosBs = ev.cifras?.saldosCaptadosBs || 0;
     const saldoDivisas = ev.cifras?.saldoCierreDivisas || 0;
     const saldosUsd = (tasaBcv > 0 ? saldosBs / tasaBcv : 0) + saldoDivisas;
@@ -20,22 +20,13 @@ export default function KpiCards({ events }: KpiCardsProps) {
   }, 0);
 
   const totalCostosUsd = events.reduce((acc, ev) => {
-    const tieneGastos = !!ev.gastos;
-    const tasaBcv = ev.gastos?.tasaBcv || 1;
-    const costosUsdBase = ev.gastos?.totalUsd || 0;
-    
-    let costosBs = 0;
-    if (tieneGastos) {
-      const g = ev.gastos!;
-      costosBs = g.alimentacionBs + g.hospedajeBs + g.transporteBs +
-                 g.soporteTecnicoBs + g.bancaElectronicaBs + g.gastosTributariosBs +
-                 g.conductorAyudanteBs + g.mantenimientoLimpiezaBs + (g.gastoCombustibleBs || 0);
-    } else if (costosUsdBase > 0 && tasaBcv > 0) {
-      costosBs = costosUsdBase * tasaBcv;
+    // Regla de Negocio: Red de Agencias no genera gastos. 
+    // Ignoramos cualquier registro residual o de prueba que tengan estas agencias en la BD.
+    const isMobile = ev.type === 'Agencia Móvil' || ev.type === 'Unidad Móvil';
+    if (isMobile) {
+      return acc + (ev.gastos?.totalUsd || 0);
     }
-    
-    const finalCostUsd = tasaBcv > 0 ? costosBs / tasaBcv : 0;
-    return acc + finalCostUsd;
+    return acc;
   }, 0);
 
   const totalMargenUsd = totalSaldoUsd - totalCostosUsd;
@@ -99,7 +90,7 @@ export default function KpiCards({ events }: KpiCardsProps) {
       {/* Costo Operativo Total (USD) */}
       <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex items-center justify-between">
         <div>
-          <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Gasto Operaciones</p>
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Gastos Operativos</p>
           <h3 className="text-2xl font-bold text-[#FE5000] mt-1">
             ${totalCostosUsd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </h3>

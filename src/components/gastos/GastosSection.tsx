@@ -72,25 +72,29 @@ export default function GastosSection() {
     });
   }, [events, selectedEventIds, selectedMonths, selectedStatuses, selectedUnitTypes]);
 
-  // Totales
-  const totales = filteredEvents.reduce((acc, ev) => {
+  const mobileEvents = useMemo(() => {
+    return filteredEvents.filter(e => e.type === 'Agencia Móvil' || e.type === 'Unidad Móvil');
+  }, [filteredEvents]);
+
+  // Totales (Single Source of Truth based on mobileEvents)
+  const totales = mobileEvents.reduce((acc, ev) => {
     if (ev.gastos) {
       const g = ev.gastos;
       const totalBs = g.alimentacionBs + g.hospedajeBs + g.transporteBs + 
                       g.soporteTecnicoBs + g.bancaElectronicaBs + g.gastosTributariosBs + 
-                      g.conductorAyudanteBs + g.mantenimientoLimpiezaBs;
+                      g.conductorAyudanteBs + g.mantenimientoLimpiezaBs + 
+                      (g.gastoCombustibleBs || 0);
       acc.totalBs += totalBs;
       acc.totalUsd += ev.gastos.totalUsd;
     }
     return acc;
   }, { totalBs: 0, totalUsd: 0 });
 
-  const mobileEvents = filteredEvents.filter(e => e.type === 'Agencia Móvil' || e.type === 'Unidad Móvil');
   const registeredCount = mobileEvents.filter(e => e.gastos).length;
   const missingCount = mobileEvents.length - registeredCount;
 
   const handleExport = (type: 'pdf' | 'excel') => {
-    const data = filteredEvents.map(ev => {
+    const data = mobileEvents.map(ev => {
       const g = ev.gastos;
       if (!g) {
         return [
@@ -103,7 +107,8 @@ export default function GastosSection() {
       }
       const totalBs = g.alimentacionBs + g.hospedajeBs + g.transporteBs + 
                       g.soporteTecnicoBs + g.bancaElectronicaBs + g.gastosTributariosBs + 
-                      g.conductorAyudanteBs + g.mantenimientoLimpiezaBs;
+                      g.conductorAyudanteBs + g.mantenimientoLimpiezaBs + 
+                      (g.gastoCombustibleBs || 0);
       return [
         ev.eventName,
         g.tasaBcv,
@@ -244,7 +249,7 @@ export default function GastosSection() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-[#00205B] rounded-2xl p-6 shadow-sm flex flex-col justify-between">
-          <p className="text-blue-200 text-sm font-medium">Total Consolidado Equiv. USD (Histórico)</p>
+          <p className="text-blue-200 text-sm font-medium">Gastos Operativos</p>
           <div className="flex items-baseline gap-2 mt-2">
             <DollarSign className="w-8 h-8 text-[#FE5000]" />
             <h3 className="text-4xl font-bold text-white">{totales.totalUsd.toLocaleString('en-US', { minimumFractionDigits: 2 })}</h3>
@@ -290,8 +295,7 @@ export default function GastosSection() {
             </thead>
             <tbody className="divide-y divide-gray-100">
               {(() => {
-                const tableEvents = [...filteredEvents]
-                  .filter(e => e.type === 'Agencia Móvil' || e.type === 'Unidad Móvil')
+                const tableEvents = [...mobileEvents]
                   .sort((a, b) => {
                     const aHasGastos = !!a.gastos;
                     const bHasGastos = !!b.gastos;
@@ -316,7 +320,8 @@ export default function GastosSection() {
                   const g = ev.gastos;
                   const totalBs = g ? (g.alimentacionBs + g.hospedajeBs + g.transporteBs + 
                                   g.soporteTecnicoBs + g.bancaElectronicaBs + g.gastosTributariosBs + 
-                                  g.conductorAyudanteBs + g.mantenimientoLimpiezaBs) : 0;
+                                  g.conductorAyudanteBs + g.mantenimientoLimpiezaBs + 
+                                  (g.gastoCombustibleBs || 0)) : 0;
                   
                   return (
                     <tr 

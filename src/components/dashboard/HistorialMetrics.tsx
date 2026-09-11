@@ -30,8 +30,14 @@ export default function HistorialMetrics({ events }: HistorialMetricsProps) {
         };
       }
 
-      const saldoUsd = (ev.saldoFinMesBs && ev.tasaBcvRentabilidad) ? (ev.saldoFinMesBs / ev.tasaBcvRentabilidad) : 0;
-      const gastoUsd = ev.gastos?.totalUsd || 0;
+      const tasaBcv = ev.gastos?.tasaBcv || ev.tasaBcvRentabilidad || 0;
+      const saldosBs = ev.cifras?.saldosCaptadosBs || 0;
+      const saldoDivisas = ev.cifras?.saldoCierreDivisas || 0;
+      const saldoUsd = (tasaBcv > 0 ? saldosBs / tasaBcv : 0) + saldoDivisas;
+
+      const isMobile = ev.type === 'Agencia Móvil' || ev.type === 'Unidad Móvil';
+      const gastoUsd = isMobile ? (ev.gastos?.totalUsd || 0) : 0;
+      
       const cuentas = ev.cifras?.cuentasAbiertas || 0;
       const tdd = ev.cifras?.tdd || 0;
 

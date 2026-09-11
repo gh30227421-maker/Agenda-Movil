@@ -3,12 +3,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useRentability } from '@/context/RentabilityContext';
 import { useAgenda } from '@/context/AgendaContext';
-import { TrendingUp, AlertCircle, CheckCircle2, ChevronRight, DollarSign, ArrowUpRight, ArrowDownRight, Building2 } from 'lucide-react';
+import { TrendingUp, AlertCircle, CheckCircle2, ChevronRight, DollarSign, ArrowUpRight, ArrowDownRight, Building2, Search } from 'lucide-react';
 import { format, isPast, isSameMonth } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { RentabilityTracking } from '@/lib/mock-data';
 import { X } from 'lucide-react';
 import ComboBox from '@/components/ui/ComboBox';
+import GlobalTrendChart from './GlobalTrendChart';
+import EventTrackingCard from './EventTrackingCard';
 
 function FormattedCurrencyInput({ value, onChange }: { value: number, onChange: (val: number) => void }) {
   const [displayValue, setDisplayValue] = useState(() => {
@@ -50,72 +52,45 @@ export default function RentabilityTrackingSection() {
   const { events } = useAgenda();
   
   const [editingCell, setEditingCell] = useState<RentabilityTracking | null>(null);
-  const [editValues, setEditValues] = useState<{ saldoActivo: number }>({ saldoActivo: 0 });
+  const [editValues, setEditValues] = useState<{ saldoActivo: number; tasaBcv: number }>({ saldoActivo: 0, tasaBcv: 0 });
+  const [filterMonth, setFilterMonth] = useState<string>('Todos');
+  const [filterType, setFilterType] = useState<string>('Todos');
   const [filterStatus, setFilterStatus] = useState<string>('Culminado');
+  const [searchTerm, setSearchTerm] = useState<string>('');
 
-  // Scroll synchronization refs
-  const topScrollRef = useRef<HTMLDivElement>(null);
-  const tableScrollRef = useRef<HTMLDivElement>(null);
-  const tableInnerRef = useRef<HTMLTableElement>(null);
-  const [tableWidth, setTableWidth] = useState<number>(0);
+  const baseValidEvents = events.filter(e => e.type !== 'Red de Agencias' && e.status !== 'Cancelado');
 
   const filteredEvents = events.filter(e => {
     if (e.type === 'Red de Agencias') return false; // Excluir Red de Agencias de módulos financieros
     if (e.status === 'Cancelado') return false;
-    if (filterStatus === 'Todos') return true;
-    return e.status === filterStatus;
-  }).sort((a, b) => new Date(a.endDate).getTime() - new Date(b.endDate).getTime());
-
-  // 1. Obtener todos los meses únicos para armar las columnas cronológicamente
-  const allDates = trackings
-    .filter(t => filteredEvents.some(e => e.id === t.eventId))
-    .map(t => new Date(t.monthDate));
     
-  const uniqueMonths = Array.from(new Set(allDates.map(d => format(d, 'yyyy-MM')))).sort();
-
-  // Calculate the total table width to fake the top scrollbar length
-  useEffect(() => {
-    if (tableInnerRef.current) {
-      setTableWidth(tableInnerRef.current.scrollWidth);
+    if (filterStatus !== 'Todos' && e.status !== filterStatus) return false;
+    if (filterType !== 'Todos' && e.type !== filterType) return false;
+    
+    if (filterMonth !== 'Todos') {
+      const eMonth = (new Date(e.startDate).getMonth() + 1).toString();
+      if (eMonth !== filterMonth) return false;
     }
-  }, [filteredEvents, trackings]);
 
-  const handleTopScroll = () => {
-    if (tableScrollRef.current && topScrollRef.current) {
-      tableScrollRef.current.scrollLeft = topScrollRef.current.scrollLeft;
+    if (searchTerm.trim() !== '') {
+      const term = searchTerm.toLowerCase();
+      if (!e.eventName.toLowerCase().includes(term) && !e.agencyCode.toLowerCase().includes(term)) {
+        return false;
+      }
     }
-  };
+    
+    return true;
+  }).sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
 
-  const handleTableScroll = () => {
-    if (topScrollRef.current && tableScrollRef.current) {
-      topScrollRef.current.scrollLeft = tableScrollRef.current.scrollLeft;
-    }
-  };
-
-  const formatCurrency = (val: number) => {
-    return new Intl.NumberFormat('es-VE', { style: 'currency', currency: 'VES' }).format(val);
-  };
-
-  const getRentabilityColor = (pct: number) => {
-    if (pct >= 60) return 'text-[#009639]';
-    if (pct >= 20) return 'text-yellow-500';
-    return 'text-red-500';
-  };
-
-  const getRentabilityBg = (pct: number) => {
-    if (pct >= 60) return 'bg-[#009639]';
-    if (pct >= 20) return 'bg-yellow-500';
-    return 'bg-red-500';
-  };
-
-  const handleEditClick = (t: RentabilityTracking) => {
+  const handleEditClick = (t: RentabilityTracking, eventRate: number) => {
     setEditingCell(t);
-    setEditValues({ saldoActivo: t.saldoActivo });
+    setEditValues({ saldoActivo: t.saldoActivo, tasaBcv: t.tasaBcv || eventRate });
   };
 
   const handleSave = async (id: string) => {
     await updateTracking(id, { 
-      saldoActivo: editValues.saldoActivo, 
+      saldoActivo: editValues.saldoActivo,
+      tasaBcv: editValues.tasaBcv,
       status: 'Cerrado'
     });
     setEditingCell(null);
@@ -132,217 +107,89 @@ export default function RentabilityTrackingSection() {
           <h1 className="text-2xl font-bold text-[#00205B]">Seguimiento de Efectividad Operativa</h1>
           <p className="text-gray-500 text-sm mt-1">Efectividad operativa y captaciones post-operativo</p>
         </div>
-        <div className="flex items-center gap-3">
-          <label className="text-sm font-semibold text-gray-700">Mostrar:</label>
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="relative w-64">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search className="h-4 w-4 text-gray-400" />
+            </div>
+            <input
+              type="text"
+              placeholder="Buscar operativo o agencia..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="block w-full pl-10 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[#FE5000] focus:border-transparent outline-none transition-all"
+            />
+          </div>
+          <div className="w-40">
+            <ComboBox 
+              options={[
+                { value: 'Todos', label: 'Todos los Meses' },
+                { value: '1', label: 'Enero' },
+                { value: '2', label: 'Febrero' },
+                { value: '3', label: 'Marzo' },
+                { value: '4', label: 'Abril' },
+                { value: '5', label: 'Mayo' },
+                { value: '6', label: 'Junio' },
+                { value: '7', label: 'Julio' },
+                { value: '8', label: 'Agosto' },
+                { value: '9', label: 'Septiembre' },
+                { value: '10', label: 'Octubre' },
+                { value: '11', label: 'Noviembre' },
+                { value: '12', label: 'Diciembre' }
+              ]}
+              value={filterMonth}
+              onChange={setFilterMonth}
+              placeholder="Mes de Inicio"
+            />
+          </div>
           <div className="w-48">
             <ComboBox 
               options={[
-                { value: 'Culminado', label: 'Solo Culminados' },
-                { value: 'Todos', label: 'Todos (Para Pruebas)' }
+                { value: 'Todos', label: 'Todos los Tipos' },
+                { value: 'Agencias Móviles', label: 'Agencias Móviles' },
+                { value: 'Unidad Móvil', label: 'Unidad Móvil' }
+              ]}
+              value={filterType}
+              onChange={setFilterType}
+              placeholder="Tipo Operativo"
+            />
+          </div>
+          <div className="w-48">
+            <ComboBox 
+              options={[
+                { value: 'Culminado', label: 'Culminados' },
+                { value: 'Pendiente', label: 'Pendientes' },
+                { value: 'Todos', label: 'Todos los Estatus' }
               ]}
               value={filterStatus}
-              onChange={(val) => setFilterStatus(val)}
+              onChange={setFilterStatus}
+              placeholder="Estatus"
             />
           </div>
         </div>
       </div>
 
-      {/* Leyenda de Indicadores */}
-      <div className="flex flex-wrap items-center gap-4 bg-white p-4 rounded-xl border border-gray-200 shadow-sm text-sm">
-        <span className="font-bold text-gray-700">Estado de Rentabilidad (Crecimiento Mensual):</span>
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-[#009639]"></div>
-          <span className="text-gray-600 font-medium">Crecimiento Positivo</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-[#D92D20]"></div>
-          <span className="text-gray-600 font-medium">Decrecimiento</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-gray-300"></div>
-          <span className="text-gray-600 font-medium">Pendiente / Sin Movimiento</span>
-        </div>
+      <div className="flex items-center text-sm font-medium text-gray-500 bg-gray-50 py-2 px-4 rounded-lg border border-gray-100">
+        Mostrando <span className="font-bold text-[#00205B] mx-1">{filteredEvents.length}</span> de <span className="font-bold text-[#00205B] mx-1">{baseValidEvents.length}</span> jornadas activas
       </div>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden flex flex-col">
-        
-        {/* Top Scrollbar synchronized with main table */}
-        <div 
-          ref={topScrollRef} 
-          className="overflow-x-auto overflow-y-hidden border-b border-gray-100 bg-gray-50/50" 
-          onScroll={handleTopScroll}
-        >
-          <div style={{ width: tableWidth || '100%', height: '1px' }}></div>
-        </div>
+      <GlobalTrendChart events={filteredEvents} trackings={trackings} />
 
-        <div 
-          ref={tableScrollRef}
-          className="overflow-x-auto" 
-          onScroll={handleTableScroll}
-        >
-          <table ref={tableInnerRef} className="w-full text-sm text-left">
-            <thead className="text-xs text-gray-500 uppercase bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="px-6 py-4 font-bold text-[#00205B] sticky left-0 bg-gray-50 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] min-w-[280px]">
-                  Operativo
-                </th>
-                {uniqueMonths.map(monthStr => {
-                  const d = new Date(`${monthStr}-02`);
-                  return (
-                    <th key={monthStr} className="px-6 py-4 text-center font-bold text-[#00205B] min-w-[240px]">
-                      {format(d, 'MMM yyyy', { locale: es })}
-                    </th>
-                  );
-                })}
-                <th className="px-6 py-4 text-right font-bold text-[#00205B] min-w-[200px] bg-gray-50/50">
-                  Rentabilidad Final
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {filteredEvents.map(event => {
-                const eventTrackings = trackings.filter(t => t.eventId === event.id).sort((a, b) => a.monthIndex - b.monthIndex);
-                
-                // Margins & Comparatives
-                const tasaBcv = event.gastos?.tasaBcv || 1;
-                const initialGastosUsd = event.gastos?.totalUsd || 0;
-                
-                const totalIncomeBs = eventTrackings.reduce((sum, t) => sum + (t.saldoActivo || 0), 0);
-                const totalIncomeUsd = totalIncomeBs / tasaBcv;
-                
-                const netMarginUsd = totalIncomeUsd - initialGastosUsd;
-                const netMarginBs = netMarginUsd * tasaBcv;
-                
-                const colorClass = netMarginUsd >= 0 ? 'text-[#009639]' : 'text-[#D92D20]';
-                const nextPendingTracking = eventTrackings.find(t => t.status === 'Pendiente');
+      <div className="flex flex-col gap-4 mt-6">
+        {filteredEvents.map(event => (
+          <EventTrackingCard 
+            key={event.id}
+            event={event}
+            trackings={trackings}
+            onEditClick={handleEditClick}
+          />
+        ))}
 
-                return (
-                  <tr key={event.id} className="hover:bg-gray-50/30 transition-colors group/row">
-                    <td className="px-6 py-5 border-r border-gray-100 align-top sticky left-0 bg-white group-hover/row:bg-gray-50/30 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
-                      <div className="flex flex-col h-full justify-between">
-                        <div>
-                          <div className="font-bold text-[#00205B] text-[15px] leading-tight">{event.eventName}</div>
-                          <div className="text-xs text-gray-500 mt-1.5 flex items-center gap-1.5 font-medium">
-                            <Building2 className="w-3.5 h-3.5 opacity-70" /> {event.agencyCode}
-                          </div>
-                          <div className="text-[10px] font-bold text-gray-400 mt-2 uppercase tracking-wider">Inicio: {event.endDate}</div>
-                        </div>
-                        {nextPendingTracking && (
-                          <button 
-                            onClick={() => handleEditClick(nextPendingTracking)}
-                            className="mt-4 w-full bg-white hover:bg-[#00205B] text-[#00205B] hover:text-white border border-gray-200 hover:border-[#00205B] transition-all duration-200 py-1.5 px-3 rounded-lg text-[11px] font-bold flex items-center justify-center gap-1.5 shadow-sm group/btn"
-                          >
-                            <TrendingUp className="w-3.5 h-3.5 group-hover/btn:text-white" />
-                            Registrar Métrica
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                    
-                    {uniqueMonths.map(monthStr => {
-                      const t = eventTrackings.find(track => format(new Date(track.monthDate), 'yyyy-MM') === monthStr);
-                      
-                      if (!t) {
-                        return (
-                          <td key={`empty-${monthStr}`} className="px-3 py-5 align-middle border-r border-gray-100 min-w-[240px]">
-                            <div className="text-center text-gray-300">
-                              <span className="block w-4 h-px bg-gray-200 mx-auto"></span>
-                            </div>
-                          </td>
-                        );
-                      }
-
-                      const isPending = t.status === 'Pendiente';
-                      const cellDate = new Date(t.monthDate);
-                      const isOverdue = isPending && isPast(cellDate) && !isSameMonth(cellDate, new Date());
-                      
-                      // Calculate difference vs previous month
-                      let diff = 0;
-                      let showDiff = false;
-                      if (!isPending && t.monthIndex > 1) {
-                        const prevT = eventTrackings.find(track => track.monthIndex === t.monthIndex - 1);
-                        if (prevT && prevT.status === 'Cerrado') {
-                          diff = t.saldoActivo - prevT.saldoActivo;
-                          showDiff = true;
-                        }
-                      }
-
-                      const cellStatusColor = isPending ? (isOverdue ? 'bg-red-400' : 'bg-gray-300') : (diff >= 0 ? 'bg-[#009639]' : 'bg-[#D92D20]');
-
-                      return (
-                        <td key={t.id} className="px-3 py-5 align-top border-r border-gray-100 min-w-[240px]">
-                            <div 
-                              onClick={() => handleEditClick(t)}
-                              className={`group relative overflow-hidden p-3.5 rounded-xl border transition-all cursor-pointer ${
-                                isPending 
-                                  ? isOverdue ? 'bg-red-50/40 border-red-100 hover:border-red-300' : 'bg-gray-50/50 border-gray-200 hover:border-gray-300' 
-                                  : 'bg-white border-gray-200 shadow-sm hover:shadow-md hover:border-[#00205B]/30'
-                              }`}
-                            >
-                              {/* Línea indicadora de estado lateral */}
-                              <div className={`absolute left-0 top-0 bottom-0 w-1 ${cellStatusColor}`} />
-                              
-                              <div className="flex items-center justify-between mb-2.5 pl-1.5">
-                                <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">
-                                  {format(cellDate, 'MMM yyyy', { locale: es })}
-                                </span>
-                                {isPending ? (
-                                  isOverdue ? <AlertCircle className="w-4 h-4 text-red-500" /> : <div className="w-1.5 h-1.5 bg-gray-300 rounded-full"></div>
-                                ) : (
-                                  <CheckCircle2 className="w-4 h-4 text-[#009639]" />
-                                )}
-                              </div>
-                              
-                              <div className="pl-1.5">
-                                {isPending ? (
-                                  <div className="text-xs text-left py-2 text-gray-400 group-hover:text-[#00205B] font-medium transition-colors flex items-center gap-1.5">
-                                    <div className="w-6 h-px bg-gray-300"></div>
-                                    Registrar Cierre
-                                  </div>
-                                ) : (
-                                  <div className="space-y-1.5">
-                                    <div className="flex flex-col">
-                                      <span className="text-[10px] text-gray-400 font-medium mb-0.5 uppercase tracking-wide">Saldo Mes</span>
-                                      <div className="flex items-end justify-between gap-2">
-                                        <span className="text-[15px] font-bold text-gray-900 truncate">
-                                          Bs. {new Intl.NumberFormat('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(t.saldoActivo)}
-                                        </span>
-                                      </div>
-                                      {showDiff && (
-                                        <div className="flex items-center justify-between mt-1">
-                                          <div className="text-[9px] text-gray-400 uppercase font-medium">Vs Mes Ant.</div>
-                                          <div className={`flex items-center gap-0.5 text-[11px] font-bold ${diff >= 0 ? 'text-[#009639]' : 'text-[#D92D20]'}`}>
-                                            {diff >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
-                                            {new Intl.NumberFormat('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Math.abs(diff))}
-                                          </div>
-                                        </div>
-                                      )}
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                        </td>
-                      );
-                    })}
-
-                    <td className="px-6 py-5 text-right align-middle bg-gray-50/50">
-                      <div className="flex flex-col items-end gap-1.5">
-                        <div className={`text-[15px] font-bold ${colorClass}`}>
-                          Bs. {new Intl.NumberFormat('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(netMarginBs)}
-                        </div>
-                        <div className={`text-xl font-black ${colorClass}`}>
-                          $ {new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(netMarginUsd)}
-                        </div>
-                        <div className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mt-1">Margen Neto</div>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+        {filteredEvents.length === 0 && (
+          <div className="text-center py-12 bg-white rounded-2xl border border-gray-200">
+            <p className="text-gray-400 font-medium">No hay eventos que coincidan con los filtros.</p>
+          </div>
+        )}
       </div>
 
       {editingCell && (
@@ -370,7 +217,7 @@ export default function RentabilityTrackingSection() {
                   {editingCell && (
                     <span className="text-xs font-bold text-[#00205B]">
                       $ {new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(
-                        editValues.saldoActivo / (events.find(e => e.id === editingCell.eventId)?.gastos?.tasaBcv || 1)
+                        editValues.tasaBcv > 0 ? editValues.saldoActivo / editValues.tasaBcv : 0
                       )}
                     </span>
                   )}
@@ -378,6 +225,20 @@ export default function RentabilityTrackingSection() {
                 <FormattedCurrencyInput 
                   value={editValues.saldoActivo} 
                   onChange={(val) => setEditValues({...editValues, saldoActivo: val})} 
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Tasa BCV del Mes (Bs/USD)</label>
+                <input 
+                  type="number" 
+                  step="0.01"
+                  min="0.01"
+                  required
+                  value={editValues.tasaBcv || ''}
+                  onChange={(e) => setEditValues({...editValues, tasaBcv: parseFloat(e.target.value) || 0})}
+                  className="w-full p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#FE5000] focus:border-transparent transition-all outline-none text-gray-900" 
+                  placeholder="0.00"
                 />
               </div>
             </div>

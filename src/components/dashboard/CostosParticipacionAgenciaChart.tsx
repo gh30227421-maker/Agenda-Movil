@@ -22,10 +22,7 @@ export default function CostosParticipacionAgenciaChart({ events }: CostosPartic
     events.forEach(ev => {
       const g = ev.gastos;
       if (!g) return;
-      const tasa = g.tasaBcv || 1;
-      const totalEv = ((g.alimentacionBs || 0) + (g.transporteBs || 0) + (g.hospedajeBs || 0) + 
-                       (g.soporteTecnicoBs || 0) + (g.bancaElectronicaBs || 0) + (g.gastosTributariosBs || 0) + 
-                       (g.conductorAyudanteBs || 0) + (g.mantenimientoLimpiezaBs || 0)) / tasa;
+      const totalEv = g.totalUsd || 0;
 
       if (ev.type === 'Agencia Móvil') {
         countAgencia++;
@@ -130,10 +127,18 @@ export default function CostosParticipacionAgenciaChart({ events }: CostosPartic
           </div>
         </div>
 
+        {/* Total Acumulado */}
+        <div className="mt-3 text-center">
+          <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">Total Acumulado</p>
+          <p className="text-xl font-black text-[#00205C]">
+            ${stats.total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </p>
+        </div>
+
         {/* Métricas Inferiores */}
-        <div className="mt-2 text-center">
-          <p className="text-xs text-gray-500 font-medium">Gasto Promedio / Jornada</p>
-          <p className="font-bold text-base text-gray-800">
+        <div className="mt-3 pt-2 border-t border-gray-100 w-[80%] text-center">
+          <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">Promedio / Jornada</p>
+          <p className="font-bold text-sm text-gray-800">
             ${stats.promedio.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </p>
         </div>
@@ -192,11 +197,19 @@ export default function CostosParticipacionAgenciaChart({ events }: CostosPartic
                 </div>
               </div>
 
-              <div className="mt-6 text-center bg-gray-50 px-8 py-4 rounded-2xl border border-gray-100">
-                <p className="text-sm text-gray-500 font-medium">Gasto Promedio por Jornada Operativa</p>
-                <p className="font-black text-2xl text-gray-800 mt-1">
-                  ${stats.promedio.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </p>
+              <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-lg">
+                <div className="text-center bg-gray-50 px-6 py-4 rounded-2xl border border-gray-100">
+                  <p className="text-sm text-gray-500 font-medium">Monto Total Acumulado</p>
+                  <p className="font-black text-2xl text-[#00205C] mt-1">
+                    ${stats.total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </p>
+                </div>
+                <div className="text-center bg-gray-50 px-6 py-4 rounded-2xl border border-gray-100">
+                  <p className="text-sm text-gray-500 font-medium">Promedio por Jornada</p>
+                  <p className="font-black text-2xl text-gray-800 mt-1">
+                    ${stats.promedio.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </p>
+                </div>
               </div>
             </div>
           </div>

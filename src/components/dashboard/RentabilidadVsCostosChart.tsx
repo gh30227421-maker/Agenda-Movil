@@ -72,8 +72,8 @@ export default function RentabilidadVsCostosChart({ events }: RentabilidadVsCost
 
   return (
     <ChartModalWrapper
-      title="Rentabilidad vs. Costo Operativo"
-      subtitle="Comparativa directa de inversión en gastos operativos vs. retorno neto por jornada"
+      title="Efectividad vs. Costo Operativo"
+      subtitle="Comparativa directa de inversión en gastos operativos vs. efectividad neta por jornada"
     >
       <div className="w-full h-full min-h-[500px] flex flex-col justify-between py-2">
         {/* Selector de Modo de Visualización */}

@@ -90,7 +90,7 @@ function TasaInput({ value, onChange }: { value: number, onChange: (val: number)
 }
 
 export default function EventManagementModal() {
-  const { events, agencies, updateEvent, deleteEvent, addEvent, modalState, closeModal, setModalMode, setModalEventId } = useAgenda();
+  const { events, agencies, updateEvent, deleteEvent, addEvent, modalState, closeModal, setModalMode, setModalEventId, deleteExpenses } = useAgenda();
   const { showToast } = useToast();
   
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -331,16 +331,16 @@ export default function EventManagementModal() {
     
     setIsSubmitting(true);
     const gastos = {
-      alimentacionBs: gastosValues.alimentacion,
-      hospedajeBs: gastosValues.hospedaje,
-      transporteBs: gastosValues.transporte,
-      soporteTecnicoBs: gastosValues.soporteTecnico,
-      bancaElectronicaBs: gastosValues.bancaElectronica,
-      gastosTributariosBs: gastosValues.gastosTributarios,
-      conductorAyudanteBs: gastosValues.conductorAyudante,
-      mantenimientoLimpiezaBs: gastosValues.mantenimientoLimpieza,
-      gastoCombustibleBs: event.type === 'Unidad Móvil' ? gastosValues.combustible : 0,
-      distanciaKm: event.type === 'Unidad Móvil' ? gastosValues.distancia : 0,
+      alimentacionBs: Number(gastosValues.alimentacion.toFixed(2)),
+      hospedajeBs: Number(gastosValues.hospedaje.toFixed(2)),
+      transporteBs: Number(gastosValues.transporte.toFixed(2)),
+      soporteTecnicoBs: Number(gastosValues.soporteTecnico.toFixed(2)),
+      bancaElectronicaBs: Number(gastosValues.bancaElectronica.toFixed(2)),
+      gastosTributariosBs: Number(gastosValues.gastosTributarios.toFixed(2)),
+      conductorAyudanteBs: Number(gastosValues.conductorAyudante.toFixed(2)),
+      mantenimientoLimpiezaBs: Number(gastosValues.mantenimientoLimpieza.toFixed(2)),
+      gastoCombustibleBs: event.type === 'Unidad Móvil' ? Number(gastosValues.combustible.toFixed(2)) : 0,
+      distanciaKm: event.type === 'Unidad Móvil' ? Number(gastosValues.distancia.toFixed(2)) : 0,
       tasaBcv: bcvRate,
       totalUsd: Number(totalUsd.toFixed(2)),
       estado: 'Pendiente' as const
@@ -354,6 +354,21 @@ export default function EventManagementModal() {
       console.error(e);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteGastos = async () => {
+    if (!event) return;
+    if (window.confirm("¿Está seguro que desea eliminar todos los gastos registrados para este evento? Esta acción no se puede deshacer y el evento volverá a estado Pendiente.")) {
+      try {
+        setIsSubmitting(true);
+        await deleteExpenses(event.id);
+        if (modalState.isGlobal) closeModal(); else setModalMode('menu');
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
 
@@ -1118,7 +1133,20 @@ export default function EventManagementModal() {
                   </div>
                 </div>
 
-                <div className="flex justify-end pt-6 border-t border-gray-200 mt-6">
+                <div className="flex justify-between pt-6 border-t border-gray-200 mt-6">
+                  <div>
+                    {event?.gastos && (
+                      <button 
+                        type="button" 
+                        onClick={handleDeleteGastos}
+                        disabled={isSubmitting}
+                        className="flex items-center gap-2 bg-white text-red-500 border border-red-200 px-4 py-3 rounded-xl font-medium hover:bg-red-50 transition-all disabled:opacity-50"
+                      >
+                        <Trash2 className="w-5 h-5" /> 
+                        <span className="hidden sm:inline">Eliminar Gastos</span>
+                      </button>
+                    )}
+                  </div>
                   <button disabled={isSubmitting} type="submit" className="flex items-center gap-2 bg-[#FE5000] text-white px-6 py-3 rounded-xl font-bold hover:bg-[#e04700] shadow-md hover:shadow-lg transition-all disabled:opacity-50">
                     <Save className="w-5 h-5" /> {isSubmitting ? 'Guardando...' : 'Guardar Gastos'}
                   </button>

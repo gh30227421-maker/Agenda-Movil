@@ -9,7 +9,6 @@ import VenezuelaMap from './VenezuelaMap';
 import VolumenChart from './VolumenChart';
 import CostosParticipacionChart from './CostosParticipacionChart';
 import CostosCategoriasChart from './CostosCategoriasChart';
-import MatrizRentabilidad from './MatrizRentabilidad';
 import HistorialMetrics from './HistorialMetrics';
 import AgenciaRankingChart from './AgenciaRankingChart';
 import AgenciaDistribucionChart from './AgenciaDistribucionChart';
@@ -432,11 +431,6 @@ export default function DashboardSection() {
         <div className="w-full">
           <RentabilidadVsCostosChart events={filteredEvents} />
         </div>
-      </div>
-
-      {/* Bloque 5: Matriz de Rentabilidad (Ubicado al final por su extenso detalle) */}
-      <div className="pt-6 mt-6 border-t border-gray-200">
-        <MatrizRentabilidad events={filteredEvents} />
       </div>
     </div>
   );

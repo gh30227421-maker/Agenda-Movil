@@ -36,6 +36,7 @@ interface AgendaContextType {
   fetchData: () => Promise<void>;
   updateEvent: (id: string, data: Partial<AgendaEvent>) => Promise<void>;
   deleteEvent: (id: string) => Promise<void>;
+  deleteExpenses: (id: string) => Promise<void>;
   addEvent: (data: Omit<AgendaEvent, 'id'>) => Promise<void>;
   addAssignment: (data: Omit<EventAssignment, 'id'>) => Promise<void>;
   toggleAssignmentStatus: (id: string) => Promise<void>;
@@ -236,32 +237,35 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
         // Cifras Operativas
         const { data: existingOp } = await (supabase as any).from('cifras_operativas').select('id').eq('event_id', id).maybeSingle() as { data: any | null; error: any };
         if (existingOp) {
-          await (supabase as any).from('cifras_operativas').update({
+          const { error: opErr } = await (supabase as any).from('cifras_operativas').update({
             cuentas_abiertas: data.cifras.cuentasAbiertas,
             tdd: data.cifras.tdd,
             reclamos: data.cifras.reclamos
           }).eq('event_id', id);
+          if (opErr) throw opErr;
         } else {
-          await (supabase as any).from('cifras_operativas').insert({
+          const { error: opErr } = await (supabase as any).from('cifras_operativas').insert({
             event_id: id,
             cuentas_abiertas: data.cifras.cuentasAbiertas,
             tdd: data.cifras.tdd,
             reclamos: data.cifras.reclamos
           });
+          if (opErr) throw opErr;
         }
 
         // Saldos Financieros
         const { data: existingFin } = await (supabase as any).from('saldos_financieros_cierre').select('id').eq('event_id', id).maybeSingle() as { data: any | null; error: any };
         if (existingFin) {
-          await (supabase as any).from('saldos_financieros_cierre').update({
+          const { error: finErr } = await (supabase as any).from('saldos_financieros_cierre').update({
             saldos_captados_bs: data.cifras.saldosCaptadosBs,
             atm_consultas: data.cifras.atmConsultas,
             atm_retiros: data.cifras.atmRetiros,
             atm_cambio_clave: data.cifras.atmCambioClave,
             saldo_cierre_divisas: data.cifras.saldoCierreDivisas
           }).eq('event_id', id);
+          if (finErr) throw finErr;
         } else {
-          await (supabase as any).from('saldos_financieros_cierre').insert({
+          const { error: finErr } = await (supabase as any).from('saldos_financieros_cierre').insert({
             event_id: id,
             saldos_captados_bs: data.cifras.saldosCaptadosBs,
             atm_consultas: data.cifras.atmConsultas,
@@ -269,13 +273,14 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
             atm_cambio_clave: data.cifras.atmCambioClave,
             saldo_cierre_divisas: data.cifras.saldoCierreDivisas
           });
+          if (finErr) throw finErr;
         }
       }
 
       if (data.gastos) {
         const { data: existingExpense } = await (supabase as any).from('event_expenses').select('id').eq('event_id', id).maybeSingle() as { data: any | null; error: any };
         if (existingExpense) {
-          await (supabase as any).from('event_expenses').update({
+          const { error: expErr } = await (supabase as any).from('event_expenses').update({
             alimentacion_bs: data.gastos.alimentacionBs,
             hospedaje_bs: data.gastos.hospedajeBs,
             transporte_bs: data.gastos.transporteBs,
@@ -287,10 +292,12 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
             gasto_combustible_bs: data.gastos.gastoCombustibleBs,
             distancia_km: data.gastos.distanciaKm,
             tasa_bcv: data.gastos.tasaBcv,
+            total_usd: data.gastos.totalUsd,
             status: data.gastos.estado
           }).eq('event_id', id);
+          if (expErr) throw expErr;
         } else {
-          await (supabase as any).from('event_expenses').insert({
+          const { error: expErr } = await (supabase as any).from('event_expenses').insert({
             event_id: id,
             alimentacion_bs: data.gastos.alimentacionBs,
             hospedaje_bs: data.gastos.hospedajeBs,
@@ -303,24 +310,28 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
             gasto_combustible_bs: data.gastos.gastoCombustibleBs,
             distancia_km: data.gastos.distanciaKm,
             tasa_bcv: data.gastos.tasaBcv,
+            total_usd: data.gastos.totalUsd,
             status: data.gastos.estado
           });
+          if (expErr) throw expErr;
         }
       }
 
       if (data.saldoFinMesBs !== undefined && data.tasaBcvRentabilidad !== undefined) {
          const { data: existingClosing } = await (supabase as any).from('event_closings').select('id').eq('event_id', id).maybeSingle() as { data: any | null; error: any };
          if (existingClosing) {
-            await (supabase as any).from('event_closings').update({
+            const { error: closeErr } = await (supabase as any).from('event_closings').update({
               saldo_fin_mes_bs: data.saldoFinMesBs,
               tasa_bcv_rentabilidad: data.tasaBcvRentabilidad
             } as any).eq('event_id', id);
+            if (closeErr) throw closeErr;
          } else {
-            await (supabase as any).from('event_closings').insert({
+            const { error: closeErr } = await (supabase as any).from('event_closings').insert({
               event_id: id,
               saldo_fin_mes_bs: data.saldoFinMesBs,
               tasa_bcv_rentabilidad: data.tasaBcvRentabilidad
             } as any);
+            if (closeErr) throw closeErr;
          }
       }
 
@@ -343,6 +354,20 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
     } catch (error: any) {
       console.error(error);
       showToast(error.message || 'Error al eliminar evento', 'error');
+    }
+  };
+
+  const deleteExpenses = async (id: string) => {
+    try {
+      const { error } = await (supabase as any).from('event_expenses').delete().eq('event_id', id);
+      if (error) throw error;
+      
+      showToast('Gastos eliminados exitosamente', 'success');
+      await fetchData();
+    } catch (error: any) {
+      console.error(error);
+      showToast(error.message || 'Error al eliminar gastos', 'error');
+      throw error;
     }
   };
 
@@ -474,7 +499,7 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
 
   return (
     <AgendaContext.Provider value={{ 
-      events, agencies, updateEvent, deleteEvent, addEvent, 
+      events, agencies, updateEvent, deleteEvent, deleteExpenses, addEvent, 
       assignments, addAssignment, toggleAssignmentStatus,
       employees, addEmployee, updateEmployee, deleteEmployee, isLoading, isSeeding, fetchData, handleSeed,
       modalState, openModal, closeModal, setModalMode, setModalEventId
