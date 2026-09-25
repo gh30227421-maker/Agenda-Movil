@@ -1,10 +1,8 @@
 import React from 'react';
-import RutasUnidadMovil from '@/components/rutas/RutasUnidadMovil';
-import RutasAgenciaMovil from '@/components/rutas/RutasAgenciaMovil';
-import { Truck, Building2, Radar } from 'lucide-react';
+import { Radar } from 'lucide-react';
 import PresentationMode from '@/components/ui/PresentationMode';
 import SystemStatus from '@/components/ui/SystemStatus';
-import GlobalMonitoreoKPIs from '@/components/rutas/GlobalMonitoreoKPIs';
+import RutasDashboardClient from '@/components/rutas/RutasDashboardClient';
 
 export const metadata = {
   title: 'Monitoreo Territorial | Impacto Corporativo',
@@ -43,24 +41,12 @@ export default function RutasPage() {
         </div>
       </div>
       
-      {/* Secciones Continuas */}
+      {/* Secciones Continuas e Interactivas (Client Wrapper) */}
       <div 
         id="tv-scroll-container" 
-        className="w-full flex flex-col relative z-10 gap-6 [.presentation-mode-active_&]:pt-[100px]"
+        className="w-full flex flex-col relative z-10"
       >
-        
-        {/* KPIs Globales Consolidados */}
-        <GlobalMonitoreoKPIs />
-        
-        {/* Bloque 1: Unidad Móvil */}
-        <section className="w-full pt-4 relative">
-          <RutasUnidadMovil />
-        </section>
-
-        {/* Bloque 2: Agencia Móvil */}
-        <section className="w-full pb-8 relative">
-          <RutasAgenciaMovil />
-        </section>
+        <RutasDashboardClient />
       </div>
       <PresentationMode />
     </div>

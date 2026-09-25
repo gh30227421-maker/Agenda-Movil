@@ -4,7 +4,7 @@ import React, { useMemo } from 'react';
 import { useAgenda } from '@/context/AgendaContext';
 import { Users, CreditCard, CalendarRange, BarChart3 } from 'lucide-react';
 
-export default function GlobalMonitoreoKPIs() {
+export default function GlobalMonitoreoKPIs({ selectedMonths = [] }: { selectedMonths?: string[] }) {
   const { events, isLoading } = useAgenda();
 
   const globals = useMemo(() => {
@@ -17,6 +17,7 @@ export default function GlobalMonitoreoKPIs() {
     events.forEach(e => {
       // Filtrar estrictamente solo para Agencia Móvil, Unidad Móvil y Red de Agencias
       if (e.type !== 'Agencia Móvil' && e.type !== 'Unidad Móvil' && e.type !== 'Red de Agencias') return;
+      if (selectedMonths.length > 0 && (!e.startDate || !selectedMonths.some(m => e.startDate?.startsWith(m)))) return;
 
       totalJornadas++;
       
@@ -40,7 +41,7 @@ export default function GlobalMonitoreoKPIs() {
       totalJornadas,
       totalOperaciones
     };
-  }, [events]);
+  }, [events, selectedMonths]);
 
   if (isLoading) return null;
 

@@ -5,7 +5,7 @@ import PremiumCarousel from './PremiumCarousel';
 import AnimatedCounter from '@/components/ui/AnimatedCounter';
 import { supabase } from '@/lib/supabase';
 import { useAgenda } from '@/context/AgendaContext';
-import { Loader2, Users, MapPin, Building2, Activity, Calendar, Video, Download, Truck } from 'lucide-react';
+import { Loader2, Users, MapPin, Building2, Activity, Calendar, Video, Download, Truck, XCircle } from 'lucide-react';
 import { exportToPNG } from '@/utils/exportUtils';
 import { toPng } from 'html-to-image';
 // @ts-ignore
@@ -44,13 +44,16 @@ const normalizeStateName = (name: string) => {
 
 const geoUrl = '/venezuela.json';
 
-export default function RutasAgenciaMovil() {
+export default function RutasAgenciaMovil({ selectedMonths = [] }: { selectedMonths?: string[] }) {
   const { events: allEvents, isLoading: isEventsLoading } = useAgenda();
   const [isCombinado, setIsCombinado] = useState(false);
   
   const events = useMemo(() => {
-    return allEvents.filter(e => e.type === 'Agencia Móvil' || (isCombinado && e.type === 'Red de Agencias'));
-  }, [allEvents, isCombinado]);
+    return allEvents.filter(e => 
+      (e.type === 'Agencia Móvil' || (isCombinado && e.type === 'Red de Agencias')) &&
+      (selectedMonths.length === 0 || (e.startDate && selectedMonths.some(m => e.startDate?.startsWith(m))))
+    );
+  }, [allEvents, isCombinado, selectedMonths]);
   
   const [photos, setPhotos] = useState<any[]>([]);
   const [loadingPhotos, setLoadingPhotos] = useState(true);
@@ -59,6 +62,16 @@ export default function RutasAgenciaMovil() {
   
   const [playlist, setPlaylist] = useState<string[]>([]);
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
+
+  const [drilldownState, setDrilldownState] = useState<string | null>(null);
+  const [drilldownEventId, setDrilldownEventId] = useState<string | null>(null);
+  const [showPopover, setShowPopover] = useState<boolean>(false);
+
+  const filteredEvents = useMemo(() => {
+    if (drilldownEventId) return events.filter(e => e.id === drilldownEventId);
+    if (drilldownState) return events.filter(e => normalizeStateName(e.estadoOperativo || e.state) === drilldownState);
+    return events;
+  }, [events, drilldownState, drilldownEventId]);
 
   // Fetch Playlist de Videos
   useEffect(() => {
@@ -199,7 +212,7 @@ export default function RutasAgenciaMovil() {
     let totalDistancia = 0;
     const statesSet = new Set<string>();
     
-    events.forEach(ev => {
+    filteredEvents.forEach(ev => {
       if (ev.cifras?.cuentasAbiertas) {
         totalCuentas += ev.cifras.cuentasAbiertas;
       }
@@ -218,7 +231,19 @@ export default function RutasAgenciaMovil() {
       estados: statesSet.size,
       distancia: totalDistancia
     };
-  }, [events]);
+  }, [filteredEvents]);
+
+  const displayedPhotos = useMemo(() => {
+    if (drilldownEventId) {
+      const p = photos.filter(p => p.event_id === drilldownEventId);
+      if (p.length > 0) return p;
+    } else if (drilldownState) {
+      const stateEventIds = events.filter(e => normalizeStateName(e.estadoOperativo || e.state) === drilldownState).map(e => e.id);
+      const p = photos.filter(p => stateEventIds.includes(p.event_id));
+      if (p.length > 0) return p;
+    }
+    return photos;
+  }, [photos, drilldownState, drilldownEventId, events]);
 
   const nextEvent = useMemo(() => {
     const today = new Date();
@@ -271,7 +296,7 @@ export default function RutasAgenciaMovil() {
 
           {/* Carrusel Inmersivo */}
           <div className="w-full h-[260px] xl:h-[340px]">
-            <PremiumCarousel photos={photos} />
+            <PremiumCarousel photos={displayedPhotos} />
           </div>
 
           {/* Live Timeline Vertical */}
@@ -425,7 +450,7 @@ export default function RutasAgenciaMovil() {
                     {loadingKm ? (
                       <Loader2 className="w-5 h-5 animate-spin text-[#00205B]" />
                     ) : (
-                      <AnimatedCounter end={dbTotalKm || kpis.distancia} /> 
+                      <AnimatedCounter end={drilldownState || drilldownEventId ? kpis.distancia : (dbTotalKm || kpis.distancia)} /> 
                     )}
                     <span className="text-sm text-slate-400">Km</span>
                   </p>
@@ -445,6 +470,60 @@ export default function RutasAgenciaMovil() {
             >
               <Download className="w-5 h-5" />
             </button>
+
+            {/* Popover Drill-Down */}
+            {drilldownState && showPopover && (
+              <div className="absolute top-0 left-4 md:top-[-20px] z-50 bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-slate-200 p-4 w-[320px] animate-in fade-in zoom-in-95 duration-200">
+                <div className="flex items-center justify-between mb-3 border-b border-slate-100 pb-2">
+                   <h3 className="text-sm font-black text-[#00205B] uppercase tracking-wider">{drilldownState}</h3>
+                   <button onClick={() => setShowPopover(false)} className="text-slate-400 hover:text-red-500 transition-colors" title="Cerrar Menú">
+                     <XCircle className="w-5 h-5" />
+                   </button>
+                </div>
+                <div className="flex flex-col gap-2 max-h-[300px] overflow-y-auto pr-1 hide-scrollbar">
+                  {events.filter(e => normalizeStateName(e.estadoOperativo || e.state) === drilldownState).map(ev => (
+                     <button 
+                       key={ev.id}
+                       onClick={() => setDrilldownEventId(drilldownEventId === ev.id ? null : ev.id)}
+                       className={`text-left p-2.5 rounded-xl border transition-all ${drilldownEventId === ev.id ? 'bg-[#00205B] border-[#00205B] text-white shadow-md' : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-blue-50 hover:border-blue-200'}`}
+                     >
+                       <p className="text-[11px] font-bold leading-tight mb-1">{ev.eventName || 'Operativo Especial'}</p>
+                       <p className={`text-[9px] flex items-center gap-1 ${drilldownEventId === ev.id ? 'text-blue-200' : 'text-slate-500'}`}>
+                         <Users className="w-3 h-3" /> {(ev.cifras?.cuentasAbiertas || 0) + (ev.cifras?.atendidos || 0)} Atendidos
+                       </p>
+                     </button>
+                  ))}
+                </div>
+                <button 
+                  onClick={() => { setDrilldownState(null); setDrilldownEventId(null); setShowPopover(false); }}
+                  className="w-full mt-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-colors border border-slate-200"
+                >
+                  Limpiar y Ver Nacional
+                </button>
+              </div>
+            )}
+
+            {/* Etiqueta Compacta de Filtro Activo */}
+            {(drilldownState || drilldownEventId) && !showPopover && (
+              <div className="absolute top-0 left-4 md:top-[-20px] z-50 bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border border-slate-200 p-3 flex items-center gap-3 animate-in fade-in zoom-in-95 duration-200">
+                <div className="flex flex-col max-w-[300px]">
+                  <span className="text-[9px] text-slate-500 font-bold uppercase tracking-wider">Filtro Activo</span>
+                  <strong className="text-xs font-black text-[#00205B] uppercase break-words" title={drilldownEventId ? (events.find(e => e.id === drilldownEventId)?.eventName || 'Evento') : drilldownState}>
+                    {drilldownEventId ? (events.find(e => e.id === drilldownEventId)?.eventName || 'Evento Seleccionado') : drilldownState}
+                  </strong>
+                </div>
+                <div className="h-6 w-px bg-slate-200 mx-0.5"></div>
+                {drilldownState && (
+                  <button onClick={() => setShowPopover(true)} className="text-[9px] font-bold text-[#00205B] bg-blue-50 hover:bg-blue-100 px-2 py-1.5 rounded-md transition-colors uppercase tracking-wider shadow-sm">
+                    Modificar
+                  </button>
+                )}
+                <button onClick={() => { setDrilldownState(null); setDrilldownEventId(null); setShowPopover(false); }} className="text-[9px] font-bold text-red-600 bg-red-50 hover:bg-red-100 px-2 py-1.5 rounded-md transition-colors uppercase tracking-wider shadow-sm">
+                  Nacional
+                </button>
+              </div>
+            )}
+
           <ComposableMap
             xmlns="http://www.w3.org/2000/svg"
             projection="geoMercator"
@@ -500,22 +579,36 @@ export default function RutasAgenciaMovil() {
                           setTooltip({ ...tooltip, x: e.clientX, y: e.clientY });
                         }
                       }}
+                      onClick={(e: any) => {
+                        if (isActive) {
+                          setDrilldownState(normName);
+                          setShowPopover(true);
+                        }
+                      }}
                       onMouseLeave={() => setTooltip(null)}
                       style={{
                         default: {
-                          fill: isActive ? '#FE5000' : '#1E293B',
-                          stroke: isActive ? '#CC4000' : '#64748B',
+                          fill: isActive 
+                            ? (drilldownState && drilldownState !== normName ? '#334155' : '#FE5000') 
+                            : '#1E293B',
+                          stroke: isActive 
+                            ? (drilldownState && drilldownState !== normName ? '#475569' : '#CC4000') 
+                            : '#64748B',
                           strokeWidth: isActive ? 1.2 : 1,
                           outline: 'none',
-                          filter: isActive ? 'drop-shadow(0 0 8px rgba(249, 115, 22, 0.5))' : 'none',
+                          filter: isActive && (!drilldownState || drilldownState === normName) ? 'drop-shadow(0 0 8px rgba(249, 115, 22, 0.5))' : 'none',
                           transition: 'all 0.3s ease',
                         },
                         hover: {
-                          fill: isActive ? '#FF8A50' : '#334155',
-                          stroke: isActive ? '#FE5000' : '#94A3B8',
+                          fill: isActive 
+                            ? (drilldownState && drilldownState !== normName ? '#475569' : '#FF8A50') 
+                            : '#334155',
+                          stroke: isActive 
+                            ? (drilldownState && drilldownState !== normName ? '#64748B' : '#FE5000') 
+                            : '#94A3B8',
                           strokeWidth: isActive ? 1.2 : 1,
                           outline: 'none',
-                          filter: isActive ? 'drop-shadow(0 0 12px rgba(249, 115, 22, 0.8))' : 'none',
+                          filter: isActive && (!drilldownState || drilldownState === normName) ? 'drop-shadow(0 0 12px rgba(249, 115, 22, 0.8))' : 'none',
                           cursor: isActive ? 'pointer' : 'default',
                         },
                         pressed: {

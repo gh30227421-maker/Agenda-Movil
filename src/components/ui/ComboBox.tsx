@@ -131,8 +131,9 @@ export default function ComboBox({
               filteredOptions.map((opt, index) => {
                 const showGroupHeader = opt.group && (index === 0 || filteredOptions[index - 1].group !== opt.group);
                 
+                const isAllOption = opt.value === 'all' || opt.value === 'todos';
                 const isSelected = multiple && Array.isArray(value) 
-                  ? (opt.value === 'all' ? value.length === 0 || value.includes('all') : value.includes(opt.value))
+                  ? (isAllOption ? value.length === 0 || value.includes(opt.value) : value.includes(opt.value))
                   : value === opt.value;
 
                 return (
@@ -146,10 +147,10 @@ export default function ComboBox({
                       type="button"
                       onClick={() => {
                         if (multiple && Array.isArray(value)) {
-                          if (opt.value === 'all') {
+                          if (isAllOption) {
                             onChange([]);
                           } else {
-                            const currentVals = value.filter(v => v !== 'all');
+                            const currentVals = value.filter(v => v !== 'all' && v !== 'todos');
                             const newValue = currentVals.includes(opt.value)
                               ? currentVals.filter(v => v !== opt.value)
                               : [...currentVals, opt.value];

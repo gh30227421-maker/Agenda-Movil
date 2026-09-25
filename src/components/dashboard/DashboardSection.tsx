@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Filter, Calendar, MapPin, BarChart3, CalendarRange, XCircle, Grid, Truck, Building2, Store } from 'lucide-react';
 import { useAgenda } from '@/context/AgendaContext';
 import ComboBox from '@/components/ui/ComboBox';
@@ -17,7 +17,7 @@ import UnidadDistribucionChart from './UnidadDistribucionChart';
 import RentabilidadRegionChart from './RentabilidadRegionChart';
 import RentabilidadTopEventosChart from './RentabilidadTopEventosChart';
 import RentabilidadVsCostosChart from './RentabilidadVsCostosChart';
-
+import RankingEventosOperativoChart from './RankingEventosOperativoChart';
 const isEventInPeriod = (evStartDate: string | undefined, periods: string[]) => {
   if (periods.length === 0 || periods.includes('todos')) return true;
   if (!evStartDate) return false;
@@ -45,6 +45,7 @@ export default function DashboardSection() {
   const { events, agencies } = useAgenda();
 
   // Estados de filtros
+  const [activeTab, setActiveTab] = useState<'operativo' | 'financiero'>('operativo');
   const [selectedEventType, setSelectedEventType] = useState<string>('Todas');
   const [selectedEventIds, setSelectedEventIds] = useState<string[]>([]);
 
@@ -195,166 +196,210 @@ export default function DashboardSection() {
     return acc;
   }, 0);
 
+  // Limpieza dinámica bidireccional: si un filtro seleccionado ya no es válido tras cambiar otro, se limpia automáticamente
+  useEffect(() => {
+    if (selectedEventIds.length > 0) {
+      const validEventIds = selectedEventIds.filter(id => availableEvents.some(ev => ev.value === id));
+      if (validEventIds.length !== selectedEventIds.length) {
+        setSelectedEventIds(validEventIds);
+      }
+    }
+  }, [availableEvents, selectedEventIds]);
+
+  useEffect(() => {
+    if (selectedStateFilters.length > 0) {
+      const validStates = selectedStateFilters.filter(st => availableStates.some(s => s.value === st));
+      if (validStates.length !== selectedStateFilters.length) {
+        setSelectedStateFilters(validStates);
+      }
+    }
+  }, [availableStates, selectedStateFilters]);
+
+  useEffect(() => {
+    if (selectedRegionFilters.length > 0) {
+      const validRegions = selectedRegionFilters.filter(rg => availableRegions.some(r => r.value === rg));
+      if (validRegions.length !== selectedRegionFilters.length) {
+        setSelectedRegionFilters(validRegions);
+      }
+    }
+  }, [availableRegions, selectedRegionFilters]);
+
   return (
     <div className="space-y-6 w-full px-4 sm:px-8 mx-auto pb-10">
       {/* Cabecera Principal y Barra de Filtros Dinámicos */}
-      <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 pb-4">
-          <div>
-            <h1 className="text-2xl font-bold text-[#00205B]">Panel Operativo Financiero</h1>
-            <p className="text-sm text-gray-500">Gestión de jornadas, despliegue de unidades y control de efectividad operativa a nivel nacional</p>
+      <div className="bg-white rounded-2xl p-4 sm:p-5 border border-gray-100 shadow-sm flex flex-col gap-4">
+        {/* Fila 1: Cabecera Unificada (Título, Pestañas, KPIs) */}
+        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
+            <div>
+              <h1 className="text-xl sm:text-2xl font-bold text-[#00205B] leading-tight">Panel Operativo Financiero</h1>
+              <p className="text-xs text-gray-500 mt-0.5">Gestión de jornadas, despliegue y control de efectividad</p>
+            </div>
+            
+            {/* Pestañas de Navegación Principal (Integradas arriba) */}
+            <div className="flex items-center gap-1 bg-gray-100/80 p-1 rounded-lg w-fit border border-gray-200 shrink-0">
+              <button
+                onClick={() => setActiveTab('operativo')}
+                className={`px-5 py-1.5 text-xs sm:text-sm font-bold rounded-md transition-all duration-200 ${
+                  activeTab === 'operativo' 
+                    ? 'bg-white text-[#00205B] shadow-sm ring-1 ring-black/5' 
+                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'
+                }`}
+              >
+                Módulo Operativo
+              </button>
+              <button
+                onClick={() => setActiveTab('financiero')}
+                className={`px-5 py-1.5 text-xs sm:text-sm font-bold rounded-md transition-all duration-200 ${
+                  activeTab === 'financiero' 
+                    ? 'bg-white text-[#00205B] shadow-sm ring-1 ring-black/5' 
+                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'
+                }`}
+              >
+                Módulo Financiero
+              </button>
+            </div>
           </div>
           
-          <div className="flex items-center gap-4 overflow-x-auto pb-2 sm:pb-0">
+          <div className="flex items-center gap-4 overflow-x-auto pb-1 sm:pb-0">
+            
+            {/* Filtro Tipo de Evento (Canales) - Movido Arriba */}
+            <div className="flex bg-gray-100 p-1 rounded-lg max-w-fit shadow-sm border border-gray-200 h-[38px] items-center shrink-0">
+              <button 
+                onClick={() => {
+                  setSelectedEventType('Todas');
+                  setSelectedEventIds([]);
+                  setSelectedRegionFilters([]);
+                  setSelectedStateFilters([]);
+                }}
+                className={getButtonClass('Todas', 'bg-white text-gray-800 shadow-sm font-bold text-xs py-1 px-3', 'text-xs py-1 px-3 hover:text-gray-900 hover:bg-gray-200/50')}
+              >
+                <Grid className="w-3.5 h-3.5" />
+                <span className="hidden xl:inline">Todas</span>
+              </button>
+              <button 
+                onClick={() => {
+                  setSelectedEventType('Unidad Móvil');
+                  setSelectedEventIds([]);
+                  setSelectedRegionFilters([]);
+                  setSelectedStateFilters([]);
+                }}
+                className={getButtonClass('Unidad Móvil', 'bg-[#FE5000] text-white font-bold shadow-sm text-xs py-1 px-3', 'text-xs py-1 px-3 hover:text-[#FE5000] hover:bg-orange-50')}
+              >
+                <Truck className="w-3.5 h-3.5" />
+                <span className="hidden xl:inline">Unidad Móvil</span>
+              </button>
+              <button 
+                onClick={() => {
+                  setSelectedEventType('Agencia Móvil');
+                  setSelectedEventIds([]);
+                  setSelectedRegionFilters([]);
+                  setSelectedStateFilters([]);
+                }}
+                className={getButtonClass('Agencia Móvil', 'bg-[#00205B] text-white font-bold shadow-sm text-xs py-1 px-3', 'text-xs py-1 px-3 hover:text-[#00205B] hover:bg-blue-50')}
+              >
+                <Building2 className="w-3.5 h-3.5" />
+                <span className="hidden xl:inline">Agencia Móvil</span>
+              </button>
+              <button 
+                onClick={() => {
+                  setSelectedEventType('Red de Agencias');
+                  setSelectedEventIds([]);
+                  setSelectedRegionFilters([]);
+                  setSelectedStateFilters([]);
+                }}
+                className={getButtonClass('Red de Agencias', 'bg-[#009639] text-white font-bold shadow-sm text-xs py-1 px-3', 'text-xs py-1 px-3 hover:text-[#009639] hover:bg-green-50')}
+              >
+                <Store className="w-3.5 h-3.5" />
+                <span className="hidden xl:inline">Red de Agencias</span>
+              </button>
+            </div>
+
             {/* KPIs Compactos Integrados */}
-            <div className="flex items-center gap-6 border-r border-gray-200 pr-6 mr-2">
+            <div className="flex items-center gap-5 border-l border-gray-200 pl-4 border-r pr-5 mx-1 shrink-0">
               <div className="flex flex-col items-center">
-                <div className="flex items-center gap-1.5 mb-1">
+                <div className="flex items-center gap-1 mb-0.5">
                   <BarChart3 className="w-3.5 h-3.5 text-[#FE5000]" />
                   <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Total Ops</span>
                 </div>
-                <span className="text-xl font-black text-[#00205B]">{formatNumber(totalOperaciones)}</span>
+                <span className="text-lg font-black text-[#00205B] leading-none">{formatNumber(totalOperaciones)}</span>
               </div>
               <div className="flex flex-col items-center">
-                <div className="flex items-center gap-1.5 mb-1">
+                <div className="flex items-center gap-1 mb-0.5">
                   <CalendarRange className="w-3.5 h-3.5 text-[#009639]" />
                   <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Jornadas</span>
                 </div>
-                <span className="text-xl font-black text-[#00205B]">{formatNumber(filteredEvents.length)}</span>
+                <span className="text-lg font-black text-[#00205B] leading-none">{formatNumber(filteredEvents.length)}</span>
               </div>
             </div>
 
-            <span className="text-xs bg-blue-50 text-[#00205B] font-bold px-3 py-1.5 rounded-xl border border-blue-100 w-fit whitespace-nowrap">
-              Mostrando {filteredEvents.length} de {events.length} jornadas
+            <span className="text-[10px] sm:text-xs bg-blue-50 text-[#00205B] font-bold px-2.5 py-1 rounded-lg border border-blue-100 whitespace-nowrap shrink-0">
+              Mostrando {filteredEvents.length} de {events.length}
             </span>
           </div>
         </div>
 
-        {/* Filtro Tipo de Evento */}
-        <div className="flex bg-gray-100 p-1 rounded-xl shrink-0 overflow-x-auto max-w-fit hide-scrollbar mb-4 shadow-sm border border-gray-200">
-            <button 
-              onClick={() => setSelectedEventType('Todas')}
-              className={getButtonClass('Todas', 'bg-white text-gray-800 shadow-sm font-bold', 'hover:text-gray-900 hover:bg-gray-200/50')}
-            >
-              <Grid className="w-4 h-4" />
-              <span className="hidden sm:inline">Todas</span>
-            </button>
-            <button 
-              onClick={() => setSelectedEventType('Unidad Móvil')}
-              className={getButtonClass('Unidad Móvil', 'bg-[#FE5000] text-white font-bold shadow-sm', 'hover:text-[#FE5000] hover:bg-orange-50')}
-            >
-              <Truck className="w-4 h-4" />
-              <span className="hidden sm:inline">Unidad Móvil</span>
-            </button>
-            <button 
-              onClick={() => setSelectedEventType('Agencia Móvil')}
-              className={getButtonClass('Agencia Móvil', 'bg-[#00205B] text-white font-bold shadow-sm', 'hover:text-[#00205B] hover:bg-blue-50')}
-            >
-              <Building2 className="w-4 h-4" />
-              <span className="hidden sm:inline">Agencia Móvil</span>
-            </button>
-            <button 
-              onClick={() => setSelectedEventType('Red de Agencias')}
-              className={getButtonClass('Red de Agencias', 'bg-[#009639] text-white font-bold shadow-sm', 'hover:text-[#009639] hover:bg-green-50')}
-            >
-              <Store className="w-4 h-4" />
-              <span className="hidden sm:inline">Red de Agencias</span>
-            </button>
-        </div>
-
-        {/* Barra de Filtros */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-1">
-          {/* Selector 1: Operativo Específico */}
-          <div>
-            <label className="text-xs font-semibold text-gray-600 mb-1 flex items-center gap-1.5">
-              Operativo / Evento:
-            </label>
-            <ComboBox
-              multiple
-              options={[{ value: 'todos', label: 'Todos los Operativos' }, ...availableEvents]}
-              value={selectedEventIds}
-              onChange={(val: string[]) => {
-                setSelectedEventIds(val);
-                // Si eligen un operativo específico, forzamos los otros filtros (solo tomamos el último seleccionado como referencia opcional)
-                if (val.length > 0 && !val.includes('todos')) {
-                  const lastVal = val[val.length - 1];
-                  const ev = events.find(e => e.id === lastVal);
-                  if (ev) {
-                    if (ev.startDate && selectedMonths.length === 0) setSelectedMonths([ev.startDate.substring(0, 7)]);
-                    if (ev.state && selectedStateFilters.length === 0) {
-                      setSelectedStateFilters([ev.state]);
-                      const ag = agencies.find(a => a.state === ev.state);
-                      if (ag && ag.region) setSelectedRegionFilters([ag.region]);
-                    }
-                  }
-                }
-              }}
-              icon={<Filter className="w-3.5 h-3.5" />}
-              emptyText="No se encontraron operativos"
-            />
+        {/* Fila 2: Filtros Compactados */}
+        <div className="flex flex-col lg:flex-row lg:items-end gap-3 pt-3 border-t border-gray-100">
+          {/* Selectores (ComboBoxes) */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 flex-1 w-full">
+            <div>
+              <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1.5 flex ml-1">Operativo / Evento</label>
+              <ComboBox
+                multiple
+                options={[{ value: 'todos', label: 'Todos los Operativos' }, ...availableEvents]}
+                value={selectedEventIds}
+                onChange={(val: string[]) => setSelectedEventIds(val)}
+                icon={<Filter className="w-3.5 h-3.5 text-gray-500" />}
+                emptyText="No hay operativos"
+              />
+            </div>
+            <div>
+              <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1.5 flex ml-1">Mes / Periodo</label>
+              <ComboBox
+                multiple
+                options={[{ value: 'todos', label: 'Todos los Meses' }, ...availableMonths]}
+                value={selectedMonths}
+                onChange={(val: string[]) => {
+                  setSelectedMonths(val);
+                  if (selectedEventIds.length > 0) setSelectedEventIds([]);
+                }}
+                icon={<Calendar className="w-3.5 h-3.5 text-gray-500" />}
+                emptyText="No hay meses"
+              />
+            </div>
+            <div>
+              <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1.5 flex ml-1">Región</label>
+              <ComboBox
+                multiple
+                options={[{ value: 'todos', label: 'Todas las Regiones' }, ...availableRegions]}
+                value={selectedRegionFilters}
+                onChange={(val: string[]) => {
+                  setSelectedRegionFilters(val);
+                  setSelectedStateFilters([]);
+                  setSelectedEventIds([]);
+                }}
+                icon={<MapPin className="w-3.5 h-3.5 text-gray-500" />}
+                emptyText="No hay regiones"
+              />
+            </div>
+            <div>
+              <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1.5 flex ml-1">Estado</label>
+              <ComboBox
+                multiple
+                options={[{ value: 'todos', label: 'Todos los Estados' }, ...availableStates]}
+                value={selectedStateFilters}
+                onChange={(val: string[]) => {
+                  setSelectedStateFilters(val);
+                  setSelectedEventIds([]);
+                }}
+                icon={<MapPin className="w-3.5 h-3.5 text-[#00205B]" />}
+                emptyText="No hay estados"
+              />
+            </div>
           </div>
 
-          {/* Selector 2: Mes Específico */}
-          <div>
-            <label className="text-xs font-semibold text-gray-600 mb-1 flex items-center gap-1.5">
-              Mes / Periodo:
-            </label>
-            <ComboBox
-              multiple
-              options={[{ value: 'todos', label: 'Todos los Meses' }, ...availableMonths]}
-              value={selectedMonths}
-              onChange={(val: string[]) => {
-                setSelectedMonths(val);
-                // Limpiar operativo si se cambia mes (opcional)
-                if (selectedEventIds.length > 0) {
-                   setSelectedEventIds([]);
-                }
-              }}
-              icon={<Calendar className="w-3.5 h-3.5" />}
-              emptyText="No hay meses disponibles"
-            />
-          </div>
-
-          {/* Selector 3: Región */}
-          <div>
-            <label className="text-xs font-semibold text-gray-600 mb-1 flex items-center gap-1.5">
-              Región:
-            </label>
-            <ComboBox
-              multiple
-              options={[{ value: 'todos', label: 'Todas las Regiones' }, ...availableRegions]}
-              value={selectedRegionFilters}
-              onChange={(val: string[]) => {
-                setSelectedRegionFilters(val);
-                setSelectedStateFilters([]);
-                setSelectedEventIds([]);
-              }}
-              icon={<MapPin className="w-3.5 h-3.5" />}
-              emptyText="No hay regiones"
-            />
-          </div>
-
-          {/* Selector 4: Estado / Ubicación */}
-          <div>
-            <label className="text-xs font-semibold text-gray-600 mb-1 flex items-center gap-1.5">
-              Estado:
-            </label>
-            <ComboBox
-              multiple
-              options={[{ value: 'todos', label: 'Todos los Estados' }, ...availableStates]}
-              value={selectedStateFilters}
-              onChange={(val: string[]) => {
-                setSelectedStateFilters(val);
-                setSelectedEventIds([]); // Limpiar operativo específico
-              }}
-              icon={<MapPin className="w-3.5 h-3.5 text-[#00205B]" />}
-              emptyText="No hay estados"
-            />
-          </div>
-        </div>
-
-        {/* Limpiar Filtros */}
-        <div className="flex justify-end pt-2 border-t border-gray-100">
+          {/* Limpiar Filtros */}
           <button
             type="button"
             onClick={() => {
@@ -364,74 +409,92 @@ export default function DashboardSection() {
               setSelectedRegionFilters([]);
               setSelectedStateFilters([]);
             }}
-            className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-[#FE5000] transition-colors"
+            className="flex items-center justify-center gap-1.5 text-[11px] font-bold text-gray-500 hover:text-[#FE5000] transition-colors h-[38px] px-3 bg-gray-50 hover:bg-orange-50 rounded-lg border border-transparent hover:border-orange-100 shrink-0 w-full lg:w-auto mt-2 lg:mt-0"
           >
-            <XCircle className="w-4 h-4" />
-            Limpiar Filtros
+            <XCircle className="w-3.5 h-3.5" />
+            <span>Limpiar</span>
           </button>
         </div>
       </div>
 
       {/* Bloque 1: Tarjetas KPI Consolidadas (Filtradas) */}
-      <KpiCards events={filteredEvents} />
+      <KpiCards events={filteredEvents} mode={activeTab} />
 
-      {/* Bloque 2: Georreferenciación & Volumen Operativo (Filtrados) */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <VenezuelaMap 
-          events={filteredEvents} 
-          agencies={agencies}
-          selectedState={selectedStateFilters.length > 0 ? selectedStateFilters[0] : 'todos'}
-          onStateClick={(stateName) => {
-            if (selectedStateFilters.includes(stateName)) {
-               setSelectedStateFilters(selectedStateFilters.filter(s => s !== stateName));
-            } else {
-               setSelectedStateFilters([...selectedStateFilters, stateName]);
-            }
-          }}
-        />
-        <VolumenChart events={filteredEvents} />
-      </div>
+      {activeTab === 'operativo' && (
+        <div className="space-y-6">
+          {/* Bloque 2: Georreferenciación & Volumen Operativo (Filtrados) */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+            <VenezuelaMap 
+              events={filteredEvents} 
+              agencies={agencies}
+              selectedState={selectedStateFilters.length > 0 ? selectedStateFilters[0] : 'todos'}
+              onStateClick={(stateName) => {
+                if (selectedStateFilters.includes(stateName)) {
+                   setSelectedStateFilters(selectedStateFilters.filter(s => s !== stateName));
+                } else {
+                   setSelectedStateFilters([...selectedStateFilters, stateName]);
+                }
+              }}
+            />
+            <VolumenChart events={filteredEvents} />
+          </div>
 
-      {/* Bloque 3: Estructura de Costos Globales */}
-      <div className="pt-2">
-        <h2 className="text-xl font-black text-[#00205B] mb-6">Análisis de Costos Globales</h2>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <CostosParticipacionChart events={filteredEvents} />
-          <CostosCategoriasChart events={filteredEvents} />
+          {/* Bloque 4 y 5: Gráficos Inferiores en Paralelo */}
+          <div className="pt-2">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <HistorialMetrics events={filteredEvents} mode="operativo" />
+              <RankingEventosOperativoChart events={filteredEvents} />
+            </div>
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Bloque 4: Evolución Temporal */}
-      <HistorialMetrics events={filteredEvents} />
+      {activeTab === 'financiero' && (
+        <div className="space-y-6 mt-6">
+          {/* Bloque 3: Estructura de Costos Globales */}
+          <div className="pt-2">
+            <h2 className="text-xl font-black text-[#00205B] mb-6">Análisis de Costos Globales</h2>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <CostosParticipacionChart events={filteredEvents} />
+              <CostosCategoriasChart events={filteredEvents} />
+            </div>
+          </div>
 
-      {/* SECCIÓN: Análisis Detallado por Canal */}
-      <div className="pt-6 mt-6 border-t border-gray-200">
-        <h2 className="text-xl font-black text-[#00205B] mb-6">Análisis Detallado por Canal (Agencia Móvil)</h2>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <AgenciaRankingChart events={filteredEvents} />
-          <AgenciaDistribucionChart events={filteredEvents} />
-        </div>
-      </div>
+          {/* Evolución Financiera Temporal */}
+          <div className="pt-2">
+            <HistorialMetrics events={filteredEvents} mode="financiero" />
+          </div>
 
-      <div className="pt-6 mt-6 border-t border-gray-200">
-        <h2 className="text-xl font-black text-[#00205B] mb-6">Análisis Detallado por Canal (Unidad Móvil)</h2>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <UnidadRankingChart events={filteredEvents} />
-          <UnidadDistribucionChart events={filteredEvents} />
-        </div>
-      </div>
+          {/* SECCIÓN: Análisis Detallado por Canal */}
+          <div className="pt-6 mt-6 border-t border-gray-200">
+            <h2 className="text-xl font-black text-[#00205B] mb-6">Análisis Detallado por Canal (Agencia Móvil)</h2>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <AgenciaRankingChart events={filteredEvents} />
+              <AgenciaDistribucionChart events={filteredEvents} />
+            </div>
+          </div>
 
-      {/* SECCIÓN: Análisis de Efectividad Operativa */}
-      <div className="pt-6 mt-6 border-t border-gray-200">
-        <h2 className="text-xl font-black text-[#00205B] mb-6">Análisis de Efectividad Operativa</h2>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          <RentabilidadRegionChart events={filteredEvents} agencies={agencies} />
-          <RentabilidadTopEventosChart events={filteredEvents} />
+          <div className="pt-6 mt-6 border-t border-gray-200">
+            <h2 className="text-xl font-black text-[#00205B] mb-6">Análisis Detallado por Canal (Unidad Móvil)</h2>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <UnidadRankingChart events={filteredEvents} />
+              <UnidadDistribucionChart events={filteredEvents} />
+            </div>
+          </div>
+
+          {/* SECCIÓN: Análisis de Efectividad Operativa */}
+          <div className="pt-6 mt-6 border-t border-gray-200">
+            <h2 className="text-xl font-black text-[#00205B] mb-6">Análisis de Efectividad Operativa</h2>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+              <RentabilidadRegionChart events={filteredEvents} agencies={agencies} />
+              <RentabilidadTopEventosChart events={filteredEvents} />
+            </div>
+            <div className="w-full">
+              <RentabilidadVsCostosChart events={filteredEvents} />
+            </div>
+          </div>
         </div>
-        <div className="w-full">
-          <RentabilidadVsCostosChart events={filteredEvents} />
-        </div>
-      </div>
+      )}
     </div>
   );
 }

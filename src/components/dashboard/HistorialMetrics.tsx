@@ -8,9 +8,10 @@ import ChartModalWrapper from './ChartModalWrapper';
 
 interface HistorialMetricsProps {
   events: any[];
+  mode?: 'operativo' | 'financiero' | 'all';
 }
 
-export default function HistorialMetrics({ events }: HistorialMetricsProps) {
+export default function HistorialMetrics({ events, mode = 'all' }: HistorialMetricsProps) {
   // Procesar datos para agruparlos por mes
   const data = useMemo(() => {
     const monthlyData: Record<string, any> = {};
@@ -51,8 +52,9 @@ export default function HistorialMetrics({ events }: HistorialMetricsProps) {
   }, [events]);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div className={`grid grid-cols-1 ${mode === 'all' ? 'lg:grid-cols-2' : ''} gap-6`}>
       {/* Evolución Financiera (Líneas / Áreas) */}
+      {(mode === 'all' || mode === 'financiero') && (
       <ChartModalWrapper 
         title="Evolución Financiera (USD)" 
         subtitle="Comparativa de Saldo Cierre vs Gastos Operativos a lo largo del tiempo"
@@ -78,8 +80,10 @@ export default function HistorialMetrics({ events }: HistorialMetricsProps) {
           )}
         </div>
       </ChartModalWrapper>
+      )}
 
       {/* Evolución de Volumen (Barras) */}
+      {(mode === 'all' || mode === 'operativo') && (
       <ChartModalWrapper 
         title="Evolución de Volumen Operativo" 
         subtitle="Crecimiento de Apertura de Cuentas y Entregas de TDD"
@@ -105,6 +109,7 @@ export default function HistorialMetrics({ events }: HistorialMetricsProps) {
           )}
         </div>
       </ChartModalWrapper>
+      )}
     </div>
   );
 }
