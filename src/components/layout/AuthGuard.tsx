@@ -11,8 +11,8 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   useEffect(() => {
-    // Si terminó de cargar y no hay usuario, y no estamos en la página de login
-    if (!isLoading && !user && pathname !== '/login') {
+    // Si terminó de cargar y no hay usuario, y no estamos en la página de login o captura
+    if (!isLoading && !user && pathname !== '/login' && !pathname.startsWith('/captura/')) {
       router.push('/login');
     }
   }, [user, isLoading, pathname, router]);
@@ -22,8 +22,8 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
     return <Loader fullScreen={true} text="Autenticando..." />;
   }
 
-  // Si no hay usuario y no es la página de login, no renderizamos los children (evita destellos de UI protegida)
-  if (!user && pathname !== '/login') {
+  // Si no hay usuario y no es la página de login ni captura, no renderizamos los children (evita destellos de UI protegida)
+  if (!user && pathname !== '/login' && !pathname.startsWith('/captura/')) {
     return null;
   }
 

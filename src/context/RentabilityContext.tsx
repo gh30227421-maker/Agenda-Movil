@@ -102,7 +102,8 @@ export function RentabilityProvider({ children }: { children: ReactNode }) {
           .from('event_rentability_tracking')
           .insert(trackingsToInsert);
         if (insertError) {
-          console.error('Error generating rentability trackings:', insertError);
+          // Si es un error de duplicado (ej. por Strict Mode de React), solo lanzamos un warning
+          console.warn('Nota: Error al generar trackings (posible duplicado por concurrencia):', insertError.message || insertError);
         } else {
           needsRefetch = true;
         }

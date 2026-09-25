@@ -1,6 +1,6 @@
 "use client";
 
-import { Box, Bell, Truck, LayoutDashboard, CalendarRange, Users, BarChart3, Receipt, TrendingUp, UserCircle, LogOut, Settings, Wifi, Building2, ChevronDown, MapPinned } from 'lucide-react';
+import { Box, Bell, Truck, LayoutDashboard, CalendarRange, Users, BarChart3, Receipt, TrendingUp, UserCircle, LogOut, Settings, Wifi, Building2, ChevronDown, MapPinned, Activity } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
@@ -25,6 +25,7 @@ export default function Header() {
   const navGroups = [
     { name: 'Rutas y Despliegues', icon: MapPinned, href: '/rutas' },
     { name: 'Dashboard', icon: LayoutDashboard, href: '/dashboard' },
+    { name: 'Gestión en Vivo', icon: Activity, href: '/gestion-en-vivo' },
     { 
       name: 'Gestión Operativa', 
       icon: CalendarRange, 
@@ -53,7 +54,8 @@ export default function Header() {
       items: [
         { name: 'Usuarios', href: '/admin/users' },
         { name: 'Agencias', href: '/admin/agencies' },
-        { name: 'Galería de Eventos', href: '/admin/photos' }
+        { name: 'Galería de Eventos', href: '/admin/photos' },
+        { name: 'Gestión en Vivo', href: '/admin/gestion-en-vivo' }
       ]
     });
   }

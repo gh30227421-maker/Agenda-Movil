@@ -544,11 +544,11 @@ export default function RutasUnidadMovil({ selectedMonths = [] }: { selectedMont
             xmlns="http://www.w3.org/2000/svg"
             projection="geoMercator"
             projectionConfig={{
-              scale: 2400,
+              scale: 2760,
               center: [-66.5, 6.8]
             }}
             viewBox="0 0 1000 750"
-            className="w-[95%] mx-auto h-auto scale-110 md:scale-115 origin-center transition-transform duration-1000"
+            className="w-[95%] mx-auto h-auto origin-center transition-transform duration-1000"
             style={{ 
               overflow: 'visible', 
               filter: 'drop-shadow(0 25px 35px rgba(0, 0, 0, 0.5))'
@@ -677,21 +677,22 @@ export default function RutasUnidadMovil({ selectedMonths = [] }: { selectedMont
           <div className="sticky top-24 flex flex-col gap-6 lg:mt-[4.5rem]">
             
             {/* Video Institucional */}
-            <div className="w-full h-auto rounded-2xl overflow-hidden shadow-[0_15px_40px_rgba(0,32,91,0.1)] border border-slate-200 bg-slate-900/40 backdrop-blur-sm group pointer-events-auto relative">
+            <div className="w-full h-auto rounded-2xl overflow-hidden shadow-[0_15px_40px_rgba(0,32,91,0.1)] border border-slate-200 bg-slate-900 group pointer-events-auto relative">
               {playlist.length > 0 && (
                 <video 
                   key={playlist[currentVideoIndex]}
-                  src={playlist[currentVideoIndex]}
                   className="w-full h-auto block object-cover relative z-10"
                   autoPlay
                   muted
                   loop={playlist.length === 1}
                   playsInline
+                  preload="metadata"
                   onEnded={handleVideoEnded}
-                  onError={(e) => {
-                    e.currentTarget.style.opacity = '0';
-                  }}
-                />
+                >
+                  <source src={playlist[currentVideoIndex]} type="video/mp4" />
+                  <source src={playlist[currentVideoIndex].replace('.mp4', '.webm')} type="video/webm" />
+                  Tu navegador no soporta el formato de video.
+                </video>
               )}
               <div className="absolute top-3 right-3 z-20 bg-[#00205B]/80 backdrop-blur border border-white/20 rounded-full px-2 py-1 flex items-center gap-1.5 shadow-md transition-all">
                  <Video className="w-3.5 h-3.5 text-white" />
