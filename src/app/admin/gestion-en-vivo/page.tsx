@@ -3,9 +3,12 @@
 import React, { useState, useEffect } from 'react';
 import { useAgenda } from '@/context/AgendaContext';
 import { supabase } from '@/lib/supabase';
-import { Search, Link as LinkIcon, ExternalLink, Activity, Copy, CheckCircle2, Navigation, Power } from 'lucide-react';
+import { Search, Link as LinkIcon, ExternalLink, Activity, Copy, CheckCircle2, Navigation, Power, Download } from 'lucide-react';
 import Link from 'next/link';
 import ComboBox from '@/components/ui/ComboBox';
+import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 export default function AdminGestionEnVivoPage() {
   const { events, isLoading } = useAgenda();
@@ -13,6 +16,99 @@ export default function AdminGestionEnVivoPage() {
   const [activeEventId, setActiveEventId] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [loadingActivation, setLoadingActivation] = useState(false);
+  const [loadingExport, setLoadingExport] = useState(false);
+
+  const fetchRegistrosForExport = async (eventId: string) => {
+    const { data, error } = await supabase
+      .from('registros_en_vivo')
+      .select('*')
+      .eq('event_id', eventId)
+      .order('fecha_registro', { ascending: false });
+    if (error) throw error;
+    return data || [];
+  };
+
+  const handleExportExcel = async () => {
+    if (!selectedEventId) return;
+    setLoadingExport(true);
+    try {
+      const registros = await fetchRegistrosForExport(selectedEventId);
+      if (registros.length === 0) {
+        alert("No hay registros para este evento.");
+        return;
+      }
+      const event = events.find(e => e.id === selectedEventId);
+      const exportData = registros.map(r => ({
+        'Fecha y Hora': new Date(r.fecha_registro).toLocaleString(),
+        'Cédula de Identidad': r.cedula_identidad,
+        'Tipo de Solicitud': r.tipo_solicitud,
+        'Cuentas': r.modulo_cuenta || '-',
+        'TDD': r.modulo_tdd || '-',
+        'TDC': r.modulo_tdc_opcional || '-',
+        'Otras Operaciones': r.modulo_otras_operaciones || '-'
+      }));
+
+      const worksheet = XLSX.utils.json_to_sheet(exportData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Registros");
+      
+      const filename = `Reporte_${event?.eventName || 'Evento'}_${new Date().toISOString().split('T')[0]}.xlsx`;
+      XLSX.writeFile(workbook, filename);
+    } catch (err) {
+      console.error(err);
+      alert("Error al exportar a Excel.");
+    } finally {
+      setLoadingExport(false);
+    }
+  };
+
+  const handleExportPDF = async () => {
+    if (!selectedEventId) return;
+    setLoadingExport(true);
+    try {
+      const registros = await fetchRegistrosForExport(selectedEventId);
+      if (registros.length === 0) {
+        alert("No hay registros para este evento.");
+        return;
+      }
+      const event = events.find(e => e.id === selectedEventId);
+      const doc = new jsPDF('landscape');
+      
+      doc.setFontSize(18);
+      doc.text(`Reporte de Jornada: ${event?.eventName || 'Evento'}`, 14, 22);
+      
+      doc.setFontSize(11);
+      doc.setTextColor(100);
+      doc.text(`Fecha de exportación: ${new Date().toLocaleDateString()}`, 14, 30);
+      
+      const tableColumn = ["Fecha/Hora", "Cédula", "Solicitud", "Cuentas", "TDD", "Otras Operaciones"];
+      const tableRows = registros.map(r => [
+        new Date(r.fecha_registro).toLocaleString(),
+        r.cedula_identidad,
+        r.tipo_solicitud,
+        r.modulo_cuenta || '-',
+        r.modulo_tdd || '-',
+        r.modulo_otras_operaciones || '-'
+      ]);
+
+      // @ts-ignore
+      doc.autoTable({
+        head: [tableColumn],
+        body: tableRows,
+        startY: 40,
+        styles: { fontSize: 8 },
+        headStyles: { fillColor: [0, 32, 91] }
+      });
+      
+      const filename = `Reporte_${event?.eventName || 'Evento'}_${new Date().toISOString().split('T')[0]}.pdf`;
+      doc.save(filename);
+    } catch (err) {
+      console.error(err);
+      alert("Error al exportar a PDF.");
+    } finally {
+      setLoadingExport(false);
+    }
+  };
 
   useEffect(() => {
     // Fetch currently active event
@@ -113,7 +209,7 @@ export default function AdminGestionEnVivoPage() {
           
           <div className="mb-6">
             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Buscar Jornada Operativa</label>
-            <div className="max-w-lg flex flex-col md:flex-row gap-4">
+            <div className="max-w-2xl flex flex-col md:flex-row gap-4">
               <div className="flex-1">
                 <ComboBox
                   options={eventOptions}
@@ -122,13 +218,44 @@ export default function AdminGestionEnVivoPage() {
                   placeholder="Seleccionar evento..."
                 />
               </div>
-              <button
-                onClick={handleActivate}
-                disabled={!selectedEventId || loadingActivation}
-                className="px-6 py-2.5 bg-[#FE5000] text-white font-bold rounded-xl hover:bg-[#CC4000] transition-colors disabled:opacity-50 disabled:hover:bg-[#FE5000]"
-              >
-                {loadingActivation ? 'Activando...' : 'Establecer como Activo'}
-              </button>
+              <div className="flex flex-col sm:flex-row gap-2 shrink-0">
+                <Link
+                  href={selectedEventId ? `/gestion-en-vivo?historical_id=${selectedEventId}` : '#'}
+                  target="_blank"
+                  className={`flex items-center justify-center px-6 py-2.5 font-bold rounded-xl transition-colors border ${!selectedEventId ? 'border-slate-200 text-slate-400 bg-slate-50 cursor-not-allowed pointer-events-none' : 'border-[#00205B] text-[#00205B] bg-white hover:bg-slate-50'}`}
+                >
+                  Consultar Histórico
+                </Link>
+                <button
+                  onClick={handleActivate}
+                  disabled={!selectedEventId || loadingActivation}
+                  className="px-6 py-2.5 bg-[#FE5000] text-white font-bold rounded-xl hover:bg-[#CC4000] transition-colors disabled:opacity-50 disabled:hover:bg-[#FE5000]"
+                >
+                  {loadingActivation ? 'Activando...' : 'Establecer como Activo'}
+                </button>
+              </div>
+            </div>
+
+            <div className={`mt-6 pt-5 border-t border-slate-100 transition-opacity duration-300 ${selectedEventId ? 'opacity-100' : 'opacity-50 pointer-events-none'}`}>
+              <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Exportar Reporte de la Jornada Seleccionada</p>
+              <div className="flex flex-wrap gap-3">
+                <button 
+                  onClick={handleExportExcel}
+                  disabled={!selectedEventId || loadingExport}
+                  className="px-5 py-2.5 bg-[#107C41]/10 text-[#107C41] hover:bg-[#107C41]/20 border border-[#107C41]/20 rounded-xl text-sm font-bold transition-colors flex items-center gap-2 disabled:opacity-50"
+                >
+                  <Download className="w-4 h-4" />
+                  {loadingExport ? 'Generando...' : 'Descargar Excel'}
+                </button>
+                <button 
+                  onClick={handleExportPDF}
+                  disabled={!selectedEventId || loadingExport}
+                  className="px-5 py-2.5 bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 rounded-xl text-sm font-bold transition-colors flex items-center gap-2 disabled:opacity-50"
+                >
+                  <Download className="w-4 h-4" />
+                  {loadingExport ? 'Generando...' : 'Descargar PDF'}
+                </button>
+              </div>
             </div>
           </div>
         </div>

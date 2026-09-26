@@ -8,11 +8,37 @@ import { useRentability } from '@/context/RentabilityContext';
 import { isPast, isSameMonth } from 'date-fns';
 import NotificationsDropdown from './NotificationsDropdown';
 import PWAInstallButton from './PWAInstallButton';
+import { useEffect, useState } from 'react';
+import { supabase } from '@/lib/supabase';
 
 export default function Header() {
   const pathname = usePathname();
   const { user, isAdmin, signOut } = useAuth();
   const { trackings } = useRentability();
+  const [isLiveActive, setIsLiveActive] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    
+    const fetchLiveConfig = async () => {
+      const { data } = await supabase.from('live_config').select('active_event_id').eq('id', 1).maybeSingle();
+      setIsLiveActive(!!data?.active_event_id);
+    };
+    
+    fetchLiveConfig();
+    
+    const channel = supabase.channel('header_live_config')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'live_config' }, (payload: any) => {
+        if (payload.new && payload.new.id === 1) {
+          setIsLiveActive(!!payload.new.active_event_id);
+        }
+      })
+      .subscribe();
+      
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
 
   if (!user) return null;
 
@@ -22,11 +48,13 @@ export default function Header() {
     return isPast(cellDate) && !isSameMonth(cellDate, new Date());
   }).length;
 
-  const navGroups = [
+  const navGroups: any[] = [
     { name: 'Rutas y Despliegues', icon: MapPinned, href: '/rutas' },
     { name: 'Dashboard', icon: LayoutDashboard, href: '/dashboard' },
-    { name: 'Gestión en Vivo', icon: Activity, href: '/gestion-en-vivo' },
-    { 
+  ];
+
+  if (isAdmin) {
+    navGroups.push({ 
       name: 'Gestión Operativa', 
       icon: CalendarRange, 
       items: [
@@ -34,8 +62,8 @@ export default function Header() {
         { name: 'Personal', href: '/personal' },
         { name: 'Activos', href: '/activos' },
       ]
-    },
-    { 
+    });
+    navGroups.push({ 
       name: 'Auditoría y Reportes', 
       icon: TrendingUp, 
       items: [
@@ -44,10 +72,7 @@ export default function Header() {
         { name: 'Cierre de Operativo', href: '/rentabilidad' },
         { name: 'Seg. de Efectividad Operativa', href: '/seguimiento' },
       ]
-    },
-  ];
-
-  if (isAdmin) {
+    });
     navGroups.push({
       name: 'Administración', 
       icon: Settings, 
@@ -58,7 +83,19 @@ export default function Header() {
         { name: 'Gestión en Vivo', href: '/admin/gestion-en-vivo' }
       ]
     });
+  } else {
+    // Usuario regular: Solo acceso a la Agenda en Gestión Operativa
+    navGroups.push({ 
+      name: 'Gestión Operativa', 
+      icon: CalendarRange, 
+      items: [
+        { name: 'Agenda', href: '/agenda' }
+      ]
+    });
   }
+
+  // Agregamos Gestión en Vivo al final
+  navGroups.push({ name: 'Gestión en Vivo', icon: Activity, href: '/gestion-en-vivo' });
 
   return (
     <header className="h-28 bg-[#00205B] text-white fixed top-0 left-0 right-0 z-50 shadow-md w-full border-b-4 border-[#FE5000]">
@@ -87,17 +124,31 @@ export default function Header() {
           const isActive = group.href === pathname || group.items?.some(i => i.href === pathname);
           
           if (!group.items) {
+            const isLive = group.name === 'Gestión en Vivo';
+            // Solo resaltamos si isLive y ademas hay un evento activo (isLiveActive)
+            const shouldHighlightLive = isLive && isLiveActive;
+
             return (
               <Link
                 key={group.name}
                 href={group.href!}
                 className={`relative flex items-center gap-2.5 px-5 py-2.5 rounded-xl text-[15px] font-semibold transition-all ${
                   isActive
-                    ? 'bg-white/15 text-white shadow-inner border-b-2 border-[#FE5000]'
-                    : 'bg-white/5 text-gray-200 hover:bg-white/10 hover:text-white border-b-2 border-transparent hover:border-white/20'
+                    ? shouldHighlightLive ? 'bg-red-500/20 text-white shadow-inner border-b-2 border-red-500' : 'bg-white/15 text-white shadow-inner border-b-2 border-[#FE5000]'
+                    : shouldHighlightLive 
+                      ? 'bg-red-500/10 text-red-100 hover:bg-red-500/20 hover:text-white border-b-2 border-transparent hover:border-red-400'
+                      : 'bg-white/5 text-gray-200 hover:bg-white/10 hover:text-white border-b-2 border-transparent hover:border-white/20'
                 }`}
               >
-                <Icon className="w-4 h-4" />
+                <div className="relative flex items-center justify-center">
+                  <Icon className={`w-4 h-4 ${shouldHighlightLive && !isActive ? 'text-red-400' : ''}`} />
+                  {shouldHighlightLive && (
+                    <span className="absolute -top-1 -right-1 flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-1.5 w-1.5 m-auto bg-red-500"></span>
+                    </span>
+                  )}
+                </div>
                 <span>{group.name}</span>
               </Link>
             );

@@ -63,15 +63,14 @@ const STATE_REGION_MAP: Record<string, string> = {
 };
 
 // Paleta corporativa BNC estricta: Naranja institucional y escala descendente de azules corporativos
-const REGION_PALETTE = [
-  '#FE5000', // Región 1 (Líder): Naranja Institucional BNC
-  '#00205C', // Región 2: Azul Marino Profundo (rgb(0, 32, 92))
-  '#16356F', // Región 3: Azul de ultramar oscuro (rgb(22, 53, 111))
-  '#2C4A82', // Región 4: Azul corporativo / Clásico (rgb(44, 74, 130))
-  '#426095', // Región 5: Azul acero medio (rgb(66, 96, 149))
-  '#5A78AD', // Región 6 / Adicional: Azul acero suave
-  '#85A0CE', // Otras regiones
-];
+const REGION_COLORS: Record<string, string> = {
+  'CAPITAL': '#FFB703', // Amarillo / Oro
+  'CENTRO OCCIDENTE': '#009639', // Verde Institucional BNC
+  'OCCIDENTE - ANDES': '#00205B', // Azul Institucional BNC
+  'ORIENTE': '#DC2626', // Rojo
+  'ARAGUA - LOS LLANOS': '#FE5000', // Naranja Institucional BNC
+  'GUAYANA': '#64748B', // Gris Pizarra
+};
 
 export default function VenezuelaMap({ events, agencies = [], selectedState = 'todos', onStateClick }: VenezuelaMapProps) {
   const [viewMode, setViewMode] = useState<'estados' | 'regiones'>('estados');
@@ -329,7 +328,7 @@ export default function VenezuelaMap({ events, agencies = [], selectedState = 't
                     const regionName = getRegionOfState(geoName);
                     const isSelected = selectedState !== 'todos' && normalizeStateName(selectedState) === normName;
                     
-                    let fillColor = '#E2E8F0'; // Sin operativos
+                    let fillColor = '#D1D5DB'; // Sin operativos
                     let isHighlighted = false;
 
                     if (viewMode === 'estados') {
@@ -338,6 +337,8 @@ export default function VenezuelaMap({ events, agencies = [], selectedState = 't
                       if (topIndex >= 0 && topIndex < 3) {
                         fillColor = '#FE5000';
                         isHighlighted = true;
+                      } else if (topIndex === 3 || topIndex === 4) {
+                        fillColor = '#009639';
                       } else if (isActive) {
                         fillColor = '#00205B';
                       }
@@ -345,7 +346,7 @@ export default function VenezuelaMap({ events, agencies = [], selectedState = 't
                       // Modo Regiones: Escala cromática corporativa BNC exacta
                       const regionIndex = regionData.ranking.findIndex(r => r.name === regionName);
                       if (regionIndex >= 0) {
-                        fillColor = REGION_PALETTE[regionIndex] || '#426095';
+                        fillColor = REGION_COLORS[regionName] || '#9CA3AF';
                         if (regionIndex === 0) isHighlighted = true;
                       } else if (isActive) {
                         fillColor = '#85A0CE';
@@ -458,14 +459,18 @@ export default function VenezuelaMap({ events, agencies = [], selectedState = 't
                 <>
                   <div className="flex items-center gap-2.5">
                     <div className={`${isExpanded ? 'w-4 h-4' : 'w-3 h-3'} rounded bg-[#FE5000]`}></div>
-                    <span className="text-gray-700 font-medium">Top 3 Estados</span>
+                    <span className="text-gray-700 font-medium">Top 1-3</span>
+                  </div>
+                  <div className="flex items-center gap-2.5">
+                    <div className={`${isExpanded ? 'w-4 h-4' : 'w-3 h-3'} rounded bg-[#009639]`}></div>
+                    <span className="text-gray-700 font-medium">Top 4-5</span>
                   </div>
                   <div className="flex items-center gap-2.5">
                     <div className={`${isExpanded ? 'w-4 h-4' : 'w-3 h-3'} rounded bg-[#00205B]`}></div>
                     <span className="text-gray-700 font-medium">Otros Activos</span>
                   </div>
                   <div className="flex items-center gap-2.5">
-                    <div className={`${isExpanded ? 'w-4 h-4' : 'w-3 h-3'} border border-gray-200 rounded bg-[#E2E8F0]`}></div>
+                    <div className={`${isExpanded ? 'w-4 h-4' : 'w-3 h-3'} border border-gray-300 rounded bg-[#D1D5DB]`}></div>
                     <span className="text-gray-600 font-medium">Sin Operativos</span>
                   </div>
                 </>
@@ -475,7 +480,7 @@ export default function VenezuelaMap({ events, agencies = [], selectedState = 't
                     <div key={reg.name} className="flex items-center gap-2.5">
                       <div 
                         className={`${isExpanded ? 'w-4 h-4' : 'w-3 h-3'} rounded shadow-xs shrink-0`}
-                        style={{ backgroundColor: REGION_PALETTE[idx] || '#426095' }}
+                        style={{ backgroundColor: REGION_COLORS[reg.name] || '#9CA3AF' }}
                       />
                       <span className="text-gray-700 font-medium truncate">{reg.name}</span>
                     </div>
@@ -511,8 +516,8 @@ export default function VenezuelaMap({ events, agencies = [], selectedState = 't
                   >
                     <div className="flex items-center gap-2.5">
                       <span 
-                        className={`w-6 h-6 rounded-lg font-bold text-xs flex items-center justify-center shadow-sm ${
-                          idx < 3 ? 'bg-[#FE5000] text-white' : 'bg-[#00205B] text-white'
+                        className={`w-6 h-6 rounded-lg font-bold text-xs flex items-center justify-center shadow-sm text-white ${
+                          idx < 3 ? 'bg-[#FE5000]' : idx < 5 ? 'bg-[#009639]' : 'bg-[#00205B]'
                         }`}
                       >
                         {idx + 1}
@@ -539,7 +544,7 @@ export default function VenezuelaMap({ events, agencies = [], selectedState = 't
                 )
               ) : (
                 regionData.ranking.length > 0 ? regionData.ranking.map((item, idx) => {
-                  const regionColor = REGION_PALETTE[idx] || '#426095';
+                  const regionColor = REGION_COLORS[item.name] || '#9CA3AF';
                   return (
                     <div
                       key={item.name}

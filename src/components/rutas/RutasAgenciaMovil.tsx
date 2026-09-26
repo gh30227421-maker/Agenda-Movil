@@ -227,7 +227,7 @@ export default function RutasAgenciaMovil({ selectedMonths = [] }: { selectedMon
 
     return {
       beneficiados: totalCuentas,
-      eventos: events.length,
+      eventos: filteredEvents.length,
       estados: statesSet.size,
       distancia: totalDistancia
     };
@@ -363,7 +363,7 @@ export default function RutasAgenciaMovil({ selectedMonths = [] }: { selectedMon
 
               <div className="flex-grow h-px bg-slate-200"></div>
             </div>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 w-full">
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 w-full">
               
               {/* KPI 1: Clientes Atendidos */}
               <div ref={kpiCiudadanosRef} id="kpi-ciudadanos-atendidos-agencia" className="group flex flex-col backdrop-blur-md bg-white/90 p-4 rounded-xl shadow-xl shadow-slate-200/50 border border-slate-200 hover:shadow-[0_15px_40px_rgba(254,80,0,0.12)] transition-all duration-500 relative overflow-hidden">
@@ -380,9 +380,14 @@ export default function RutasAgenciaMovil({ selectedMonths = [] }: { selectedMon
                   <Users className="w-3.5 h-3.5 text-[#FE5000]" /> Clientes Atendidos
                 </p>
                 <div className="flex flex-wrap items-end gap-2 justify-between">
-                  <p className="text-xl lg:text-2xl font-black text-[#00205B] tracking-tight">
-                    +<AnimatedCounter end={kpis.beneficiados} />
-                  </p>
+                  <div className="flex flex-col">
+                    <p className="text-xl lg:text-2xl font-black text-[#00205B] tracking-tight">
+                      <AnimatedCounter end={kpis.beneficiados} />
+                    </p>
+                    <span className="text-[10px] font-bold text-gray-400 tracking-wider">
+                      CUENTAS ABIERTAS
+                    </span>
+                  </div>
                   <span className="text-[10px] font-bold text-[#009639] bg-green-50 px-1.5 py-0.5 rounded-md mb-1">📈 +20%</span>
                 </div>
               </div>
@@ -431,32 +436,7 @@ export default function RutasAgenciaMovil({ selectedMonths = [] }: { selectedMon
                 </div>
               </div>
 
-              {/* KPI 4: Kilómetros Recorridos */}
-              <div ref={kpiLogisticaRef} id="kpi-logistica-recorrida-agencia" className="group flex flex-col backdrop-blur-md bg-white/90 p-4 rounded-xl shadow-xl shadow-slate-200/50 border border-slate-200 hover:shadow-[0_15px_40px_rgba(100,116,139,0.12)] transition-all duration-500 relative overflow-hidden">
-                <button
-                  onClick={() => downloadImage(kpiLogisticaRef, 'KPI_Logistica_Recorrida')}
-                  className="ignore-export absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-slate-100 hover:bg-slate-500 hover:text-white text-slate-400 p-1.5 rounded-md shadow-sm z-50"
-                  title="Descargar en PNG"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                </button>
-                <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-slate-400 to-slate-600" />
-                <svg className="absolute bottom-0 left-0 w-full h-1/2 object-cover opacity-30 pointer-events-none text-slate-200" viewBox="0 0 100 30" preserveAspectRatio="none"><path d="M0,30 Q40,5 70,25 T100,10" fill="none" stroke="currentColor" strokeWidth="1.5" vectorEffect="non-scaling-stroke" /></svg>
-                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-                  <Activity className="w-3.5 h-3.5 text-slate-500" /> Kilómetros Recorridos
-                </p>
-                <div className="flex flex-wrap items-end gap-2 justify-between relative z-10">
-                  <p className="text-xl lg:text-2xl font-black text-[#00205B] tracking-tight flex items-center gap-2">
-                    {loadingKm ? (
-                      <Loader2 className="w-5 h-5 animate-spin text-[#00205B]" />
-                    ) : (
-                      <AnimatedCounter end={drilldownState || drilldownEventId ? kpis.distancia : (dbTotalKm || kpis.distancia)} /> 
-                    )}
-                    <span className="text-sm text-slate-400">Km</span>
-                  </p>
-                  <span className="text-[10px] font-bold text-[#009639] bg-green-50 px-1.5 py-0.5 rounded-md mb-1">📈 +8%</span>
-                </div>
-              </div>
+
 
             </div>
           </div>
@@ -622,23 +602,7 @@ export default function RutasAgenciaMovil({ selectedMonths = [] }: { selectedMon
               }
             </Geographies>
 
-            {/* Puntos de Camión */}
-            {events.filter(e => (e.estadoOperativo || e.state) && STATE_COORDS[normalizeStateName(e.estadoOperativo || e.state)]).map(e => getJitteredCoord(STATE_COORDS[normalizeStateName(e.estadoOperativo || e.state)])).map((coord: [number, number], idx: number) => (
-              <Marker key={idx} coordinates={coord}>
-                <foreignObject x="-24" y="-36" width="48" height="48">
-                  <div className="relative flex flex-col items-center justify-end w-full h-full pb-1 opacity-90 hover:opacity-100 hover:-translate-y-1 transition-all">
-                    
-                    {/* Contenedor Flotante del Camión */}
-                    <div className="relative flex flex-col items-center">
-                      <div className="bg-[#00205B] p-1.5 rounded-lg shadow-[#00205B]/50 border border-white/20">
-                        <Building2 className="w-3 h-3 text-white" />
-                      </div>
-                      <div className="w-0 h-0 border-l-[4px] border-l-transparent border-r-[4px] border-r-transparent border-t-[5px] border-t-[#00205B]"></div>
-                    </div>
-                  </div>
-                </foreignObject>
-              </Marker>
-            ))}
+
           </ComposableMap>
         </div>
         </div> {/* <-- Cierre de la Columna Central */}

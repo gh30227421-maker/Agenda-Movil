@@ -141,9 +141,10 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
               tdd: operativas?.tdd || 0,
               reclamos: operativas?.reclamos || 0,
               saldosCaptadosBs: financieras?.saldos_captados_bs || 0,
-              atmConsultas: financieras?.atm_consultas || 0,
-              atmRetiros: financieras?.atm_retiros || 0,
-              atmCambioClave: financieras?.atm_cambio_clave || 0,
+              atmConsultas: operativas?.atm_consultas || 0,
+              atmRetiros: operativas?.atm_retiros || 0,
+              atmCambioClave: operativas?.atm_cambio_clave || 0,
+              ventaPos: operativas?.venta_pos || 0,
               saldoCierreDivisas: financieras?.saldo_cierre_divisas || 0
             } : undefined,
             gastos: expense ? {
@@ -240,7 +241,11 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
           const { error: opErr } = await (supabase as any).from('cifras_operativas').update({
             cuentas_abiertas: data.cifras.cuentasAbiertas,
             tdd: data.cifras.tdd,
-            reclamos: data.cifras.reclamos
+            reclamos: data.cifras.reclamos,
+            atm_consultas: data.cifras.atmConsultas,
+            atm_retiros: data.cifras.atmRetiros,
+            atm_cambio_clave: data.cifras.atmCambioClave,
+            venta_pos: data.cifras.ventaPos
           }).eq('event_id', id);
           if (opErr) throw opErr;
         } else {
@@ -248,7 +253,11 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
             event_id: id,
             cuentas_abiertas: data.cifras.cuentasAbiertas,
             tdd: data.cifras.tdd,
-            reclamos: data.cifras.reclamos
+            reclamos: data.cifras.reclamos,
+            atm_consultas: data.cifras.atmConsultas,
+            atm_retiros: data.cifras.atmRetiros,
+            atm_cambio_clave: data.cifras.atmCambioClave,
+            venta_pos: data.cifras.ventaPos
           });
           if (opErr) throw opErr;
         }
@@ -258,9 +267,6 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
         if (existingFin) {
           const { error: finErr } = await (supabase as any).from('saldos_financieros_cierre').update({
             saldos_captados_bs: data.cifras.saldosCaptadosBs,
-            atm_consultas: data.cifras.atmConsultas,
-            atm_retiros: data.cifras.atmRetiros,
-            atm_cambio_clave: data.cifras.atmCambioClave,
             saldo_cierre_divisas: data.cifras.saldoCierreDivisas
           }).eq('event_id', id);
           if (finErr) throw finErr;
@@ -268,9 +274,6 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
           const { error: finErr } = await (supabase as any).from('saldos_financieros_cierre').insert({
             event_id: id,
             saldos_captados_bs: data.cifras.saldosCaptadosBs,
-            atm_consultas: data.cifras.atmConsultas,
-            atm_retiros: data.cifras.atmRetiros,
-            atm_cambio_clave: data.cifras.atmCambioClave,
             saldo_cierre_divisas: data.cifras.saldoCierreDivisas
           });
           if (finErr) throw finErr;

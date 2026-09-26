@@ -18,6 +18,8 @@ import RentabilidadRegionChart from './RentabilidadRegionChart';
 import RentabilidadTopEventosChart from './RentabilidadTopEventosChart';
 import RentabilidadVsCostosChart from './RentabilidadVsCostosChart';
 import RankingEventosOperativoChart from './RankingEventosOperativoChart';
+import AtmOperacionesChart from './AtmOperacionesChart';
+
 const isEventInPeriod = (evStartDate: string | undefined, periods: string[]) => {
   if (periods.length === 0 || periods.includes('todos')) return true;
   if (!evStartDate) return false;
@@ -442,6 +444,7 @@ export default function DashboardSection() {
           {/* Bloque 4 y 5: Gráficos Inferiores en Paralelo */}
           <div className="pt-2">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {false && <AtmOperacionesChart events={filteredEvents} />}
               <HistorialMetrics events={filteredEvents} mode="operativo" />
               <RankingEventosOperativoChart events={filteredEvents} />
             </div>

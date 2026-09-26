@@ -308,6 +308,7 @@ export default function EventManagementModal() {
       atmConsultas: isUnidadMovil ? Math.max(0, parseInt(formData.get('atmConsultas') as string) || 0) : 0,
       atmRetiros: isUnidadMovil ? Math.max(0, parseInt(formData.get('atmRetiros') as string) || 0) : 0,
       atmCambioClave: isUnidadMovil ? Math.max(0, parseInt(formData.get('atmCambioClave') as string) || 0) : 0,
+      ventaPos: isUnidadMovil ? Math.max(0, parseInt(formData.get('ventaPos') as string) || 0) : 0,
     };
     try {
       await updateEvent(event.id, { cifras, status: 'Culminado' });
@@ -934,6 +935,21 @@ export default function EventManagementModal() {
                       <div>
                         <label className="block mb-2 text-sm font-semibold text-gray-700">Cambio de Clave</label>
                         <input type="number" name="atmCambioClave" defaultValue={event.cifras?.atmCambioClave || 0} min="0" className="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5 focus:ring-[#FE5000] focus:border-[#FE5000]" />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {event.type === 'Unidad Móvil' && (
+                  <div className="bg-[#FE5000]/5 p-5 rounded-xl border border-[#FE5000]/20 shadow-sm mt-6">
+                    <h4 className="font-bold text-[#FE5000] mb-4 flex items-center gap-2">
+                      <CreditCard className="w-5 h-5" />
+                      Venta de POS (Puntos de Venta)
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block mb-2 text-sm font-semibold text-gray-700">Equipos Vendidos / Otorgados</label>
+                        <input type="number" name="ventaPos" defaultValue={event.cifras?.ventaPos || 0} min="0" className="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5 focus:ring-[#00205B] focus:border-[#00205B]" />
                       </div>
                     </div>
                   </div>

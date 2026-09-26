@@ -9,6 +9,7 @@ export interface Cifras {
   atmConsultas?: number;
   atmRetiros?: number;
   atmCambioClave?: number;
+  ventaPos?: number;
   saldoCierreDivisas?: number; // Saldo de cierre ingresado directamente en divisas
 }
 

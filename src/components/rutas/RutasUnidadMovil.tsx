@@ -183,10 +183,12 @@ export default function RutasUnidadMovil({ selectedMonths = [] }: { selectedMont
 
   const kpis = useMemo(() => {
     let totalCuentas = 0;
+    let soloCuentas = 0;
     const statesSet = new Set<string>();
     
     filteredEvents.forEach(e => {
       totalCuentas += (e.cifras?.cuentasAbiertas || 0) + (e.cifras?.atendidos || 0);
+      soloCuentas += (e.cifras?.cuentasAbiertas || 0);
       const stateName = e.estadoOperativo || e.state;
       const logisticState = stateName && STATE_COORDS[normalizeStateName(stateName)] ? normalizeStateName(stateName) : null;
       if (logisticState) {
@@ -224,7 +226,8 @@ export default function RutasUnidadMovil({ selectedMonths = [] }: { selectedMont
 
     return {
       beneficiados: totalCuentas, 
-      eventos: events.length,
+      cuentasAbiertas: soloCuentas,
+      eventos: filteredEvents.length,
       estados: statesSet.size,
       kilometros: Math.round(totalKm)
     };
@@ -247,6 +250,19 @@ export default function RutasUnidadMovil({ selectedMonths = [] }: { selectedMont
     today.setHours(0, 0, 0, 0);
     const future = events.filter(e => new Date(e.startDate || 0) >= today).sort((a, b) => new Date(a.startDate || 0).getTime() - new Date(b.startDate || 0).getTime());
     return future.length > 0 ? future[0] : null;
+  }, [events]);
+
+  const isCurrentlyDeployed = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return events.some(e => {
+      if (!e.startDate) return false;
+      const start = new Date(e.startDate);
+      const end = e.endDate ? new Date(e.endDate) : new Date(e.startDate);
+      start.setHours(0, 0, 0, 0);
+      end.setHours(23, 59, 59, 999);
+      return today >= start && today <= end;
+    });
   }, [events]);
 
   // Cálculos para la ruta
@@ -349,8 +365,10 @@ export default function RutasUnidadMovil({ selectedMonths = [] }: { selectedMont
             
             {/* Badge Animado en Vivo */}
             <div className="absolute top-4 right-4 z-30 bg-slate-900/80 backdrop-blur-md border border-white/20 rounded-full px-3 py-1.5 flex items-center gap-2 shadow-lg">
-              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.8)]" />
-              <span className="text-[10px] font-bold uppercase tracking-wider text-white">ESTADO: DESPLEGADA</span>
+              <div className={`w-2 h-2 rounded-full ${isCurrentlyDeployed ? 'bg-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.8)]' : 'bg-slate-400'}`} />
+              <span className="text-[10px] font-bold uppercase tracking-wider text-white">
+                {isCurrentlyDeployed ? 'ESTADO: DESPLEGADA' : 'ESTADO: EN BASE'}
+              </span>
             </div>
             
             <div className="absolute bottom-0 left-0 w-full p-6 bg-gradient-to-t from-black/90 via-black/40 to-transparent z-20">
@@ -391,9 +409,14 @@ export default function RutasUnidadMovil({ selectedMonths = [] }: { selectedMont
                 <Users className="w-3.5 h-3.5 text-[#FE5000]" /> Clientes Atendidos
               </p>
               <div className="flex flex-wrap items-end gap-2 justify-between">
-                <p className="text-xl lg:text-2xl font-black text-[#00205B] tracking-tight">
-                  <AnimatedCounter end={kpis.beneficiados} />
-                </p>
+                <div className="flex flex-col">
+                  <p className="text-xl lg:text-2xl font-black text-[#00205B] tracking-tight">
+                    <AnimatedCounter end={kpis.beneficiados} />
+                  </p>
+                  <span className="text-[10px] font-bold text-gray-400 tracking-wider">
+                    CUENTAS ABIERTAS
+                  </span>
+                </div>
                 <span className="text-[10px] font-bold text-[#009639] bg-green-50 px-1.5 py-0.5 rounded-md mb-1">📈 +12%</span>
               </div>
             </div>

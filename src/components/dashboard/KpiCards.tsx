@@ -13,6 +13,14 @@ export default function KpiCards({ events, mode = 'all' }: KpiCardsProps) {
   const totalTdd = events.reduce((acc, ev) => acc + (ev.cifras?.tdd || 0), 0);
   
   const totalOtrasOps = events.reduce((acc, ev) => acc + (ev.cifras?.reclamos || 0) + (ev.cifras?.atmCambioClave || 0), 0);
+  
+  const totalAtmConsultas = events.reduce((acc, ev) => acc + (ev.cifras?.atmConsultas || 0), 0);
+  const totalAtmRetiros = events.reduce((acc, ev) => acc + (ev.cifras?.atmRetiros || 0), 0);
+  const totalAtmCambioClave = events.reduce((acc, ev) => acc + (ev.cifras?.atmCambioClave || 0), 0);
+  const totalAtm = totalAtmConsultas + totalAtmRetiros + totalAtmCambioClave;
+  
+  const totalVentaPos = events.reduce((acc, ev) => acc + (ev.cifras?.ventaPos || 0), 0);
+
   const totalJornadas = events.length;
   const promedioCuentas = totalJornadas > 0 ? Math.round(totalCuentas / totalJornadas) : 0;
   const promedioTdd = totalJornadas > 0 ? Math.round(totalTdd / totalJornadas) : 0;
@@ -55,7 +63,7 @@ export default function KpiCards({ events, mode = 'all' }: KpiCardsProps) {
   const color = colorPalette[estadoGlobal as keyof typeof colorPalette];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+    <div className={`grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5`}>
       {/* Cuentas Abiertas */}
       {(mode === 'all' || mode === 'operativo') && (
       <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex items-center justify-between">
@@ -110,6 +118,34 @@ export default function KpiCards({ events, mode = 'all' }: KpiCardsProps) {
         </div>
         <div className="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600">
           <BarChart2 className="w-6 h-6" />
+        </div>
+      </div>
+      )}
+
+      {/* Operaciones ATM - TEMPORALMENTE OCULTO */}
+      {false && (mode === 'all' || mode === 'operativo') && (
+      <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex items-center justify-between">
+        <div>
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Operaciones ATM</p>
+          <h3 className="text-2xl font-bold text-[#00205B] mt-1">{totalAtm.toLocaleString('de-DE')}</h3>
+          <p className="text-xs text-gray-400 mt-1 font-medium">Operaciones procesadas</p>
+        </div>
+        <div className="w-12 h-12 rounded-xl bg-orange-50 flex items-center justify-center text-[#FE5000]">
+          <CreditCard className="w-6 h-6" />
+        </div>
+      </div>
+      )}
+
+      {/* Venta de POS - TEMPORALMENTE OCULTO */}
+      {false && (mode === 'all' || mode === 'operativo') && (
+      <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex items-center justify-between">
+        <div>
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Venta de POS</p>
+          <h3 className="text-2xl font-bold text-[#00205B] mt-1">{totalVentaPos.toLocaleString('de-DE')}</h3>
+          <p className="text-xs text-gray-400 mt-1 font-medium">Equipos comercializados</p>
+        </div>
+        <div className="w-12 h-12 rounded-xl bg-teal-50 flex items-center justify-center text-teal-600">
+          <DollarSign className="w-6 h-6" />
         </div>
       </div>
       )}

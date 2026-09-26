@@ -304,6 +304,7 @@ export default function CifrasSection() {
                 <th className="px-6 py-4">Tipo</th>
                 <th className="px-6 py-4 text-center">Cuentas Abiertas</th>
                 <th className="px-6 py-4 text-center text-[#009639]">BNC TDD</th>
+                {false && <th className="px-6 py-4 text-center text-[#FE5000]">Venta POS</th>}
                 <th className="px-6 py-4 text-center">Total Ops</th>
                 <th className="px-6 py-4 text-center">Acción</th>
               </tr>
@@ -334,6 +335,7 @@ export default function CifrasSection() {
                     <td className="px-6 py-4 text-xs font-medium">{ev.type}</td>
                     <td className="px-6 py-4 text-center font-semibold text-gray-800">{c ? formatNumber(c.cuentasAbiertas) : '-'}</td>
                     <td className="px-6 py-4 text-center font-bold text-[#009639] bg-green-50/30">{c ? formatNumber(c.tdd) : '-'}</td>
+                    {false && <td className="px-6 py-4 text-center font-bold text-[#FE5000] bg-orange-50/30">{c?.ventaPos ? formatNumber(c.ventaPos) : '-'}</td>}
                     <td className="px-6 py-4 text-center font-bold text-[#00205B]">{c ? formatNumber(totalOps) : '-'}</td>
                     <td className="px-6 py-4 text-center">
                       <button
