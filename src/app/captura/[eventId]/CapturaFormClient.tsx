@@ -115,9 +115,10 @@ export default function CapturaFormClient({ eventId }: { eventId: string }) {
       <div className="w-full max-w-4xl mx-auto bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden shrink-0 mb-8">
         <div className="bg-[#00205B] p-8 text-center relative overflow-hidden flex flex-col items-center">
           <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blue-700/40 via-transparent to-transparent"></div>
-          <div className="relative flex items-center justify-center w-16 h-16 flex-shrink-0 mb-4 z-10">
-            <Wifi className="absolute -top-1 w-8 h-8 text-[#FE5000] animate-pulse drop-shadow-md" />
-            <Truck className="absolute bottom-0 w-12 h-12 text-[#FE5000] drop-shadow-md" />
+          <div className="relative flex items-center justify-center w-24 h-24 flex-shrink-0 mb-4 z-10">
+            <div className="absolute inset-0 border-4 border-[#FE5000]/20 border-t-[#FE5000] rounded-full animate-[spin_4s_linear_infinite]" />
+            <Wifi className="absolute -top-1 w-8 h-8 text-[#FE5000] animate-pulse drop-shadow-md z-10" />
+            <img src="/unidad movil.png" alt="Unidad Móvil" className="absolute bottom-1 w-16 h-16 object-contain drop-shadow-lg" />
           </div>
           <h1 className="text-xl md:text-2xl font-black text-white uppercase tracking-widest relative z-10">{eventName}</h1>
           <p className="text-blue-200 text-sm mt-2 relative z-10">Registro de Operaciones en Campo</p>

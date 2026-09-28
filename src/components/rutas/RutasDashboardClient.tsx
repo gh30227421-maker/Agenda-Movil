@@ -8,8 +8,8 @@ import { useAgenda } from '@/context/AgendaContext';
 import { Calendar, XCircle, Filter } from 'lucide-react';
 
 export default function RutasDashboardClient() {
-  const { events } = useAgenda();
-  const [selectedMonths, setSelectedMonths] = useState<string[]>([]);
+  const { events, dashboardFilters, setDashboardFilters } = useAgenda();
+  const { selectedMonths } = dashboardFilters;
   const [showFilterBar, setShowFilterBar] = useState(false);
   const filterRef = useRef<HTMLDivElement>(null);
 
@@ -25,18 +25,20 @@ export default function RutasDashboardClient() {
 
   const handleMonthClick = (mValue: string, e: React.MouseEvent) => {
     if (mValue === 'todos') {
-      setSelectedMonths([]);
+      setDashboardFilters(prev => ({ ...prev, selectedMonths: [] }));
       setShowFilterBar(false);
       return;
     }
     
     if (e.ctrlKey || e.metaKey) {
-      setSelectedMonths(prev => {
-        if (prev.includes(mValue)) return prev.filter(v => v !== mValue);
-        return [...prev, mValue];
+      setDashboardFilters(prev => {
+        if (prev.selectedMonths.includes(mValue)) {
+          return { ...prev, selectedMonths: prev.selectedMonths.filter(v => v !== mValue) };
+        }
+        return { ...prev, selectedMonths: [...prev.selectedMonths, mValue] };
       });
     } else {
-      setSelectedMonths([mValue]);
+      setDashboardFilters(prev => ({ ...prev, selectedMonths: [mValue] }));
       setShowFilterBar(false);
     }
   };
@@ -84,7 +86,7 @@ export default function RutasDashboardClient() {
             
             {selectedMonths.length > 0 && (
               <button 
-                onClick={() => setSelectedMonths([])}
+                onClick={() => setDashboardFilters(prev => ({ ...prev, selectedMonths: [] }))}
                 className="ml-2 text-slate-400 hover:text-red-500 transition-colors"
                 title="Limpiar filtro"
               >

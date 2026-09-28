@@ -32,6 +32,8 @@ export default function PhotosManager() {
   
   const [coverUploading, setCoverUploading] = useState(false);
   const [coverPreviewTimestamp, setCoverPreviewTimestamp] = useState(Date.now());
+  const [coverAgenciaUploading, setCoverAgenciaUploading] = useState(false);
+  const [coverAgenciaPreviewTimestamp, setCoverAgenciaPreviewTimestamp] = useState(Date.now());
   const [videoUploading, setVideoUploading] = useState(false);
   const [agenciaVideoUploading, setAgenciaVideoUploading] = useState(false);
   const [agenciaVideoPreviewTimestamp, setAgenciaVideoPreviewTimestamp] = useState(Date.now());
@@ -62,6 +64,7 @@ export default function PhotosManager() {
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
+  const coverAgenciaInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
   const agenciaVideoInputRef = useRef<HTMLInputElement>(null);
   const { showToast } = useToast();
@@ -224,6 +227,38 @@ export default function PhotosManager() {
     }
   };
 
+  const handleCoverAgenciaUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    const file = e.target.files[0];
+    
+    // Check file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      showToast('La imagen es demasiado pesada. Máximo 5MB.', 'info');
+      return;
+    }
+
+    try {
+      setCoverAgenciaUploading(true);
+      const { data, error } = await supabase.storage
+        .from('event_photos')
+        .upload('agencia-oficial-cover.jpg', file, { 
+          upsert: true,
+          cacheControl: '10'
+        });
+
+      if (error) throw error;
+      
+      showToast('Portada de Agencia actualizada exitosamente', 'success');
+      // Update timestamp to bypass browser cache for the new image preview
+      setCoverAgenciaPreviewTimestamp(Date.now());
+    } catch (err: any) {
+      showToast(err.message || 'Error al actualizar la portada', 'error');
+    } finally {
+      setCoverAgenciaUploading(false);
+      if (coverAgenciaInputRef.current) coverAgenciaInputRef.current.value = '';
+    }
+  };
+
   const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
     if (unidadVideos.length >= 3) {
@@ -361,6 +396,7 @@ export default function PhotosManager() {
   }
 
   const coverUrl = `${supabase.storage.from('event_photos').getPublicUrl('unidad-oficial-cover.jpg').data.publicUrl}?t=${coverPreviewTimestamp}`;
+  const coverAgenciaUrl = `${supabase.storage.from('event_photos').getPublicUrl('agencia-oficial-cover.jpg').data.publicUrl}?t=${coverAgenciaPreviewTimestamp}`;
 
   return (
     <div className="flex flex-col gap-6 w-full relative">
@@ -429,6 +465,60 @@ export default function PhotosManager() {
                 <Upload className="w-4 h-4" />
               )}
               {coverUploading ? 'Actualizando Portada...' : 'Actualizar Portada Oficial'}
+            </button>
+          </div>
+        </div>
+
+        {/* Separador */}
+        <div className="w-full h-px bg-gray-100 my-2" />
+
+        {/* Agencia Móvil */}
+        <div className="flex flex-col md:flex-row gap-6 items-center">
+          {/* Preview */}
+          <div className="w-full md:w-1/3 aspect-[16/9] bg-gray-100 rounded-xl overflow-hidden border border-gray-200 relative group flex items-center justify-center">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img 
+              src={coverAgenciaUrl} 
+              alt="Portada Oficial Agencia" 
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                 e.currentTarget.style.opacity = '0';
+              }}
+            />
+            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center pointer-events-none">
+              <p className="text-white font-bold text-sm">Portada Actual</p>
+            </div>
+            <div className="absolute top-2 left-2 bg-[#FE5000] text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-sm z-10 pointer-events-none">
+              AGENCIA MÓVIL
+            </div>
+          </div>
+
+          {/* Acciones */}
+          <div className="flex-1">
+            <h3 className="text-md font-bold text-gray-800 mb-2">Portada Oficial Agencia Móvil</h3>
+            <p className="text-sm text-gray-500 mb-4">
+              Esta imagen se muestra de manera fija en la página pública de la Agencia Móvil.
+              Al subir una nueva imagen, reemplazará automáticamente a la anterior en toda la plataforma. Se recomienda usar formato JPG o PNG apaisado (16:9).
+            </p>
+            
+            <input 
+              type="file" 
+              accept="image/*" 
+              className="hidden" 
+              ref={coverAgenciaInputRef} 
+              onChange={handleCoverAgenciaUpload}
+            />
+            <button 
+              onClick={() => coverAgenciaInputRef.current?.click()}
+              disabled={coverAgenciaUploading}
+              className="flex items-center gap-2 bg-[#00205B] hover:bg-[#00153B] text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {coverAgenciaUploading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Upload className="w-4 h-4" />
+              )}
+              {coverAgenciaUploading ? 'Actualizando Portada...' : 'Actualizar Portada Oficial'}
             </button>
           </div>
         </div>

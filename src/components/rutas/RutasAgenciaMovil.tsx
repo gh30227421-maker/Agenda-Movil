@@ -5,7 +5,7 @@ import PremiumCarousel from './PremiumCarousel';
 import AnimatedCounter from '@/components/ui/AnimatedCounter';
 import { supabase } from '@/lib/supabase';
 import { useAgenda } from '@/context/AgendaContext';
-import { Loader2, Users, MapPin, Building2, Activity, Calendar, Video, Download, Truck, XCircle } from 'lucide-react';
+import { Loader2, Users, MapPin, Building2, Activity, Calendar, Video, Download, Truck, XCircle, Camera } from 'lucide-react';
 import { exportToPNG } from '@/utils/exportUtils';
 import { toPng } from 'html-to-image';
 // @ts-ignore
@@ -45,7 +45,7 @@ const normalizeStateName = (name: string) => {
 const geoUrl = '/venezuela.json';
 
 export default function RutasAgenciaMovil({ selectedMonths = [] }: { selectedMonths?: string[] }) {
-  const { events: allEvents, isLoading: isEventsLoading } = useAgenda();
+  const { events: allEvents, isLoading: isEventsLoading, dashboardFilters, setDashboardFilters } = useAgenda();
   const [isCombinado, setIsCombinado] = useState(false);
   
   const events = useMemo(() => {
@@ -63,8 +63,9 @@ export default function RutasAgenciaMovil({ selectedMonths = [] }: { selectedMon
   const [playlist, setPlaylist] = useState<string[]>([]);
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
 
-  const [drilldownState, setDrilldownState] = useState<string | null>(null);
-  const [drilldownEventId, setDrilldownEventId] = useState<string | null>(null);
+  const { drilldownStateAM: drilldownState, drilldownEventIdAM: drilldownEventId } = dashboardFilters;
+  const setDrilldownState = (val: string | null) => setDashboardFilters(prev => ({ ...prev, drilldownStateAM: val }));
+  const setDrilldownEventId = (val: string | null) => setDashboardFilters(prev => ({ ...prev, drilldownEventIdAM: val }));
   const [showPopover, setShowPopover] = useState<boolean>(false);
 
   const filteredEvents = useMemo(() => {
@@ -263,10 +264,10 @@ export default function RutasAgenciaMovil({ selectedMonths = [] }: { selectedMon
   return (
     <div className="flex flex-col animate-in fade-in slide-in-from-bottom-8 duration-1000 w-full px-4 md:px-8">
       
-      <div className="grid grid-cols-1 lg:grid-cols-[380px_1fr_280px] xl:grid-cols-[440px_1fr_320px] gap-6 xl:gap-8 w-full px-4 xl:px-8 max-w-[1920px] mx-auto items-start pt-6">
+      <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr_260px] xl:grid-cols-[380px_1fr_280px] 2xl:grid-cols-[440px_1fr_320px] gap-4 xl:gap-8 w-full px-4 xl:px-8 max-w-[1920px] mx-auto items-start pt-6">
         
         {/* Columna Izquierda: Narrativa y Contexto Visual */}
-        <div className="flex flex-col relative z-20 w-full gap-3">
+        <div className="flex flex-col relative z-20 w-full gap-3 min-w-0">
           
           {/* Micro-Tarjeta Próximo Destino (Real de BD) */}
           {nextEvent ? (
@@ -294,8 +295,38 @@ export default function RutasAgenciaMovil({ selectedMonths = [] }: { selectedMon
             </div>
           )}
 
-          {/* Carrusel Inmersivo */}
-          <div className="w-full h-[260px] xl:h-[340px]">
+          {/* Foto Institucional Estática */}
+          <div className="w-full h-[260px] xl:h-[340px] rounded-2xl overflow-hidden shadow-2xl shadow-slate-900/50 border border-white/10 group bg-slate-950/40 relative z-20 transition-all duration-500">
+            <div className="absolute inset-0 flex items-center justify-center text-white/20">
+              <Camera className="w-8 h-8" />
+            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img 
+              src={supabase.storage.from('event_photos').getPublicUrl('agencia-oficial-cover.jpg').data.publicUrl}
+              alt="Agencia Móvil Oficial"
+              className="w-full h-full object-cover relative z-10 animate-ken-burns"
+              onError={(e) => {
+                e.currentTarget.style.opacity = '0';
+              }}
+            />
+            
+            {/* Badge Animado en Vivo */}
+            <div className="absolute top-4 right-4 z-30 bg-slate-900/80 backdrop-blur-md border border-white/20 rounded-full px-3 py-1.5 flex items-center gap-2 shadow-lg">
+              <div className={`w-2 h-2 rounded-full ${nextEvent ? 'bg-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.8)]' : 'bg-slate-400'}`} />
+              <span className="text-[10px] font-bold uppercase tracking-wider text-white">
+                {nextEvent ? 'ESTADO: ACTIVO' : 'ESTADO: STANDBY'}
+              </span>
+            </div>
+            
+            <div className="absolute bottom-0 left-0 w-full p-6 bg-gradient-to-t from-black/90 via-black/40 to-transparent z-20">
+              <span className="text-white text-sm md:text-base font-bold uppercase tracking-widest drop-shadow-md flex items-center gap-2">
+                <Building2 className="w-5 h-5" /> Agencia Móvil Oficial
+              </span>
+            </div>
+          </div>
+
+          {/* Galería Dinámica */}
+          <div className="w-full h-[260px] xl:h-[340px] rounded-2xl overflow-hidden shadow-[0_15px_40px_rgba(0,32,91,0.1)] border border-slate-200 bg-white/40 backdrop-blur-sm pointer-events-auto transform scale-100 hover:scale-[1.01] transition-transform duration-500">
             <PremiumCarousel photos={displayedPhotos} />
           </div>
 
@@ -338,7 +369,7 @@ export default function RutasAgenciaMovil({ selectedMonths = [] }: { selectedMon
         </div>
 
         {/* Columna Central: Data y Monitoreo */}
-        <div className="flex flex-col relative w-full h-full gap-4">
+        <div className="flex flex-col relative w-full h-full gap-4 min-w-0">
           
           {/* Fila Única de KPIs */}
           <div className="flex flex-col w-full relative z-20">
@@ -363,20 +394,20 @@ export default function RutasAgenciaMovil({ selectedMonths = [] }: { selectedMon
 
               <div className="flex-grow h-px bg-slate-200"></div>
             </div>
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 w-full">
+            <div className="flex flex-nowrap gap-2 md:gap-4 w-full relative z-20">
               
               {/* KPI 1: Clientes Atendidos */}
-              <div ref={kpiCiudadanosRef} id="kpi-ciudadanos-atendidos-agencia" className="group flex flex-col backdrop-blur-md bg-white/90 p-4 rounded-xl shadow-xl shadow-slate-200/50 border border-slate-200 hover:shadow-[0_15px_40px_rgba(254,80,0,0.12)] transition-all duration-500 relative overflow-hidden">
+              <div ref={kpiCiudadanosRef} id="kpi-ciudadanos-atendidos-agencia" className="flex-1 min-w-[140px] max-w-[220px] h-[76px] group flex flex-col justify-between backdrop-blur-md bg-white/90 p-2.5 xl:p-3 rounded-xl shadow-xl shadow-slate-200/50 border border-slate-200 hover:shadow-[0_15px_40px_rgba(254,80,0,0.12)] transition-all duration-500 relative overflow-hidden">
                 <button
                   onClick={() => downloadImage(kpiCiudadanosRef, 'KPI_Ciudadanos_Atendidos')}
-                  className="ignore-export absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-slate-100 hover:bg-[#FE5000] hover:text-white text-slate-400 p-1.5 rounded-md shadow-sm z-50"
+                  className="ignore-export absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-slate-100 hover:bg-[#FE5000] hover:text-white text-slate-400 p-1.5 rounded-md shadow-sm z-50"
                   title="Descargar en PNG"
                 >
                   <Download className="w-3.5 h-3.5" />
                 </button>
                 <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-[#FE5000] to-[#FF8A50]" />
                 <svg className="absolute bottom-0 left-0 w-full h-1/2 object-cover opacity-30 pointer-events-none text-slate-200" viewBox="0 0 100 30" preserveAspectRatio="none"><path d="M0,30 Q20,15 50,25 T100,10" fill="none" stroke="currentColor" strokeWidth="1.5" vectorEffect="non-scaling-stroke" /></svg>
-                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                <p className="text-[9px] text-slate-500 font-bold uppercase tracking-wider flex items-center gap-1.5">
                   <Users className="w-3.5 h-3.5 text-[#FE5000]" /> Clientes Atendidos
                 </p>
                 <div className="flex flex-wrap items-end gap-2 justify-between">
@@ -393,17 +424,17 @@ export default function RutasAgenciaMovil({ selectedMonths = [] }: { selectedMon
               </div>
             
               {/* KPI 2: Puntos de Despliegue */}
-              <div ref={kpiJornadasRef} id="kpi-jornadas-desplegadas-agencia" className="group flex flex-col backdrop-blur-md bg-white/90 p-4 rounded-xl shadow-xl shadow-slate-200/50 border border-slate-200 hover:shadow-[0_15px_40px_rgba(254,80,0,0.12)] transition-all duration-500 relative overflow-hidden">
+              <div ref={kpiJornadasRef} id="kpi-jornadas-desplegadas-agencia" className="flex-1 min-w-[140px] max-w-[220px] h-[76px] group flex flex-col justify-between backdrop-blur-md bg-white/90 p-2.5 xl:p-3 rounded-xl shadow-xl shadow-slate-200/50 border border-slate-200 hover:shadow-[0_15px_40px_rgba(254,80,0,0.12)] transition-all duration-500 relative overflow-hidden">
                 <button
                   onClick={() => downloadImage(kpiJornadasRef, 'KPI_Jornadas_Desplegadas')}
-                  className="ignore-export absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-slate-100 hover:bg-[#FE5000] hover:text-white text-slate-400 p-1.5 rounded-md shadow-sm z-50"
+                  className="ignore-export absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-slate-100 hover:bg-[#FE5000] hover:text-white text-slate-400 p-1.5 rounded-md shadow-sm z-50"
                   title="Descargar en PNG"
                 >
                   <Download className="w-3.5 h-3.5" />
                 </button>
                 <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-[#FE5000] to-[#FF8A50]" />
                 <svg className="absolute bottom-0 left-0 w-full h-1/2 object-cover opacity-30 pointer-events-none text-slate-200" viewBox="0 0 100 30" preserveAspectRatio="none"><path d="M0,30 Q30,5 60,20 T100,5" fill="none" stroke="currentColor" strokeWidth="1.5" vectorEffect="non-scaling-stroke" /></svg>
-                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                <p className="text-[9px] text-slate-500 font-bold uppercase tracking-wider flex items-center gap-1.5">
                   <Building2 className="w-3.5 h-3.5 text-[#FE5000]" /> Jornadas Desplegadas
                 </p>
                 <div className="flex flex-wrap items-end gap-2 justify-between">
@@ -415,17 +446,17 @@ export default function RutasAgenciaMovil({ selectedMonths = [] }: { selectedMon
               </div>
 
               {/* KPI 3: Cobertura Nacional */}
-              <div ref={kpiEstadosRef} id="kpi-estados-visitados-agencia" className="group flex flex-col backdrop-blur-md bg-white/90 p-4 rounded-xl shadow-xl shadow-slate-200/50 border border-slate-200 hover:shadow-[0_15px_40px_rgba(0,32,91,0.12)] transition-all duration-500 relative overflow-hidden">
+              <div ref={kpiEstadosRef} id="kpi-estados-visitados-agencia" className="flex-1 min-w-[140px] max-w-[220px] h-[76px] group flex flex-col justify-between backdrop-blur-md bg-white/90 p-2.5 xl:p-3 rounded-xl shadow-xl shadow-slate-200/50 border border-slate-200 hover:shadow-[0_15px_40px_rgba(0,32,91,0.12)] transition-all duration-500 relative overflow-hidden">
                 <button
                   onClick={() => downloadImage(kpiEstadosRef, 'KPI_Estados_Visitados')}
-                  className="ignore-export absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-slate-100 hover:bg-[#00205B] hover:text-white text-slate-400 p-1.5 rounded-md shadow-sm z-50"
+                  className="ignore-export absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-slate-100 hover:bg-[#00205B] hover:text-white text-slate-400 p-1.5 rounded-md shadow-sm z-50"
                   title="Descargar en PNG"
                 >
                   <Download className="w-3.5 h-3.5" />
                 </button>
                 <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-[#00205B] to-[#003A9E]" />
                 <svg className="absolute bottom-0 left-0 w-full h-1/2 object-cover opacity-30 pointer-events-none text-slate-200" viewBox="0 0 100 30" preserveAspectRatio="none"><path d="M0,30 Q25,10 50,20 T100,5" fill="none" stroke="currentColor" strokeWidth="1.5" vectorEffect="non-scaling-stroke" /></svg>
-                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                <p className="text-[9px] text-slate-500 font-bold uppercase tracking-wider flex items-center gap-1.5">
                   <MapPin className="w-3.5 h-3.5 text-[#00205B]" /> Estados Visitados
                 </p>
                 <div className="flex flex-wrap items-end gap-2 justify-between">
@@ -608,7 +639,7 @@ export default function RutasAgenciaMovil({ selectedMonths = [] }: { selectedMon
         </div> {/* <-- Cierre de la Columna Central */}
 
         {/* Columna Derecha: Panel de Video (Agencia Móvil) */}
-        <div className="flex flex-col relative w-full h-full pr-4 xl:pr-6">
+        <div className="flex flex-col relative w-full h-full pr-4 xl:pr-6 min-w-0">
           <div className="sticky top-24 flex flex-col gap-6 lg:mt-[4.5rem]">
             {/* Video Institucional */}
             <div className="w-full h-auto rounded-2xl overflow-hidden shadow-[0_15px_40px_rgba(0,32,91,0.1)] border border-slate-200 bg-slate-900 group pointer-events-auto relative">

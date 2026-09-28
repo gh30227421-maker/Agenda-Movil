@@ -35,7 +35,7 @@ const normalizeStateName = (name: string) => {
 const geoUrl = '/venezuela.json';
 
 export default function RutasUnidadMovil({ selectedMonths = [] }: { selectedMonths?: string[] }) {
-  const { events: allEvents, isLoading: isEventsLoading } = useAgenda();
+  const { events: allEvents, isLoading: isEventsLoading, dashboardFilters, setDashboardFilters } = useAgenda();
   const events = useMemo(() => allEvents.filter(e => e.type === 'Unidad Móvil' && (selectedMonths.length === 0 || (e.startDate && selectedMonths.some(m => e.startDate?.startsWith(m))))), [allEvents, selectedMonths]);
   
   const [photos, setPhotos] = useState<any[]>([]);
@@ -46,8 +46,9 @@ export default function RutasUnidadMovil({ selectedMonths = [] }: { selectedMont
   const [playlist, setPlaylist] = useState<string[]>([]);
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
 
-  const [drilldownState, setDrilldownState] = useState<string | null>(null);
-  const [drilldownEventId, setDrilldownEventId] = useState<string | null>(null);
+  const { drilldownStateUM: drilldownState, drilldownEventIdUM: drilldownEventId } = dashboardFilters;
+  const setDrilldownState = (val: string | null) => setDashboardFilters(prev => ({ ...prev, drilldownStateUM: val }));
+  const setDrilldownEventId = (val: string | null) => setDashboardFilters(prev => ({ ...prev, drilldownEventIdUM: val }));
   const [showPopover, setShowPopover] = useState<boolean>(false);
 
   const filteredEvents = useMemo(() => {
@@ -312,10 +313,10 @@ export default function RutasUnidadMovil({ selectedMonths = [] }: { selectedMont
       `}} />
 
 
-      <div className="grid grid-cols-1 lg:grid-cols-[380px_1fr_280px] xl:grid-cols-[440px_1fr_320px] gap-6 xl:gap-8 w-full px-4 xl:px-8 max-w-[1920px] mx-auto items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr_260px] xl:grid-cols-[380px_1fr_280px] 2xl:grid-cols-[440px_1fr_320px] gap-4 xl:gap-8 w-full px-4 xl:px-8 max-w-[1920px] mx-auto items-start">
         
         {/* Columna Izquierda: Narrativa y Contexto Visual */}
-        <div className="flex flex-col relative z-20 w-full gap-3">
+        <div className="flex flex-col relative z-20 w-full gap-3 min-w-0">
           
           {/* Texto Informativo */}
           <p className="text-slate-600 text-sm leading-relaxed mb-4">
@@ -386,26 +387,26 @@ export default function RutasUnidadMovil({ selectedMonths = [] }: { selectedMont
         </div>
 
         {/* Columna Central: Data y Monitoreo */}
-        <div className="flex flex-col relative w-full h-full">
+        <div className="flex flex-col relative w-full h-full min-w-0">
           
           {/* Fila Única de KPIs */}
           <div className="flex items-center gap-4 mb-4 relative z-20">
             <h3 className="text-lg md:text-xl font-black text-slate-900 uppercase tracking-widest m-0">Indicadores Operativos - Unidad Móvil</h3>
             <div className="flex-grow h-px bg-slate-200"></div>
           </div>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 w-full relative z-20">
+          <div className="flex flex-nowrap gap-2 md:gap-4 w-full relative z-20">
             {/* KPI 2: Clientes Atendidos */}
-            <div ref={kpiCiudadanosRef} id="kpi-ciudadanos-atendidos-unidad" className="group flex flex-col backdrop-blur-md bg-white/90 p-4 rounded-xl shadow-xl shadow-slate-200/50 border border-slate-200 hover:shadow-[0_15px_40px_rgba(254,80,0,0.12)] transition-all duration-500 relative overflow-hidden">
+            <div ref={kpiCiudadanosRef} id="kpi-ciudadanos-atendidos-unidad" className="flex-1 min-w-[140px] max-w-[220px] h-[76px] group flex flex-col justify-between backdrop-blur-md bg-white/90 p-2.5 xl:p-3 rounded-xl shadow-xl shadow-slate-200/50 border border-slate-200 hover:shadow-[0_15px_40px_rgba(254,80,0,0.12)] transition-all duration-500 relative overflow-hidden">
               <button
                 onClick={() => downloadImage(kpiCiudadanosRef, 'KPI_Ciudadanos_Atendidos')}
-                className="ignore-export absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-slate-100 hover:bg-[#FE5000] hover:text-white text-slate-400 p-1.5 rounded-md shadow-sm z-50"
+                className="ignore-export absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-slate-100 hover:bg-[#FE5000] hover:text-white text-slate-400 p-1.5 rounded-md shadow-sm z-50"
                 title="Descargar en PNG"
               >
                 <Download className="w-3.5 h-3.5" />
               </button>
               <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-[#FE5000] to-[#FF8A50]" />
               <svg className="absolute bottom-0 left-0 w-full h-1/2 object-cover opacity-30 pointer-events-none text-slate-200" viewBox="0 0 100 30" preserveAspectRatio="none"><path d="M0,30 Q20,15 50,25 T100,10" fill="none" stroke="currentColor" strokeWidth="1.5" vectorEffect="non-scaling-stroke" /></svg>
-              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+              <p className="text-[9px] text-slate-500 font-bold uppercase tracking-wider flex items-center gap-1.5">
                 <Users className="w-3.5 h-3.5 text-[#FE5000]" /> Clientes Atendidos
               </p>
               <div className="flex flex-wrap items-end gap-2 justify-between">
@@ -422,17 +423,17 @@ export default function RutasUnidadMovil({ selectedMonths = [] }: { selectedMont
             </div>
 
             {/* KPI: Puntos de Despliegue */}
-            <div ref={kpiJornadasRef} id="kpi-jornadas-desplegadas-unidad" className="group flex flex-col backdrop-blur-md bg-white/90 p-4 rounded-xl shadow-xl shadow-slate-200/50 border border-slate-200 hover:shadow-[0_15px_40px_rgba(0,150,57,0.12)] transition-all duration-500 relative overflow-hidden">
+            <div ref={kpiJornadasRef} id="kpi-jornadas-desplegadas-unidad" className="flex-1 min-w-[140px] max-w-[220px] h-[76px] group flex flex-col justify-between backdrop-blur-md bg-white/90 p-2.5 xl:p-3 rounded-xl shadow-xl shadow-slate-200/50 border border-slate-200 hover:shadow-[0_15px_40px_rgba(0,150,57,0.12)] transition-all duration-500 relative overflow-hidden">
               <button
                 onClick={() => downloadImage(kpiJornadasRef, 'KPI_Jornadas_Desplegadas')}
-                className="ignore-export absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-slate-100 hover:bg-[#009639] hover:text-white text-slate-400 p-1.5 rounded-md shadow-sm z-50"
+                className="ignore-export absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-slate-100 hover:bg-[#009639] hover:text-white text-slate-400 p-1.5 rounded-md shadow-sm z-50"
                 title="Descargar en PNG"
               >
                 <Download className="w-3.5 h-3.5" />
               </button>
               <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-[#009639] to-[#00C04B]" />
               <svg className="absolute bottom-0 left-0 w-full h-1/2 object-cover opacity-30 pointer-events-none text-slate-200" viewBox="0 0 100 30" preserveAspectRatio="none"><path d="M0,30 Q30,5 60,20 T100,5" fill="none" stroke="currentColor" strokeWidth="1.5" vectorEffect="non-scaling-stroke" /></svg>
-              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+              <p className="text-[9px] text-slate-500 font-bold uppercase tracking-wider flex items-center gap-1.5">
                 <MapPin className="w-3.5 h-3.5 text-[#009639]" /> Jornadas Desplegadas
               </p>
               <div className="flex flex-wrap items-end gap-2 justify-between">
@@ -444,17 +445,17 @@ export default function RutasUnidadMovil({ selectedMonths = [] }: { selectedMont
             </div>
 
             {/* KPI: Cobertura Nacional */}
-            <div ref={kpiEstadosRef} id="kpi-estados-visitados-unidad" className="group flex flex-col backdrop-blur-md bg-white/90 p-4 rounded-xl shadow-xl shadow-slate-200/50 border border-slate-200 hover:shadow-[0_15px_40px_rgba(0,32,91,0.12)] transition-all duration-500 relative overflow-hidden">
+            <div ref={kpiEstadosRef} id="kpi-estados-visitados-unidad" className="flex-1 min-w-[140px] max-w-[220px] h-[76px] group flex flex-col justify-between backdrop-blur-md bg-white/90 p-2.5 xl:p-3 rounded-xl shadow-xl shadow-slate-200/50 border border-slate-200 hover:shadow-[0_15px_40px_rgba(0,32,91,0.12)] transition-all duration-500 relative overflow-hidden">
               <button
                 onClick={() => downloadImage(kpiEstadosRef, 'KPI_Estados_Visitados')}
-                className="ignore-export absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-slate-100 hover:bg-[#00205B] hover:text-white text-slate-400 p-1.5 rounded-md shadow-sm z-50"
+                className="ignore-export absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-slate-100 hover:bg-[#00205B] hover:text-white text-slate-400 p-1.5 rounded-md shadow-sm z-50"
                 title="Descargar en PNG"
               >
                 <Download className="w-3.5 h-3.5" />
               </button>
               <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-[#00205B] to-[#003A9E]" />
               <svg className="absolute bottom-0 left-0 w-full h-1/2 object-cover opacity-30 pointer-events-none text-slate-200" viewBox="0 0 100 30" preserveAspectRatio="none"><path d="M0,30 Q25,10 50,20 T100,5" fill="none" stroke="currentColor" strokeWidth="1.5" vectorEffect="non-scaling-stroke" /></svg>
-              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+              <p className="text-[9px] text-slate-500 font-bold uppercase tracking-wider flex items-center gap-1.5">
                 <Truck className="w-3.5 h-3.5 text-[#00205B]" /> Estados Visitados
               </p>
               <div className="flex flex-wrap items-end gap-2 justify-between">
@@ -466,17 +467,17 @@ export default function RutasUnidadMovil({ selectedMonths = [] }: { selectedMont
             </div>
 
             {/* KPI 5: Kilómetros Recorridos */}
-            <div ref={kpiLogisticaRef} id="kpi-logistica-recorrida-unidad" className="group flex flex-col backdrop-blur-md bg-white/90 p-4 rounded-xl shadow-xl shadow-slate-200/50 border border-slate-200 hover:shadow-[0_15px_40px_rgba(100,116,139,0.12)] transition-all duration-500 relative overflow-hidden">
+            <div ref={kpiLogisticaRef} id="kpi-logistica-recorrida-unidad" className="flex-1 min-w-[140px] max-w-[220px] h-[76px] group flex flex-col justify-between backdrop-blur-md bg-white/90 p-2.5 xl:p-3 rounded-xl shadow-xl shadow-slate-200/50 border border-slate-200 hover:shadow-[0_15px_40px_rgba(100,116,139,0.12)] transition-all duration-500 relative overflow-hidden">
               <button
                 onClick={() => downloadImage(kpiLogisticaRef, 'KPI_Logistica_Recorrida')}
-                className="ignore-export absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-slate-100 hover:bg-slate-500 hover:text-white text-slate-400 p-1.5 rounded-md shadow-sm z-50"
+                className="ignore-export absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-slate-100 hover:bg-slate-500 hover:text-white text-slate-400 p-1.5 rounded-md shadow-sm z-50"
                 title="Descargar en PNG"
               >
                 <Download className="w-3.5 h-3.5" />
               </button>
               <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-slate-400 to-slate-600" />
               <svg className="absolute bottom-0 left-0 w-full h-1/2 object-cover opacity-30 pointer-events-none text-slate-200" viewBox="0 0 100 30" preserveAspectRatio="none"><path d="M0,30 Q40,5 70,25 T100,10" fill="none" stroke="currentColor" strokeWidth="1.5" vectorEffect="non-scaling-stroke" /></svg>
-              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+              <p className="text-[9px] text-slate-500 font-bold uppercase tracking-wider flex items-center gap-1.5">
                 <Navigation className="w-3.5 h-3.5 text-slate-500" /> Kilómetros Recorridos
               </p>
               <div className="flex flex-wrap items-end gap-2 justify-between relative z-10">
@@ -696,7 +697,7 @@ export default function RutasUnidadMovil({ selectedMonths = [] }: { selectedMont
         </div>
 
         {/* Columna Derecha: Panel de Video & Timeline */}
-        <div className="flex flex-col relative w-full h-full pr-4 xl:pr-6">
+        <div className="flex flex-col relative w-full h-full pr-4 xl:pr-6 min-w-0">
           <div className="sticky top-24 flex flex-col gap-6 lg:mt-[4.5rem]">
             
             {/* Video Institucional */}

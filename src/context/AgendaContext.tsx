@@ -26,6 +26,14 @@ export interface Agency {
   state: string;
 }
 
+export interface DashboardFilters {
+  selectedMonths: string[];
+  drilldownStateUM: string | null;
+  drilldownEventIdUM: string | null;
+  drilldownStateAM: string | null;
+  drilldownEventIdAM: string | null;
+}
+
 interface AgendaContextType {
   events: AgendaEvent[];
   agencies: Agency[];
@@ -49,6 +57,8 @@ interface AgendaContextType {
   closeModal: () => void;
   setModalMode: (mode: ModalMode) => void;
   setModalEventId: (eventId: string | null) => void;
+  dashboardFilters: DashboardFilters;
+  setDashboardFilters: React.Dispatch<React.SetStateAction<DashboardFilters>>;
 }
 
 const AgendaContext = createContext<AgendaContextType | undefined>(undefined);
@@ -64,6 +74,14 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
   
   const [isLoading, setIsLoading] = useState(true);
   const [isSeeding, setIsSeeding] = useState(false);
+
+  const [dashboardFilters, setDashboardFilters] = useState<DashboardFilters>({
+    selectedMonths: [],
+    drilldownStateUM: null,
+    drilldownEventIdUM: null,
+    drilldownStateAM: null,
+    drilldownEventIdAM: null
+  });
 
   const [modalState, setModalState] = useState<ModalState>({
     isOpen: false,
@@ -505,7 +523,8 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
       events, agencies, updateEvent, deleteEvent, deleteExpenses, addEvent, 
       assignments, addAssignment, toggleAssignmentStatus,
       employees, addEmployee, updateEmployee, deleteEmployee, isLoading, isSeeding, fetchData, handleSeed,
-      modalState, openModal, closeModal, setModalMode, setModalEventId
+      modalState, openModal, closeModal, setModalMode, setModalEventId,
+      dashboardFilters, setDashboardFilters
     }}>
       {children}
     </AgendaContext.Provider>
