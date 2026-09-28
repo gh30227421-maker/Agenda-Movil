@@ -50,6 +50,23 @@ export default function LoginPage() {
           data: { ultimo_acceso: new Date().toISOString() }
         });
 
+        // 1. Generar nuevo ID de sesión para este dispositivo (control de sesión única)
+        const newSessionId = crypto.randomUUID();
+        localStorage.setItem('bnc_local_session_id', newSessionId);
+        await supabase.from('user_sessions').upsert({
+          user_id: data.user.id,
+          session_id: newSessionId,
+          last_active: new Date().toISOString()
+        });
+
+        // 2. Registrar la actividad de login
+        await supabase.from('user_activity_logs').insert({
+          user_id: data.user.id,
+          email: data.user.email,
+          action: 'Inicio de sesión',
+          device_info: typeof window !== 'undefined' ? navigator.userAgent : 'Desconocido'
+        });
+
         // El éxito se puede mantener en el toast normal ya que es una transición positiva
         showToast('Inicio de sesión exitoso', 'success');
         router.push('/');

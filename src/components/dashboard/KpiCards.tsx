@@ -62,8 +62,10 @@ export default function KpiCards({ events, mode = 'all' }: KpiCardsProps) {
   };
   const color = colorPalette[estadoGlobal as keyof typeof colorPalette];
 
+  const gridColsClass = mode === 'operativo' ? 'xl:grid-cols-6' : mode === 'financiero' ? 'xl:grid-cols-4' : 'xl:grid-cols-5';
+
   return (
-    <div className={`grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5`}>
+    <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 ${gridColsClass} gap-4 xl:gap-5`}>
       {/* Cuentas Abiertas */}
       {(mode === 'all' || mode === 'operativo') && (
       <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex items-center justify-between">
@@ -122,8 +124,8 @@ export default function KpiCards({ events, mode = 'all' }: KpiCardsProps) {
       </div>
       )}
 
-      {/* Operaciones ATM - TEMPORALMENTE OCULTO */}
-      {false && (mode === 'all' || mode === 'operativo') && (
+      {/* Operaciones ATM */}
+      {(mode === 'all' || mode === 'operativo') && (
       <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex items-center justify-between">
         <div>
           <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Operaciones ATM</p>
@@ -136,8 +138,8 @@ export default function KpiCards({ events, mode = 'all' }: KpiCardsProps) {
       </div>
       )}
 
-      {/* Venta de POS - TEMPORALMENTE OCULTO */}
-      {false && (mode === 'all' || mode === 'operativo') && (
+      {/* Venta de POS */}
+      {(mode === 'all' || mode === 'operativo') && (
       <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex items-center justify-between">
         <div>
           <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Venta de POS</p>

@@ -444,7 +444,7 @@ export default function DashboardSection() {
           {/* Bloque 4 y 5: Gráficos Inferiores en Paralelo */}
           <div className="pt-2">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {false && <AtmOperacionesChart events={filteredEvents} />}
+              <AtmOperacionesChart events={filteredEvents} />
               <HistorialMetrics events={filteredEvents} mode="operativo" />
               <RankingEventosOperativoChart events={filteredEvents} />
             </div>

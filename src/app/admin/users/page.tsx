@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { useRouter } from 'next/navigation';
-import { Users, Shield, Mail, Lock, UserPlus, X, RefreshCw } from 'lucide-react';
+import { Users, Shield, Mail, Lock, UserPlus, X, RefreshCw, Activity, Clock, Laptop } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import ComboBox from '@/components/ui/ComboBox';
 
@@ -25,6 +25,12 @@ export default function AdminUsersPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Estados para el log de actividad
+  const [isLogsModalOpen, setIsLogsModalOpen] = useState(false);
+  const [selectedUserLogs, setSelectedUserLogs] = useState<any[]>([]);
+  const [isLoadingLogs, setIsLoadingLogs] = useState(false);
+  const [selectedUserEmail, setSelectedUserEmail] = useState('');
 
   const [newEmail, setNewEmail] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -100,6 +106,28 @@ export default function AdminUsersPage() {
     }
   };
 
+  const handleViewLogs = async (userId: string, email: string) => {
+    setSelectedUserEmail(email);
+    setIsLogsModalOpen(true);
+    setIsLoadingLogs(true);
+    try {
+      const { data, error } = await supabase
+        .from('user_activity_logs')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(50);
+      
+      if (error) throw error;
+      setSelectedUserLogs(data || []);
+    } catch (e: any) {
+      console.error(e);
+      showToast('Error al cargar historial de actividad', 'error');
+    } finally {
+      setIsLoadingLogs(false);
+    }
+  };
+
   if (isAuthLoading || !isAdmin) return null;
 
   return (
@@ -141,7 +169,9 @@ export default function AdminUsersPage() {
                 <th className="px-6 py-4 font-bold">Correo Electrónico</th>
                 <th className="px-6 py-4 font-bold">Rol</th>
                 <th className="px-6 py-4 font-bold">Fecha de Registro</th>
+                <th className="px-6 py-4 font-bold">Fecha de Registro</th>
                 <th className="px-6 py-4 font-bold">Último Acceso</th>
+                <th className="px-6 py-4 font-bold text-center">Actividad</th>
               </tr>
             </thead>
             <tbody>
@@ -166,11 +196,21 @@ export default function AdminUsersPage() {
                   <td className="px-6 py-4 text-gray-500">
                     {u.last_sign_in_at ? new Date(u.last_sign_in_at).toLocaleString('es-VE') : 'Nunca'}
                   </td>
+                  <td className="px-6 py-4 text-center">
+                    <button
+                      onClick={() => handleViewLogs(u.id, u.email)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-[#00205B] text-gray-700 hover:text-white rounded-lg text-xs font-semibold transition-colors shadow-sm"
+                      title="Ver historial de actividad"
+                    >
+                      <Activity className="w-3.5 h-3.5" />
+                      Historial
+                    </button>
+                  </td>
                 </tr>
               ))}
               {users.length === 0 && !isLoading && (
                 <tr>
-                  <td colSpan={4} className="px-6 py-8 text-center text-gray-500">
+                  <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
                     No se encontraron usuarios
                   </td>
                 </tr>
@@ -267,6 +307,79 @@ export default function AdminUsersPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Historial de Actividad */}
+      {isLogsModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-3xl overflow-hidden max-h-[85vh] flex flex-col">
+            <div className="flex items-center justify-between p-6 border-b border-gray-100 bg-[#00205B] shrink-0">
+              <div>
+                <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                  <Activity className="w-5 h-5 text-[#FE5000]" />
+                  Historial de Actividad
+                </h3>
+                <p className="text-blue-200 text-sm mt-1">{selectedUserEmail}</p>
+              </div>
+              <button
+                onClick={() => setIsLogsModalOpen(false)}
+                className="text-blue-200 hover:text-white transition-colors p-2"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="p-6 overflow-y-auto bg-slate-50 flex-1">
+              {isLoadingLogs ? (
+                <div className="flex justify-center items-center py-12">
+                  <RefreshCw className="w-8 h-8 text-[#00205B] animate-spin" />
+                </div>
+              ) : selectedUserLogs.length === 0 ? (
+                <div className="text-center py-12 text-gray-500 flex flex-col items-center">
+                  <Clock className="w-12 h-12 text-gray-300 mb-3" />
+                  <p className="font-semibold text-lg">Sin registros de actividad</p>
+                  <p className="text-sm">El usuario no ha generado ningún registro reciente.</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {selectedUserLogs.map((log) => (
+                    <div key={log.id} className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex items-start gap-4">
+                      <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
+                        <Activity className="w-5 h-5 text-[#00205B]" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex justify-between items-start gap-2">
+                          <p className="font-bold text-gray-900">{log.action}</p>
+                          <span className="text-xs font-semibold text-gray-500 bg-gray-100 px-2.5 py-1 rounded-full whitespace-nowrap">
+                            {new Date(log.created_at).toLocaleString('es-VE')}
+                          </span>
+                        </div>
+                        {log.details && (
+                          <p className="text-sm text-gray-600 mt-1">{log.details}</p>
+                        )}
+                        {log.device_info && (
+                          <div className="flex items-center gap-1.5 mt-2 text-xs text-gray-400">
+                            <Laptop className="w-3.5 h-3.5" />
+                            <span className="truncate">{log.device_info}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            
+            <div className="p-4 border-t border-gray-100 bg-white flex justify-end shrink-0">
+              <button
+                onClick={() => setIsLogsModalOpen(false)}
+                className="bg-gray-100 text-gray-700 hover:bg-gray-200 px-5 py-2.5 rounded-xl font-semibold transition-colors"
+              >
+                Cerrar
+              </button>
+            </div>
           </div>
         </div>
       )}

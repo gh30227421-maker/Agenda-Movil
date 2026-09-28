@@ -70,7 +70,10 @@ export default function RutasDashboardClient() {
   };
 
   return (
-    <div className="w-full flex flex-col relative z-10 gap-4 [.presentation-mode-active_&]:pt-[100px]">
+    <div className="w-full flex flex-col relative z-10 gap-4 [.presentation-mode-active_&]:pt-[300px]">
+      
+      {/* Fixed Wrapper for Presentation Mode */}
+      <div className="[.presentation-mode-active_&]:fixed [.presentation-mode-active_&]:top-[193px] [.presentation-mode-active_&]:left-0 [.presentation-mode-active_&]:w-full [.presentation-mode-active_&]:z-40 [.presentation-mode-active_&]:bg-white/95 [.presentation-mode-active_&]:backdrop-blur-md [.presentation-mode-active_&]:shadow-md [.presentation-mode-active_&]:border-b [.presentation-mode-active_&]:border-slate-100 [.presentation-mode-active_&]:pb-4 transition-all duration-500">
       
       {/* Etiqueta de Filtro Activo (Resumen) */}
       <div className="w-full max-w-[1920px] mx-auto px-6 md:px-8 mt-2 flex justify-start items-center">
@@ -136,6 +139,7 @@ export default function RutasDashboardClient() {
 
       {/* KPIs Globales Consolidados */}
       <GlobalMonitoreoKPIs selectedMonths={selectedMonths} />
+      </div> {/* <-- Fin del Sticky Wrapper */}
       
       {/* Bloque 1: Unidad Móvil */}
       <section className="w-full pt-4 relative">
