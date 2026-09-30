@@ -61,14 +61,8 @@ export default function LoginPage() {
           data: { ultimo_acceso: new Date().toISOString() }
         });
 
-        // 1. Generar nuevo ID de sesión para este dispositivo (control de sesión única)
-        const newSessionId = crypto.randomUUID();
-        localStorage.setItem('bnc_local_session_id', newSessionId);
-        await supabase.from('user_sessions').upsert({
-          user_id: data.user.id,
-          session_id: newSessionId,
-          last_active: new Date().toISOString()
-        });
+        // El control de sesión única (user_sessions) ahora es delegado a AuthContext
+        // para evitar condiciones de carrera.
 
         // 2. Registrar la actividad de login
         await supabase.from('user_activity_logs').insert({
