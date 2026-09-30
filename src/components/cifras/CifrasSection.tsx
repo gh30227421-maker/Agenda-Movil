@@ -304,8 +304,9 @@ export default function CifrasSection() {
                 <th className="px-6 py-4">Tipo</th>
                 <th className="px-6 py-4 text-center">Cuentas Abiertas</th>
                 <th className="px-6 py-4 text-center text-[#009639]">BNC TDD</th>
-                <th className="px-6 py-4 text-center text-[#FE5000]">Venta POS</th>
+                <th className="px-6 py-4 text-center">Otras Ops</th>
                 <th className="px-6 py-4 text-center">Total Ops</th>
+                <th className="px-6 py-4 text-center text-[#FE5000]">Venta POS</th>
                 <th className="px-6 py-4 text-center">Acción</th>
               </tr>
             </thead>
@@ -326,7 +327,11 @@ export default function CifrasSection() {
                 }
 
                 return (
-                  <tr key={ev.id} className="hover:bg-blue-50/30 transition-colors">
+                  <tr 
+                    key={ev.id} 
+                    className="hover:bg-blue-50/30 transition-colors cursor-pointer"
+                    onClick={() => openModal('cifras', true, ev.id)}
+                  >
                     <td className="px-6 py-4 font-medium text-gray-900">
                       {ev.eventName} <br/>
                       <span className="text-xs text-gray-500 font-normal">{ev.agencyCode}</span>
@@ -335,11 +340,11 @@ export default function CifrasSection() {
                     <td className="px-6 py-4 text-xs font-medium">{ev.type}</td>
                     <td className="px-6 py-4 text-center font-semibold text-gray-800">{c ? formatNumber(c.cuentasAbiertas) : '-'}</td>
                     <td className="px-6 py-4 text-center font-bold text-[#009639] bg-green-50/30">{c ? formatNumber(c.tdd) : '-'}</td>
-                    <td className="px-6 py-4 text-center font-bold text-[#FE5000] bg-orange-50/30">{c?.ventaPos ? formatNumber(c.ventaPos) : '-'}</td>
+                    <td className="px-6 py-4 text-center font-semibold text-gray-800">{c ? formatNumber(c.reclamos) : '-'}</td>
                     <td className="px-6 py-4 text-center font-bold text-[#00205B]">{c ? formatNumber(totalOps) : '-'}</td>
+                    <td className="px-6 py-4 text-center font-bold text-[#FE5000] bg-orange-50/30">{c?.ventaPos ? formatNumber(c.ventaPos) : '-'}</td>
                     <td className="px-6 py-4 text-center">
                       <button
-                        onClick={() => openModal('cifras', true, ev.id)}
                         className={`inline-flex items-center justify-center w-24 gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors shadow-sm ${
                           c ? 'bg-gray-100 hover:bg-[#00205B] hover:text-white text-gray-700' : 'bg-orange-100 hover:bg-orange-600 hover:text-white text-orange-700'
                         }`}

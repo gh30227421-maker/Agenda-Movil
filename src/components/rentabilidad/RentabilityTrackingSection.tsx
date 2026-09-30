@@ -58,11 +58,15 @@ export default function RentabilityTrackingSection() {
   const [filterStatus, setFilterStatus] = useState<string>('Culminado');
   const [searchTerm, setSearchTerm] = useState<string>('');
 
-  const baseValidEvents = events.filter(e => e.type !== 'Red de Agencias' && e.status !== 'Cancelado');
+  const tieneCierreOperativo = (e: any) => e.cifras && ((e.cifras.saldosCaptadosBs || 0) > 0 || (e.cifras.saldoCierreDivisas || 0) > 0);
+
+  const baseValidEvents = events.filter(e => e.type !== 'Red de Agencias' && e.status === 'Culminado' && tieneCierreOperativo(e));
 
   const filteredEvents = events.filter(e => {
     if (e.type === 'Red de Agencias') return false; // Excluir Red de Agencias de módulos financieros
-    if (e.status === 'Cancelado') return false;
+    if (e.status !== 'Culminado') return false; // Solo eventos culminados
+    if (!tieneCierreOperativo(e)) return false; // Solo eventos con cierre operativo
+
     
     if (filterStatus !== 'Todos' && e.status !== filterStatus) return false;
     if (filterType !== 'Todos' && e.type !== filterType) return false;
@@ -88,10 +92,14 @@ export default function RentabilityTrackingSection() {
   };
 
   const handleSave = async (id: string) => {
+    if (!editingCell) return;
     await updateTracking(id, { 
       saldoActivo: editValues.saldoActivo,
       tasaBcv: editValues.tasaBcv,
-      status: 'Cerrado'
+      status: 'Cerrado',
+      eventId: editingCell.eventId,
+      monthIndex: editingCell.monthIndex,
+      monthDate: editingCell.monthDate
     });
     setEditingCell(null);
   };

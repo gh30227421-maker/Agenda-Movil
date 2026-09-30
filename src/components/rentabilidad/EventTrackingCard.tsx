@@ -16,18 +16,55 @@ export default function EventTrackingCard({ event, trackings, onEditClick }: Eve
   const [isExpanded, setIsExpanded] = useState(false);
   const monthsList = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
   
-  const eventTrackings = trackings.filter(t => t.eventId === event.id).sort((a, b) => a.monthIndex - b.monthIndex);
+  const baseEventTrackings = trackings.filter(t => t.eventId === event.id).sort((a, b) => a.monthIndex - b.monthIndex);
   const eventTasaBcv = event.gastos?.tasaBcv || event.tasaBcvRentabilidad || 1;
 
+  // 1. Build the full effective trackings array including lazy-loaded months
+  const effectiveTrackings = monthsList.map(monthIndex => {
+    let t = baseEventTrackings.find(track => track.monthIndex === monthIndex);
+    if (!t) {
+      let monthDate = new Date().toISOString();
+      if (event.startDate) {
+        const [yyyy, mm, dd] = event.startDate.split('T')[0].split('-');
+        const d = new Date(Number(yyyy), Number(mm) - 1, Number(dd));
+        d.setMonth(d.getMonth() + monthIndex - 1);
+        monthDate = d.toISOString();
+      }
+
+      let fallbackStatus: any = 'Pendiente';
+      let fallbackSaldo = 0;
+      
+      if (monthIndex === 1 && event.cifras) {
+        fallbackSaldo = (event.cifras.saldosCaptadosBs || 0) + ((event.cifras.saldoCierreDivisas || 0) * eventTasaBcv);
+        if (fallbackSaldo > 0) {
+          fallbackStatus = 'Cerrado';
+        }
+      }
+
+      t = {
+        id: `temp-${event.id}-${monthIndex}`,
+        eventId: event.id,
+        monthDate: monthDate,
+        monthIndex: monthIndex,
+        saldoActivo: fallbackSaldo,
+        ingresos: 0,
+        costos: 0,
+        tasaBcv: eventTasaBcv,
+        status: fallbackStatus
+      };
+    }
+    return t;
+  });
+
   // Calculate Progress
-  const closedMonths = eventTrackings.filter(t => t.status === 'Cerrado').length;
+  const closedMonths = effectiveTrackings.filter(t => t.status === 'Cerrado').length;
   const progressPct = Math.round((closedMonths / 12) * 100);
 
   // Calculate Global Trend (Last closed vs previous to it)
   let globalDeltaPct = 0;
   let hasGlobalTrend = false;
   if (closedMonths >= 2) {
-    const closedTrackings = eventTrackings.filter(t => t.status === 'Cerrado');
+    const closedTrackings = effectiveTrackings.filter(t => t.status === 'Cerrado');
     const last = closedTrackings[closedTrackings.length - 1];
     const prev = closedTrackings[closedTrackings.length - 2];
     
@@ -109,16 +146,7 @@ export default function EventTrackingCard({ event, trackings, onEditClick }: Eve
       {isExpanded && (
         <div className="bg-gray-50/50 border-t border-gray-100 p-5 overflow-x-auto">
           <div className="flex gap-4 pb-2" style={{ minWidth: 'min-content' }}>
-            {monthsList.map(monthIndex => {
-              const t = eventTrackings.find(track => track.monthIndex === monthIndex);
-              
-              if (!t) {
-                return (
-                  <div key={`empty-${monthIndex}`} className="w-48 shrink-0 flex items-center justify-center border-2 border-dashed border-gray-200 rounded-xl bg-gray-50/30 text-gray-300">
-                    M{monthIndex}
-                  </div>
-                );
-              }
+            {effectiveTrackings.map(t => {
 
               const isPending = t.status === 'Pendiente';
               const cellDate = new Date(t.monthDate);
@@ -133,7 +161,7 @@ export default function EventTrackingCard({ event, trackings, onEditClick }: Eve
               let isPositive = currentUsd >= 0; // Default for month 1
               
               if (!isPending && t.monthIndex > 1) {
-                const prevT = eventTrackings.find(track => track.monthIndex === t.monthIndex - 1);
+                const prevT = effectiveTrackings.find(track => track.monthIndex === t.monthIndex - 1);
                 if (prevT && prevT.status === 'Cerrado') {
                   const prevRate = prevT.tasaBcv || eventTasaBcv;
                   const prevUsd = (prevT.saldoActivo || 0) / prevRate;

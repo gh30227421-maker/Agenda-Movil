@@ -47,12 +47,14 @@ export function AssetsProvider({ children }: { children: ReactNode }) {
 
   const addAsset = async (asset: Omit<Database['public']['Tables']['assets']['Insert'], 'id' | 'created_at' | 'updated_at'>) => {
     try {
-      const { error } = await supabase
+      const { data: newAsset, error } = await supabase
         .from('assets')
-        .insert(asset as any);
+        .insert(asset as any)
+        .select()
+        .single();
 
       if (error) throw error;
-      await fetchAssets();
+      setAssets(prev => [newAsset, ...prev]);
       showToast('Activo registrado exitosamente', 'success');
       return true;
     } catch (err: any) {
@@ -69,7 +71,7 @@ export function AssetsProvider({ children }: { children: ReactNode }) {
         .eq('id', id);
 
       if (error) throw error;
-      await fetchAssets();
+      setAssets(prev => prev.map(a => a.id === id ? { ...a, ...updates } as any : a));
       showToast('Activo actualizado exitosamente', 'success');
       return true;
     } catch (err: any) {
@@ -87,7 +89,7 @@ export function AssetsProvider({ children }: { children: ReactNode }) {
         .eq('id', id);
 
       if (error) throw error;
-      await fetchAssets();
+      setAssets(prev => prev.filter(a => a.id !== id));
       showToast('Activo eliminado exitosamente', 'success');
       return true;
     } catch (err: any) {

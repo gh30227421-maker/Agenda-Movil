@@ -8,6 +8,8 @@ import AgendaFilters from "@/components/agenda/AgendaFilters";
 import EventList from "@/components/agenda/EventList";
 import EventCalendar from "@/components/agenda/EventCalendar";
 import PresentationMode from "@/components/ui/PresentationMode";
+import EventsImportModal from "@/components/agenda/EventsImportModal";
+import { Upload } from "lucide-react";
 
 function DashboardContent() {
   const [view, setView] = useState<'list' | 'calendar'>('calendar');
@@ -17,6 +19,7 @@ function DashboardContent() {
   const router = useRouter();
   const pathname = usePathname();
   const { events, openModal } = useAgenda();
+  const [isImportOpen, setIsImportOpen] = useState(false);
   
   const typeFilter = searchParams.get('type') || 'Todas';
   
@@ -72,6 +75,13 @@ function DashboardContent() {
             >
               <Plus className="w-4 h-4" />
               <span>Nuevo Evento</span>
+            </button>
+            <button
+              onClick={() => setIsImportOpen(true)}
+              className="flex items-center justify-center gap-2 bg-white border-2 border-[#00205B] text-[#00205B] px-4 py-2 rounded-xl font-bold hover:bg-[#00205B] hover:text-white transition-colors shadow-sm focus:ring-2 focus:ring-offset-2 focus:ring-[#00205B]"
+            >
+              <Upload className="w-4 h-4" />
+              <span className="hidden sm:inline">Importar</span>
             </button>
           </div>
           
@@ -134,6 +144,10 @@ function DashboardContent() {
       </div>
 
       <PresentationMode />
+      <EventsImportModal 
+        isOpen={isImportOpen} 
+        onClose={() => setIsImportOpen(false)} 
+      />
     </div>
   );
 }

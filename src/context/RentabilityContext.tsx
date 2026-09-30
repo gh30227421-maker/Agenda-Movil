@@ -46,7 +46,8 @@ export function RentabilityProvider({ children }: { children: ReactNode }) {
     try {
       const { data: dbTrackings, error } = await (supabase as any)
         .from('event_rentability_tracking')
-        .select('*');
+        .select('*')
+        .limit(10000);
       
       if (error) throw error;
 
@@ -54,10 +55,12 @@ export function RentabilityProvider({ children }: { children: ReactNode }) {
       const trackingsToInsert: any[] = [];
       const trackingsToUpdate: any[] = [];
 
-      // Check events to see if they lack tracking rows (allowing testing for non-cancelled)
-      const targetEvents = events.filter(e => e.status !== 'Cancelado');
+      // Check events to see if they lack tracking rows (solo operativos culminados CON cierre operativo registrado)
+      const tieneCierreOperativo = (e: any) => e.cifras && ((e.cifras.saldosCaptadosBs || 0) > 0 || (e.cifras.saldoCierreDivisas || 0) > 0);
+      const targetEvents = events.filter(e => e.status === 'Culminado' && tieneCierreOperativo(e));
       
       targetEvents.forEach(ev => {
+        if (!ev.startDate) return; // Safety check
         const evTrackings = currentTrackings.filter((t: any) => t.event_id === ev.id);
         const generatedDates = generateMonths(ev.startDate);
         
@@ -66,11 +69,12 @@ export function RentabilityProvider({ children }: { children: ReactNode }) {
           const expectedMonthIndex = i + 1;
           const existingTracking = evTrackings.find((t: any) => t.month_index === expectedMonthIndex);
           
+          const isFirstMonth = expectedMonthIndex === 1;
+          const eventRate = ev.gastos?.tasaBcv || ev.tasaBcvRentabilidad || 1;
+          const capturedBs = (ev.cifras?.saldosCaptadosBs || 0) + ((ev.cifras?.saldoCierreDivisas || 0) * eventRate);
+          const defaultStatus = isFirstMonth ? 'Cerrado' : 'Pendiente';
+          
           if (!existingTracking) {
-            const isFirstMonth = expectedMonthIndex === 1;
-            const eventRate = ev.gastos?.tasaBcv || ev.tasaBcvRentabilidad || 1;
-            const capturedBs = ev.cifras?.saldosCaptadosBs || 0;
-            
             trackingsToInsert.push({
               event_id: ev.id,
               month_date: generatedDates[i],
@@ -79,18 +83,18 @@ export function RentabilityProvider({ children }: { children: ReactNode }) {
               ingresos: 0,
               costos: 0,
               tasa_bcv: isFirstMonth ? eventRate : 0,
-              status: isFirstMonth ? 'Cerrado' : 'Pendiente'
+              status: defaultStatus
             });
-          } else if (expectedMonthIndex === 1 && existingTracking.status === 'Pendiente') {
-            // Sync legacy month 1 to Cerrado
-            const eventRate = ev.gastos?.tasaBcv || ev.tasaBcvRentabilidad || 1;
-            const capturedBs = ev.cifras?.saldosCaptadosBs || 0;
-            trackingsToUpdate.push({
-              id: existingTracking.id,
-              saldo_activo: capturedBs,
-              tasa_bcv: eventRate,
-              status: 'Cerrado'
-            });
+          } else if (isFirstMonth) {
+            // Mapeo automático de M1 si ya existe pero no está alineado con el cierre operativo
+            if (existingTracking.status !== 'Cerrado' || existingTracking.saldo_activo !== capturedBs || existingTracking.tasa_bcv !== eventRate) {
+              trackingsToUpdate.push({
+                id: existingTracking.id,
+                saldo_activo: capturedBs,
+                tasa_bcv: eventRate,
+                status: 'Cerrado'
+              });
+            }
           }
         }
       });
@@ -98,15 +102,15 @@ export function RentabilityProvider({ children }: { children: ReactNode }) {
       // Insert missing tracking rows if any
       let needsRefetch = false;
       if (trackingsToInsert.length > 0) {
+        // Upsert to avoid unique constraint violations gracefully
         const { error: insertError } = await (supabase as any)
           .from('event_rentability_tracking')
-          .insert(trackingsToInsert);
+          .upsert(trackingsToInsert, { onConflict: 'event_id, month_index' });
         if (insertError) {
-          // Si es un error de duplicado (ej. por Strict Mode de React), solo lanzamos un warning
-          console.warn('Nota: Error al generar trackings (posible duplicado por concurrencia):', insertError.message || insertError);
-        } else {
-          needsRefetch = true;
+          console.error('ERROR CRITICO AL GENERAR TRACKINGS:', insertError);
         }
+        // Siempre refetch porque en React Strict Mode la llamada concurrente pudo haber insertado los datos
+        needsRefetch = true;
       }
 
       // Update legacy first months if needed
@@ -131,7 +135,8 @@ export function RentabilityProvider({ children }: { children: ReactNode }) {
         // Re-fetch after modifications
         const { data: refreshed } = await (supabase as any)
           .from('event_rentability_tracking')
-          .select('*');
+          .select('*')
+          .limit(10000);
         if (refreshed) {
           currentTrackings = refreshed;
         } else {
@@ -175,25 +180,51 @@ export function RentabilityProvider({ children }: { children: ReactNode }) {
       if (data.costos !== undefined) payload.costos = data.costos;
       if (data.status !== undefined) payload.status = data.status;
       if (data.tasaBcv !== undefined) payload.tasa_bcv = data.tasaBcv;
-      payload.updated_at = new Date().toISOString();
+      
+      const now = new Date().toISOString();
+      payload.updated_at = now;
 
-      const { error } = await (supabase as any)
-        .from('event_rentability_tracking')
-        .update(payload)
-        .eq('id', id);
+      if (!id || id.startsWith('temp-')) {
+        // Create new
+        payload.event_id = data.eventId;
+        payload.month_index = data.monthIndex;
+        payload.month_date = data.monthDate;
+        
+        const { error } = await (supabase as any)
+          .from('event_rentability_tracking')
+          .insert(payload);
+        if (error) throw error;
+      } else {
+        // Update existing
+        const { error } = await (supabase as any)
+          .from('event_rentability_tracking')
+          .update(payload)
+          .eq('id', id);
+        if (error) throw error;
+      }
 
-      if (error) throw error;
       showToast('Mes actualizado correctamente', 'success');
-      await fetchTrackings();
+      
+      setTrackings(prev => {
+        const existing = prev.find(t => t.id === id);
+        if (existing) {
+          return prev.map(t => t.id === id ? { ...t, ...data } as any : t);
+        } else {
+          // Si es temporal/nuevo, hacemos fetch solo por seguridad o lo ideal sería retornar el ID.
+          // Para no romper la UI, recargaremos solo si es nuevo.
+          fetchTrackings();
+          return prev;
+        }
+      });
     } catch (e: any) {
       console.error(e);
-      showToast('Error al actualizar registro', 'error');
+      showToast('Error al guardar registro', 'error');
     }
   };
 
   useEffect(() => {
-    // Only fetch trackings after events are loaded
-    if (events.length > 0) {
+    // Only fetch trackings after events are loaded initially
+    if (events.length > 0 && trackings.length === 0) {
       fetchTrackings();
     }
   }, [user, events.length]);

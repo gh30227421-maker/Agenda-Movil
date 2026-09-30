@@ -180,8 +180,8 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
               totalUsd: expense.total_usd || 0,
               estado: expense.status as any
             } : undefined,
-            saldoFinMesBs: closing?.saldo_fin_mes_bs || undefined,
-            tasaBcvRentabilidad: closing?.tasa_bcv_rentabilidad || undefined,
+            saldoFinMesBs: closing?.saldo_fin_mes_bs !== null && closing?.saldo_fin_mes_bs !== undefined ? closing.saldo_fin_mes_bs : undefined,
+            tasaBcvRentabilidad: closing?.tasa_bcv_rentabilidad !== null && closing?.tasa_bcv_rentabilidad !== undefined ? closing.tasa_bcv_rentabilidad : undefined,
             _agencyId: ev.agency_id // internal reference
           } as AgendaEvent & { _agencyId: string };
         }));
@@ -357,7 +357,41 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
       }
 
       showToast('Evento actualizado', 'success');
-      await fetchData();
+      setEvents(prev => prev.map(ev => {
+        if (ev.id === id) {
+          const updated = { ...ev };
+          if (data.eventName !== undefined) updated.eventName = data.eventName;
+          if (data.startDate !== undefined) updated.startDate = data.startDate;
+          if (data.endDate !== undefined) updated.endDate = data.endDate;
+          if (data.location !== undefined) updated.location = data.location;
+          if (data.estadoOperativo !== undefined) updated.estadoOperativo = data.estadoOperativo;
+          if (data.status !== undefined) updated.status = data.status;
+          if (data.vpSolicitante !== undefined) updated.vpSolicitante = data.vpSolicitante;
+          if (data.responsable !== undefined) updated.responsable = data.responsable;
+          if (data.segments !== undefined) updated.segments = data.segments;
+          if (data.type !== undefined) updated.type = data.type;
+          if (data.agencyCode !== undefined) {
+             updated.agencyCode = data.agencyCode;
+             const agencyMatch = agencies.find(a => `${a.code} - ${a.name}` === data.agencyCode || a.code === data.agencyCode);
+             if (agencyMatch) {
+               updated.state = agencyMatch.state;
+               updated.region = agencyMatch.region;
+               updated.zone = agencyMatch.zone;
+               updated._agencyId = agencyMatch.id;
+             }
+          }
+          if (data.cifras) {
+             updated.cifras = { ...(updated.cifras || {}), ...data.cifras } as any;
+          }
+          if (data.gastos) {
+             updated.gastos = { ...(updated.gastos || {}), ...data.gastos } as any;
+          }
+          if (data.saldoFinMesBs !== undefined) updated.saldoFinMesBs = data.saldoFinMesBs;
+          if (data.tasaBcvRentabilidad !== undefined) updated.tasaBcvRentabilidad = data.tasaBcvRentabilidad;
+          return updated;
+        }
+        return ev;
+      }));
     } catch (error: any) {
       console.error(error);
       showToast(error.message || 'Error al actualizar evento', 'error');
@@ -371,7 +405,7 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
       if (error) throw error;
       
       showToast('Evento eliminado exitosamente', 'success');
-      await fetchData();
+      setEvents(prev => prev.filter(ev => ev.id !== id));
     } catch (error: any) {
       console.error(error);
       showToast(error.message || 'Error al eliminar evento', 'error');
@@ -384,7 +418,7 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
       if (error) throw error;
       
       showToast('Gastos eliminados exitosamente', 'success');
-      await fetchData();
+      setEvents(prev => prev.map(ev => ev.id === id ? { ...ev, gastos: undefined } : ev));
     } catch (error: any) {
       console.error(error);
       showToast(error.message || 'Error al eliminar gastos', 'error');
@@ -400,7 +434,7 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
       const agencyMatch = agencies.find(a => `${a.code} - ${a.name}` === data.agencyCode || a.code === data.agencyCode);
       if (agencyMatch) agencyId = agencyMatch.id;
 
-      const { error } = await (supabase as any).from('events').insert({
+      const { data: newEvent, error } = await (supabase as any).from('events').insert({
         event_type: data.type,
         agency_id: agencyId,
         event_name: data.eventName,
@@ -412,10 +446,28 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
         status: data.status,
         vp_solicitante: data.vpSolicitante || null,
         responsable: data.responsable || null
-      } as any);
+      } as any).select('*, agencies(*)').single();
       if (error) throw error;
       
-      await fetchData();
+      const agency = newEvent.agencies;
+      setEvents(prev => [...prev, {
+        id: newEvent.id,
+        type: newEvent.event_type as EventType,
+        agencyCode: agency ? `${agency.code} - ${agency.name}` : newEvent.agency_id,
+        eventName: newEvent.event_name,
+        location: newEvent.location || undefined,
+        estadoOperativo: newEvent.estado_operativo || undefined,
+        state: agency?.state || '',
+        region: agency?.region || '',
+        zone: agency?.zone || '',
+        startDate: newEvent.start_date,
+        endDate: newEvent.end_date,
+        segments: newEvent.segments || undefined,
+        status: newEvent.status as EventStatus,
+        vpSolicitante: newEvent.vp_solicitante || undefined,
+        responsable: newEvent.responsable || undefined,
+        _agencyId: newEvent.agency_id
+      } as AgendaEvent & { _agencyId: string }]);
     } catch(e: any) {
       console.error(e);
       showToast(e?.message || 'Error al crear evento', 'error');
@@ -425,12 +477,21 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
 
   const addAssignment = async (data: Omit<EventAssignment, 'id'>) => {
     try {
-      const { error } = await (supabase as any).from('event_assignments').insert({
+      const { data: newAsg, error } = await (supabase as any).from('event_assignments').insert({
+        event_id: data.eventId,
+        employee_id: data.employeeId,
+        role: data.role,
         status: data.status
-      } as any);
+      } as any).select().single();
       if (error) throw error;
       
-      await fetchData();
+      setAssignments(prev => [...prev, {
+        id: newAsg.id,
+        eventId: newAsg.event_id,
+        employeeId: newAsg.employee_id,
+        role: newAsg.role,
+        status: newAsg.status as 'Confirmado' | 'Pendiente'
+      }]);
     } catch(e: any) {
       console.error(e);
       showToast(e?.message || 'Error al asignar empleado', 'error');
@@ -446,7 +507,7 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
       const { error } = await (supabase as any).from('event_assignments').update({ status: newStatus }).eq('id', id);
       if (error) throw error;
       
-      await fetchData();
+      setAssignments(prev => prev.map(a => a.id === id ? { ...a, status: newStatus } : a));
     } catch (e: any) {
       console.error(e);
       showToast(e?.message || 'Error al actualizar estado', 'error');
@@ -456,15 +517,21 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
 
   const addEmployee = async (data: Omit<Employee, 'id'>) => {
     try {
-      const { error } = await (supabase as any).from('employees').insert({
+      const { data: newEmp, error } = await (supabase as any).from('employees').insert({
         employee_code: data.employeeCode,
         dni: data.dni,
         full_name: data.fullName,
         cargo: data.cargo
-      } as any);
+      } as any).select().single();
       if (error) throw error;
       
-      await fetchData();
+      setEmployees(prev => [...prev, {
+        id: newEmp.id,
+        employeeCode: newEmp.employee_code,
+        dni: newEmp.dni,
+        fullName: newEmp.full_name,
+        cargo: newEmp.cargo
+      }]);
     } catch (e: any) {
       console.error(e);
       showToast(e?.message || 'Error al agregar empleado', 'error');
@@ -480,7 +547,7 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
       } as any).eq('id', id);
       if (error) throw error;
       
-      await fetchData();
+      setEmployees(prev => prev.map(emp => emp.id === id ? { ...emp, fullName: data.fullName || emp.fullName, cargo: data.cargo || emp.cargo } : emp));
     } catch (e: any) {
       console.error(e);
       showToast(e?.message || 'Error al actualizar empleado', 'error');
@@ -494,7 +561,7 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
       const { error } = await (supabase as any).from('employees').delete().eq('id', id);
       if (error) throw error;
       
-      await fetchData();
+      setEmployees(prev => prev.filter(emp => emp.id !== id));
     } catch (e: any) {
       console.error(e);
       showToast(e?.message || 'Error al eliminar empleado', 'error');

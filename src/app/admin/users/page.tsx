@@ -121,8 +121,8 @@ export default function AdminUsersPage() {
       if (error) throw error;
       setSelectedUserLogs(data || []);
     } catch (e: any) {
-      console.error(e);
-      showToast('Error al cargar historial de actividad', 'error');
+      console.error('Supabase error:', e);
+      showToast(e.message || 'Error al cargar historial de actividad', 'error');
     } finally {
       setIsLoadingLogs(false);
     }

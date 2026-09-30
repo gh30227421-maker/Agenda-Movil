@@ -261,7 +261,7 @@ export default function EventManagementModal() {
         combustible: 0, distancia: 0,
       });
     }
-  }, [event?.id, modalState.mode]);
+  }, [event?.id, modalState.mode, modalState.isOpen, modalState.defaultDate]);
 
   // Autocomplete for edit form
   useEffect(() => {

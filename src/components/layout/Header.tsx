@@ -113,17 +113,18 @@ export default function Header() {
     <>
       {/* Pantalla de Transición Global */}
       {isNavigating && (
-        <div className="fixed inset-0 z-[99999] backdrop-blur-md bg-[#001A45]/40 flex flex-col items-center justify-center animate-in fade-in duration-300">
+        <div className="fixed inset-0 z-[99999] backdrop-blur-md bg-black/40 flex flex-col items-center justify-center animate-in fade-in duration-300">
           <div className="relative flex items-center justify-center w-48 h-48 mb-8">
             {/* Anillo de carga animado (Spinner) */}
             <div className="absolute inset-0 border-4 border-[#FE5000]/20 border-t-[#FE5000] rounded-full animate-[spin_2s_linear_infinite]" />
             <div className="absolute inset-4 border-4 border-[#009639]/20 border-b-[#009639] rounded-full animate-[spin_3s_linear_infinite_reverse]" />
+            
             <img src="/unidad movil.png" alt="Cargando..." className="w-32 h-32 object-contain drop-shadow-2xl animate-pulse relative z-10" />
           </div>
           <h2 className="text-2xl font-black text-white tracking-widest uppercase mb-2 font-[family-name:var(--font-montserrat)] drop-shadow-md">
             Agenda Móvil
           </h2>
-          <p className="text-blue-200/80 text-sm font-medium">Cargando módulo, por favor espere...</p>
+          <p className="text-gray-200 text-sm font-medium">Cargando módulo, por favor espere...</p>
         </div>
       )}
 
