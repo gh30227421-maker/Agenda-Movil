@@ -61,7 +61,7 @@ export default function TraceMap({ events }: TraceMapProps) {
     <div className="w-full h-[400px] bg-transparent rounded-2xl overflow-hidden relative flex items-center justify-center">
       <ComposableMap
         projection="geoMercator"
-        projectionConfig={{ scale: 2500, center: [-66, 7.5] }}
+        projectionConfig={{ scale: 2850, center: [-66, 6.8] }}
         className="w-full h-full"
       >
         <Geographies geography={geoUrl}>

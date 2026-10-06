@@ -76,6 +76,22 @@ export default function CapturaFormClient({ eventId }: { eventId: string }) {
     const cedulaCompleta = `${tipoDoc}-${cedula}`;
 
     try {
+      // Verificación de duplicado
+      const { data: existingClient, error: checkError } = await supabase
+        .from('registros_en_vivo')
+        .select('id')
+        .eq('event_id', eventId)
+        .eq('cedula_identidad', cedulaCompleta)
+        .maybeSingle();
+
+      if (checkError) throw checkError;
+
+      if (existingClient) {
+        setError(`El cliente con cédula ${cedulaCompleta} ya fue registrado.`);
+        setLoading(false);
+        return;
+      }
+
       const { error: insertError } = await supabase.from('registros_en_vivo').insert({
         event_id: eventId,
         cedula_identidad: cedulaCompleta,

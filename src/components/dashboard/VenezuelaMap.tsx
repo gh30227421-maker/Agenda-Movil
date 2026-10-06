@@ -313,8 +313,8 @@ export default function VenezuelaMap({ events, agencies = [], selectedState = 't
             <ComposableMap
               projection="geoMercator"
               projectionConfig={{
-                scale: 2500,
-                center: [-66, 7.5]
+                scale: 2850,
+                center: [-66, 6.8]
               }}
               className={`w-full h-full ${isExpanded ? '' : 'max-h-[400px]'}`}
             >
