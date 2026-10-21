@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { DollarSign, CreditCard, Users, TrendingUp, FileText, BarChart2 } from 'lucide-react';
+import { DollarSign, CreditCard, Users, TrendingUp, FileText, BarChart2, Receipt, CalendarDays } from 'lucide-react';
 
 interface KpiCardsProps {
   events: any[];
@@ -47,6 +47,29 @@ export default function KpiCards({ events, mode = 'all' }: KpiCardsProps) {
   const rentabilidadGlobal = totalSaldoUsd > 0 ? (totalMargenUsd / totalSaldoUsd) * 100 : 0;
   const promedioSaldoCuenta = totalCuentas > 0 ? (totalSaldoUsd / totalCuentas) : 0;
 
+  // Jornadas móviles que incurren en viáticos / gastos operativos
+  const jornadasMoviles = events.filter(ev => ev.type === 'Agencia Móvil' || ev.type === 'Unidad Móvil');
+  const totalJornadasMoviles = jornadasMoviles.length;
+  const promedioGastoJornada = totalJornadasMoviles > 0 ? (totalCostosUsd / totalJornadasMoviles) : 0;
+
+  // Meses únicos con operativos móviles para el promedio mensual
+  const distinctMonths = new Set<string>();
+  jornadasMoviles.forEach(ev => {
+    if (ev.startDate) {
+      distinctMonths.add(ev.startDate.substring(0, 7)); // YYYY-MM
+    }
+  });
+
+  // Excluir el mes en curso (que está corriendo) para calcular el promedio mensual contra meses cerrados
+  const currentMonthStr = new Date().toISOString().substring(0, 7);
+  const closedMonths = Array.from(distinctMonths).filter(m => m < currentMonthStr);
+  const mesesDivisor = closedMonths.length > 0 ? closedMonths.length : distinctMonths.size;
+  const gastosMesesCerrados = jornadasMoviles
+    .filter(ev => ev.startDate && (closedMonths.length === 0 || ev.startDate.substring(0, 7) < currentMonthStr))
+    .reduce((acc, ev) => acc + (ev.gastos?.totalUsd || 0), 0);
+  const gastoBase = closedMonths.length > 0 && gastosMesesCerrados > 0 ? gastosMesesCerrados : totalCostosUsd;
+  const promedioGastoMensual = mesesDivisor > 0 ? (gastoBase / mesesDivisor) : 0;
+
   const UMBRAL_RENTABLE = 35;
   const UMBRAL_LIMITE = 20;
   let estadoGlobal = 'No Rentable';
@@ -62,7 +85,7 @@ export default function KpiCards({ events, mode = 'all' }: KpiCardsProps) {
   };
   const color = colorPalette[estadoGlobal as keyof typeof colorPalette];
 
-  const gridColsClass = mode === 'operativo' ? 'xl:grid-cols-6' : mode === 'financiero' ? 'xl:grid-cols-4' : 'xl:grid-cols-5';
+  const gridColsClass = 'xl:grid-cols-6';
 
   return (
     <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 ${gridColsClass} gap-4 xl:gap-5`}>
@@ -152,11 +175,13 @@ export default function KpiCards({ events, mode = 'all' }: KpiCardsProps) {
       </div>
       )}
 
-      {/* Saldo Total Captado (USD) */}
+      {/* 1. Saldo Total Captado (USD) */}
       {(mode === 'all' || mode === 'financiero') && (
       <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex items-center justify-between">
         <div>
-          <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Saldo Cierre Total ($)</p>
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap truncate" title="Total Saldos al Cierre">
+            Total Saldos al Cierre
+          </p>
           <h3 className="text-2xl font-bold text-emerald-600 mt-1">
             ${totalSaldoUsd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </h3>
@@ -168,27 +193,85 @@ export default function KpiCards({ events, mode = 'all' }: KpiCardsProps) {
       </div>
       )}
 
-      {/* Costo Operativo Total (USD) */}
+      {/* 2. Saldo Promedio por Cuenta (USD) */}
       {(mode === 'all' || mode === 'financiero') && (
       <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex items-center justify-between">
         <div>
-          <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Gastos Operativos</p>
-          <h3 className="text-2xl font-bold text-[#FE5000] mt-1">
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap truncate" title="Saldo Prom. Cuenta">
+            Saldo Prom. Cuenta
+          </p>
+          <h3 className="text-2xl font-bold text-emerald-600 mt-1">
+            ${promedioSaldoCuenta.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </h3>
+          <p className="text-xs text-gray-400 mt-1">Total Saldo / Cuentas</p>
+        </div>
+        <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600">
+          <TrendingUp className="w-6 h-6" />
+        </div>
+      </div>
+      )}
+
+      {/* 3. Costo Operativo Total (USD) */}
+      {(mode === 'all' || mode === 'financiero') && (
+      <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex items-center justify-between">
+        <div>
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap truncate" title="Gastos Operativos">
+            Gastos Operativos
+          </p>
+          <h3 className="text-2xl font-bold text-[#00205B] mt-1">
             ${totalCostosUsd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </h3>
           <p className="text-xs text-gray-400 mt-1">Viáticos & Gastos Esp.</p>
         </div>
-        <div className="w-12 h-12 rounded-xl bg-orange-50 flex items-center justify-center text-[#FE5000]">
+        <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-[#00205B]">
           <CreditCard className="w-6 h-6" />
         </div>
       </div>
       )}
 
-      {/* Margen Operativo Global */}
+      {/* 4. Gasto Promedio Mensual (USD) */}
+      {(mode === 'all' || mode === 'financiero') && (
+      <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex items-center justify-between">
+        <div>
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap truncate" title="Gasto Prom. Mensual">
+            Gasto Prom. Mensual
+          </p>
+          <h3 className="text-2xl font-bold text-[#00205B] mt-1">
+            ${promedioGastoMensual.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </h3>
+          <p className="text-xs text-gray-400 mt-1">&nbsp;</p>
+        </div>
+        <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-[#00205B]">
+          <CalendarDays className="w-6 h-6" />
+        </div>
+      </div>
+      )}
+
+      {/* 5. Gasto Promedio por Jornada (USD) */}
+      {(mode === 'all' || mode === 'financiero') && (
+      <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex items-center justify-between">
+        <div>
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap truncate" title="Gasto Prom. Jornada">
+            Gasto Prom. Jornada
+          </p>
+          <h3 className="text-2xl font-bold text-[#00205B] mt-1">
+            ${promedioGastoJornada.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </h3>
+          <p className="text-xs text-gray-400 mt-1">Viáticos por jornada móvil</p>
+        </div>
+        <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-[#00205B]">
+          <Receipt className="w-6 h-6" />
+        </div>
+      </div>
+      )}
+
+      {/* 6. Margen Operativo Global (USD) - Cierre Ejecutivo */}
       {(mode === 'all' || mode === 'financiero') && (
       <div className="bg-[#00205B] rounded-2xl p-5 text-white shadow-sm flex items-center justify-between">
         <div>
-          <p className="text-xs font-medium text-blue-200 uppercase tracking-wider">Margen Est. (USD)</p>
+          <p className="text-xs font-medium text-blue-200 uppercase tracking-wider whitespace-nowrap truncate" title="Margen Est. (USD)">
+            Margen Est. (USD)
+          </p>
           <h3 className="text-2xl font-bold text-white mt-1">
             ${totalMargenUsd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </h3>
@@ -198,22 +281,6 @@ export default function KpiCards({ events, mode = 'all' }: KpiCardsProps) {
         </div>
         <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center text-white">
           <DollarSign className="w-6 h-6 text-[#FE5000]" />
-        </div>
-      </div>
-      )}
-      
-      {/* Saldo Promedio por Cuenta (USD) */}
-      {(mode === 'all' || mode === 'financiero') && (
-      <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex items-center justify-between">
-        <div>
-          <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Saldo Prom. Cuenta</p>
-          <h3 className="text-2xl font-bold text-sky-600 mt-1">
-            ${promedioSaldoCuenta.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </h3>
-          <p className="text-xs text-gray-400 mt-1">Total Saldo / Cuentas</p>
-        </div>
-        <div className="w-12 h-12 rounded-xl bg-sky-50 flex items-center justify-center text-sky-600">
-          <TrendingUp className="w-6 h-6" />
         </div>
       </div>
       )}

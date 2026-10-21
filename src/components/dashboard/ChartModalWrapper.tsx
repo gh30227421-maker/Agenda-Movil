@@ -87,32 +87,32 @@ export default function ChartModalWrapper({ title, subtitle, children, variant =
 
       {/* Modal a Pantalla Completa */}
       {isExpanded && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 sm:p-8">
-          <div ref={modalChartRef} className="bg-white rounded-3xl w-full h-full flex flex-col shadow-2xl relative animate-in fade-in zoom-in duration-200">
-            <div className="flex items-center justify-between p-6 border-b border-gray-100">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-3 sm:p-6 lg:p-8">
+          <div ref={modalChartRef} className="bg-white rounded-3xl w-full max-w-7xl h-full max-h-[92vh] flex flex-col shadow-2xl relative animate-in fade-in zoom-in duration-200">
+            <div className="flex items-center justify-between p-5 sm:p-6 border-b border-gray-100 shrink-0">
               <div>
-                <h2 className="text-2xl font-bold text-[#00205B]">{title}</h2>
-                {subtitle && <p className="text-gray-500">{subtitle}</p>}
+                <h2 className="text-xl sm:text-2xl font-bold text-[#00205B]">{title}</h2>
+                {subtitle && <p className="text-xs sm:text-sm text-gray-500 mt-0.5">{subtitle}</p>}
               </div>
               <div className="flex items-center gap-2 hide-on-download">
                 <button 
                   onClick={() => downloadImage(modalChartRef, title)}
-                  className="p-3 bg-gray-50 hover:bg-gray-100 rounded-full transition-colors text-gray-600"
+                  className="p-2.5 sm:p-3 bg-gray-50 hover:bg-gray-100 rounded-full transition-colors text-gray-600"
                   title="Descargar"
                 >
-                  <Download className="w-6 h-6" />
+                  <Download className="w-5 h-5 sm:w-6 sm:h-6" />
                 </button>
                 <button 
                   onClick={() => setIsExpanded(false)}
-                  className="p-3 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors text-gray-600"
+                  className="p-2.5 sm:p-3 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors text-gray-600"
                   title="Cerrar"
                 >
-                  <X className="w-6 h-6" />
+                  <X className="w-5 h-5 sm:w-6 sm:h-6" />
                 </button>
               </div>
             </div>
             
-            <div className="flex-1 w-full h-full min-h-[600px] p-6 overflow-hidden flex flex-col items-center justify-center bg-white rounded-b-3xl">
+            <div className="flex-1 w-full h-full min-h-0 p-4 sm:p-6 overflow-hidden flex flex-col items-stretch justify-start bg-white rounded-b-3xl">
               {typeof children === 'function' ? children(true) : children}
             </div>
           </div>

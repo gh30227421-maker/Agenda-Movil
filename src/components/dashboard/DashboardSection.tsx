@@ -19,6 +19,7 @@ import RentabilidadTopEventosChart from './RentabilidadTopEventosChart';
 import RentabilidadVsCostosChart from './RentabilidadVsCostosChart';
 import RankingEventosOperativoChart from './RankingEventosOperativoChart';
 import AtmOperacionesChart from './AtmOperacionesChart';
+import GastoMensualJornadaChart from './GastoMensualJornadaChart';
 
 const isEventInPeriod = (evStartDate: string | undefined, periods: string[]) => {
   if (periods.length === 0 || periods.includes('todos')) return true;
@@ -48,12 +49,42 @@ export default function DashboardSection() {
 
   // Estados de filtros
   const [activeTab, setActiveTab] = useState<'operativo' | 'financiero'>('operativo');
-  const [selectedEventType, setSelectedEventType] = useState<string>('Todas');
+  const [selectedEventTypes, setSelectedEventTypes] = useState<string[]>(['Todas']);
   const [selectedEventIds, setSelectedEventIds] = useState<string[]>([]);
 
+  const isTypeSelected = (type: string) => {
+    if (type === 'Todas') return selectedEventTypes.length === 0 || selectedEventTypes.includes('Todas');
+    return selectedEventTypes.includes(type);
+  };
+
+  const isTypeMatch = (evType: string) => {
+    if (selectedEventTypes.length === 0 || selectedEventTypes.includes('Todas')) return true;
+    return selectedEventTypes.includes(evType);
+  };
+
+  const handleChannelClick = (type: string, e: React.MouseEvent) => {
+    const isMulti = e.ctrlKey || e.metaKey;
+    if (type === 'Todas') {
+      setSelectedEventTypes(['Todas']);
+    } else if (isMulti) {
+      let current = selectedEventTypes.filter(t => t !== 'Todas');
+      if (current.includes(type)) {
+        current = current.filter(t => t !== type);
+      } else {
+        current = [...current, type];
+      }
+      setSelectedEventTypes(current.length === 0 ? ['Todas'] : current);
+    } else {
+      setSelectedEventTypes([type]);
+    }
+    setSelectedEventIds([]);
+    setSelectedRegionFilters([]);
+    setSelectedStateFilters([]);
+  };
+
   const getButtonClass = (type: string, activeClass: string, inactiveClass: string) => {
-    return `flex items-center gap-2 px-4 py-2 rounded-lg text-sm transition-all whitespace-nowrap ${
-      selectedEventType === type ? activeClass : inactiveClass
+    return `flex items-center gap-2 px-4 py-2 rounded-lg text-sm transition-all whitespace-nowrap cursor-pointer select-none ${
+      isTypeSelected(type) ? activeClass : inactiveClass
     }`;
   };
   const [selectedMonths, setSelectedMonths] = useState<string[]>([]);
@@ -64,7 +95,8 @@ export default function DashboardSection() {
   const availableMonths = useMemo(() => {
     const rawMonths = new Set<string>();
     events.forEach(ev => {
-      if (selectedEventType !== 'Todas' && ev.type !== selectedEventType) return;
+      if (activeTab === 'financiero' && ev.type === 'Red de Agencias') return;
+      if (!isTypeMatch(ev.type)) return;
       if (selectedEventIds.length > 0 && !selectedEventIds.includes(ev.id)) return;
       if (selectedRegionFilters.length > 0) {
         const ag = agencies.find(a => a.state === ev.state);
@@ -113,12 +145,13 @@ export default function DashboardSection() {
     });
 
     return [...semestres, ...trimestres, ...meses];
-  }, [events, agencies, selectedEventType, selectedEventIds, selectedRegionFilters, selectedStateFilters]);
+  }, [events, agencies, selectedEventTypes, selectedEventIds, selectedRegionFilters, selectedStateFilters, activeTab]);
 
   const availableRegions = useMemo(() => {
     const regions = new Set<string>();
     events.forEach(ev => {
-      if (selectedEventType !== 'Todas' && ev.type !== selectedEventType) return;
+      if (activeTab === 'financiero' && ev.type === 'Red de Agencias') return;
+      if (!isTypeMatch(ev.type)) return;
       if (selectedEventIds.length > 0 && !selectedEventIds.includes(ev.id)) return;
       if (!isEventInPeriod(ev.startDate, selectedMonths)) return;
       if (selectedStateFilters.length > 0 && !selectedStateFilters.includes(ev.state || '')) return;
@@ -127,12 +160,13 @@ export default function DashboardSection() {
       if (ag && ag.region) regions.add(ag.region);
     });
     return Array.from(regions).sort().map(r => ({ value: r, label: r }));
-  }, [events, agencies, selectedEventType, selectedEventIds, selectedMonths, selectedStateFilters]);
+  }, [events, agencies, selectedEventTypes, selectedEventIds, selectedMonths, selectedStateFilters, activeTab]);
 
   const availableStates = useMemo(() => {
     const states = new Set<string>();
     events.forEach(ev => {
-      if (selectedEventType !== 'Todas' && ev.type !== selectedEventType) return;
+      if (activeTab === 'financiero' && ev.type === 'Red de Agencias') return;
+      if (!isTypeMatch(ev.type)) return;
       if (selectedEventIds.length > 0 && !selectedEventIds.includes(ev.id)) return;
       if (!isEventInPeriod(ev.startDate, selectedMonths)) return;
       if (selectedRegionFilters.length > 0) {
@@ -143,12 +177,13 @@ export default function DashboardSection() {
       if (ev.state) states.add(ev.state);
     });
     return Array.from(states).sort().map(s => ({ value: s, label: s }));
-  }, [events, agencies, selectedEventType, selectedEventIds, selectedMonths, selectedRegionFilters]);
+  }, [events, agencies, selectedEventTypes, selectedEventIds, selectedMonths, selectedRegionFilters, activeTab]);
 
   const availableEvents = useMemo(() => {
     const evs: { value: string, label: string }[] = [];
     events.forEach(ev => {
-      if (selectedEventType !== 'Todas' && ev.type !== selectedEventType) return;
+      if (activeTab === 'financiero' && ev.type === 'Red de Agencias') return;
+      if (!isTypeMatch(ev.type)) return;
       if (!isEventInPeriod(ev.startDate, selectedMonths)) return;
       if (selectedRegionFilters.length > 0) {
         const ag = agencies.find(a => a.state === ev.state);
@@ -159,13 +194,15 @@ export default function DashboardSection() {
       evs.push({ value: ev.id, label: `${ev.eventName} (${ev.state || 'N/A'})` });
     });
     return evs;
-  }, [events, agencies, selectedEventType, selectedMonths, selectedRegionFilters, selectedStateFilters]);
+  }, [events, agencies, selectedEventTypes, selectedMonths, selectedRegionFilters, selectedStateFilters, activeTab]);
 
   // Filtrado reactivo de eventos
   const filteredEvents = useMemo(() => {
     return events.filter(ev => {
-      // Filtro por Tipo
-      if (selectedEventType !== 'Todas' && ev.type !== selectedEventType) return false;
+      // Regla de Negocio: Red de Agencias no genera datos financieros en este módulo
+      if (activeTab === 'financiero' && ev.type === 'Red de Agencias') return false;
+      // Filtro por Tipo (admite selección múltiple mediante Ctrl)
+      if (!isTypeMatch(ev.type)) return false;
       // Filtro por Operativo específico
       if (selectedEventIds.length > 0 && !selectedEventIds.includes(ev.id)) {
         return false;
@@ -187,7 +224,21 @@ export default function DashboardSection() {
       }
       return true;
     });
-  }, [events, agencies, selectedEventType, selectedEventIds, selectedMonths, selectedRegionFilters, selectedStateFilters]);
+  }, [events, agencies, selectedEventTypes, selectedEventIds, selectedMonths, selectedRegionFilters, selectedStateFilters, activeTab]);
+
+  // Eventos para la gráfica mensual fija de gastos (mantiene la línea de tiempo completa por meses)
+  const monthlyFixedEvents = useMemo(() => {
+    return events.filter(ev => {
+      if (ev.type === 'Red de Agencias') return false;
+      if (!isTypeMatch(ev.type)) return false;
+      if (selectedRegionFilters.length > 0) {
+        const agencyMatch = agencies.find(a => a.state === ev.state);
+        if (!agencyMatch || !selectedRegionFilters.includes(agencyMatch.region)) return false;
+      }
+      if (selectedStateFilters.length > 0 && !selectedStateFilters.includes(ev.state || '')) return false;
+      return true;
+    });
+  }, [events, agencies, selectedEventTypes, selectedRegionFilters, selectedStateFilters]);
 
   const formatNumber = (num: number) => num.toLocaleString('es-VE');
 
@@ -251,7 +302,16 @@ export default function DashboardSection() {
                 Módulo Operativo
               </button>
               <button
-                onClick={() => setActiveTab('financiero')}
+                onClick={() => {
+                  setActiveTab('financiero');
+                  if (selectedEventTypes.includes('Red de Agencias')) {
+                    const cleaned = selectedEventTypes.filter(t => t !== 'Red de Agencias');
+                    setSelectedEventTypes(cleaned.length === 0 ? ['Todas'] : cleaned);
+                    setSelectedEventIds([]);
+                    setSelectedRegionFilters([]);
+                    setSelectedStateFilters([]);
+                  }
+                }}
                 className={`px-5 py-1.5 text-xs sm:text-sm font-bold rounded-md transition-all duration-200 ${
                   activeTab === 'financiero' 
                     ? 'bg-white text-[#00205B] shadow-sm ring-1 ring-black/5' 
@@ -265,56 +325,45 @@ export default function DashboardSection() {
           
           <div className="flex items-center gap-4 overflow-x-auto pb-1 sm:pb-0">
             
-            {/* Filtro Tipo de Evento (Canales) - Movido Arriba */}
-            <div className="flex bg-gray-100 p-1 rounded-lg max-w-fit shadow-sm border border-gray-200 h-[38px] items-center shrink-0">
+            {/* Filtro Tipo de Evento (Canales) - Soporta selección individual o múltiple con Ctrl */}
+            <div 
+              className="flex bg-gray-100 p-1 rounded-lg max-w-fit shadow-sm border border-gray-200 h-[38px] items-center shrink-0"
+              title="Tip: Mantén presionado Ctrl para seleccionar múltiples canales (ej. Unidad y Agencia a la vez)"
+            >
               <button 
-                onClick={() => {
-                  setSelectedEventType('Todas');
-                  setSelectedEventIds([]);
-                  setSelectedRegionFilters([]);
-                  setSelectedStateFilters([]);
-                }}
+                onClick={(e) => handleChannelClick('Todas', e)}
                 className={getButtonClass('Todas', 'bg-white text-gray-800 shadow-sm font-bold text-xs py-1 px-3', 'text-xs py-1 px-3 hover:text-gray-900 hover:bg-gray-200/50')}
+                title="Mostrar todas las operativas"
               >
                 <Grid className="w-3.5 h-3.5" />
                 <span className="hidden xl:inline">Todas</span>
               </button>
               <button 
-                onClick={() => {
-                  setSelectedEventType('Unidad Móvil');
-                  setSelectedEventIds([]);
-                  setSelectedRegionFilters([]);
-                  setSelectedStateFilters([]);
-                }}
+                onClick={(e) => handleChannelClick('Unidad Móvil', e)}
                 className={getButtonClass('Unidad Móvil', 'bg-[#FE5000] text-white font-bold shadow-sm text-xs py-1 px-3', 'text-xs py-1 px-3 hover:text-[#FE5000] hover:bg-orange-50')}
+                title="Unidad Móvil (Ctrl + Clic para combinar)"
               >
                 <Truck className="w-3.5 h-3.5" />
                 <span className="hidden xl:inline">Unidad Móvil</span>
               </button>
               <button 
-                onClick={() => {
-                  setSelectedEventType('Agencia Móvil');
-                  setSelectedEventIds([]);
-                  setSelectedRegionFilters([]);
-                  setSelectedStateFilters([]);
-                }}
+                onClick={(e) => handleChannelClick('Agencia Móvil', e)}
                 className={getButtonClass('Agencia Móvil', 'bg-[#00205B] text-white font-bold shadow-sm text-xs py-1 px-3', 'text-xs py-1 px-3 hover:text-[#00205B] hover:bg-blue-50')}
+                title="Agencia Móvil (Ctrl + Clic para combinar)"
               >
                 <Building2 className="w-3.5 h-3.5" />
                 <span className="hidden xl:inline">Agencia Móvil</span>
               </button>
-              <button 
-                onClick={() => {
-                  setSelectedEventType('Red de Agencias');
-                  setSelectedEventIds([]);
-                  setSelectedRegionFilters([]);
-                  setSelectedStateFilters([]);
-                }}
-                className={getButtonClass('Red de Agencias', 'bg-[#009639] text-white font-bold shadow-sm text-xs py-1 px-3', 'text-xs py-1 px-3 hover:text-[#009639] hover:bg-green-50')}
-              >
-                <Store className="w-3.5 h-3.5" />
-                <span className="hidden xl:inline">Red de Agencias</span>
-              </button>
+              {activeTab !== 'financiero' && (
+                <button 
+                  onClick={(e) => handleChannelClick('Red de Agencias', e)}
+                  className={getButtonClass('Red de Agencias', 'bg-[#009639] text-white font-bold shadow-sm text-xs py-1 px-3', 'text-xs py-1 px-3 hover:text-[#009639] hover:bg-green-50')}
+                  title="Red de Agencias (Ctrl + Clic para combinar)"
+                >
+                  <Store className="w-3.5 h-3.5" />
+                  <span className="hidden xl:inline">Red de Agencias</span>
+                </button>
+              )}
             </div>
 
             {/* KPIs Compactos Integrados */}
@@ -336,7 +385,7 @@ export default function DashboardSection() {
             </div>
 
             <span className="text-[10px] sm:text-xs bg-blue-50 text-[#00205B] font-bold px-2.5 py-1 rounded-lg border border-blue-100 whitespace-nowrap shrink-0">
-              Mostrando {filteredEvents.length} de {events.length}
+              Mostrando {filteredEvents.length} de {activeTab === 'financiero' ? events.filter(e => e.type !== 'Red de Agencias').length : events.length}
             </span>
           </div>
         </div>
@@ -405,7 +454,7 @@ export default function DashboardSection() {
           <button
             type="button"
             onClick={() => {
-              setSelectedEventType('Todas');
+              setSelectedEventTypes(['Todas']);
               setSelectedEventIds([]);
               setSelectedMonths([]);
               setSelectedRegionFilters([]);
@@ -465,7 +514,10 @@ export default function DashboardSection() {
 
           {/* Evolución Financiera Temporal */}
           <div className="pt-2">
-            <HistorialMetrics events={filteredEvents} mode="financiero" />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <HistorialMetrics events={filteredEvents} mode="financiero" />
+              <GastoMensualJornadaChart events={monthlyFixedEvents} />
+            </div>
           </div>
 
           {/* SECCIÓN: Análisis Detallado por Canal */}
