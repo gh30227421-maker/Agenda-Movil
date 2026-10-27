@@ -167,6 +167,8 @@ export default function VolumenChart({ events }: VolumenChartProps) {
                   border: 'none',
                   boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.3)'
                 }}
+                itemStyle={{ color: '#FFFFFF' }}
+                labelStyle={{ color: '#FFFFFF' }}
               />
               <Legend 
                 verticalAlign="top" 

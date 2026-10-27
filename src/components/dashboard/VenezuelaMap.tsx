@@ -66,14 +66,14 @@ const STATE_REGION_MAP: Record<string, string> = {
 const REGION_COLORS: Record<string, string> = {
   'CAPITAL': '#FFB703', // Amarillo / Oro
   'CENTRO OCCIDENTE': '#009639', // Verde Institucional BNC
-  'OCCIDENTE - ANDES': '#00205B', // Azul Institucional BNC
-  'ORIENTE': '#DC2626', // Rojo
+  'OCCIDENTE - ANDES': '#DC2626', // Rojo
+  'ORIENTE': '#00205B', // Azul Institucional BNC
   'ARAGUA - LOS LLANOS': '#FE5000', // Naranja Institucional BNC
   'GUAYANA': '#64748B', // Gris Pizarra
 };
 
 export default function VenezuelaMap({ events, agencies = [], selectedState = 'todos', onStateClick }: VenezuelaMapProps) {
-  const [viewMode, setViewMode] = useState<'estados' | 'regiones'>('estados');
+  const [viewMode, setViewMode] = useState<'estados' | 'regiones'>('regiones');
   const [tooltipContent, setTooltipContent] = useState<{
     name: string;
     regionName?: string;
@@ -281,17 +281,6 @@ export default function VenezuelaMap({ events, agencies = [], selectedState = 't
 
           <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-xl">
             <button
-              onClick={() => setViewMode('estados')}
-              className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-all ${
-                viewMode === 'estados'
-                  ? 'bg-white text-[#00205B] shadow-sm'
-                  : 'text-gray-500 hover:text-gray-800'
-              }`}
-            >
-              <MapPin className="w-3.5 h-3.5" />
-              Por Estados
-            </button>
-            <button
               onClick={() => setViewMode('regiones')}
               className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-all ${
                 viewMode === 'regiones'
@@ -301,6 +290,17 @@ export default function VenezuelaMap({ events, agencies = [], selectedState = 't
             >
               <Layers className="w-3.5 h-3.5" />
               Por Regiones
+            </button>
+            <button
+              onClick={() => setViewMode('estados')}
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                viewMode === 'estados'
+                  ? 'bg-white text-[#00205B] shadow-sm'
+                  : 'text-gray-500 hover:text-gray-800'
+              }`}
+            >
+              <MapPin className="w-3.5 h-3.5" />
+              Por Estados
             </button>
           </div>
         </div>

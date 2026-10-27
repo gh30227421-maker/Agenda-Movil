@@ -73,7 +73,9 @@ export default function AgenciaDistribucionChart({ events }: AgenciaDistribucion
                     const pct = totalGastos > 0 ? Math.round((Number(val) / totalGastos) * 100) : 0;
                     return [`$${Number(val).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${pct}%)`, name];
                   }}
-                  contentStyle={{ backgroundColor: '#00205C', borderRadius: '12px', color: '#FFF', border: 'none' }} 
+                  contentStyle={{ backgroundColor: '#00205C', borderRadius: '12px', color: '#FFF', border: 'none', boxShadow: '0 8px 16px -2px rgba(0, 32, 92, 0.25)' }} 
+                  itemStyle={{ color: '#FFFFFF', fontWeight: 600 }}
+                  labelStyle={{ color: '#FFFFFF' }}
                 />
                 <Legend 
                   verticalAlign="bottom" 

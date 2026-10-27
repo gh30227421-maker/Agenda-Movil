@@ -161,6 +161,8 @@ export default function CostosChart({ events }: CostosChartProps) {
               <Tooltip 
                 formatter={(val: any, name: any) => [`$${Number(val).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, name]}
                 contentStyle={{ backgroundColor: '#00205C', borderRadius: '12px', color: '#FFF', border: 'none' }}
+                itemStyle={{ color: '#FFFFFF' }}
+                labelStyle={{ color: '#FFFFFF' }}
               />
               <Legend verticalAlign="top" align="right" wrapperStyle={{ fontSize: '15px', paddingBottom: '15px' }} />
               <Bar dataKey="Agencia Móvil" stackId="a" fill="#00205C" radius={[0, 0, 0, 0]} barSize={24}>

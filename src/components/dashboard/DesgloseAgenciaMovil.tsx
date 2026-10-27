@@ -74,6 +74,8 @@ export default function DesgloseAgenciaMovil({ events }: DesgloseAgenciaMovilPro
                 <Tooltip 
                   formatter={(val: any, name: any) => [`$${Number(val).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 'Gasto Total']}
                   contentStyle={{ backgroundColor: '#00205C', borderRadius: '12px', color: '#FFF', border: 'none' }}
+                  itemStyle={{ color: '#FFFFFF' }}
+                  labelStyle={{ color: '#FFFFFF' }}
                 />
                 <Bar dataKey="gastoUsd" name="Gasto Total" fill="#00205C" radius={[0, 4, 4, 0]} barSize={24}>
                   <LabelList 
@@ -117,6 +119,8 @@ export default function DesgloseAgenciaMovil({ events }: DesgloseAgenciaMovilPro
                   <Tooltip 
                     formatter={(val: any, name: any) => [`$${Number(val).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, name]}
                     contentStyle={{ backgroundColor: '#00205C', borderRadius: '8px', color: '#FFF', border: 'none' }} 
+                    itemStyle={{ color: '#FFFFFF' }}
+                    labelStyle={{ color: '#FFFFFF' }}
                   />
                   <Legend 
                     verticalAlign="bottom" 
