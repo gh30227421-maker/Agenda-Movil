@@ -34,7 +34,13 @@ const normalizeStateName = (name: string) => {
 
 const geoUrl = '/venezuela.json';
 
-export default function RutasUnidadMovil({ selectedMonths = [] }: { selectedMonths?: string[] }) {
+export default function RutasUnidadMovil({ 
+  selectedMonths = [],
+  isPresentation = false
+}: { 
+  selectedMonths?: string[];
+  isPresentation?: boolean;
+}) {
   const { events: allEvents, isLoading: isEventsLoading, dashboardFilters, setDashboardFilters } = useAgenda();
   const events = useMemo(() => allEvents.filter(e => e.type === 'Unidad Móvil' && (selectedMonths.length === 0 || (e.startDate && selectedMonths.some(m => e.startDate?.startsWith(m))))), [allEvents, selectedMonths]);
   
@@ -313,19 +319,21 @@ export default function RutasUnidadMovil({ selectedMonths = [] }: { selectedMont
       `}} />
 
 
-      <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr_260px] xl:grid-cols-[380px_1fr_280px] 2xl:grid-cols-[440px_1fr_320px] gap-4 xl:gap-8 w-full px-4 xl:px-8 max-w-[1920px] mx-auto items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr_320px] xl:grid-cols-[380px_1fr_360px] 2xl:grid-cols-[420px_1fr_400px] gap-6 xl:gap-8 w-full px-4 xl:px-8 max-w-[1920px] mx-auto items-start">
         
         {/* Columna Izquierda: Narrativa y Contexto Visual */}
         <div className="flex flex-col relative z-20 w-full gap-3 min-w-0">
           
           {/* Texto Informativo */}
-          <p className="text-slate-600 text-sm leading-relaxed mb-4">
-            Llevamos la <strong className="font-bold text-slate-900">solidez del banco</strong> a cada rincón del país. A través de nuestras agencias móviles, garantizamos <strong className="font-bold text-slate-900">atención financiera inmediata</strong>, conectando comunidades y descentralizando nuestros servicios con <strong className="font-bold text-[#FE5000]">tecnología de vanguardia</strong> en tiempo real.
-          </p>
+          {!isPresentation && (
+            <p className="text-slate-600 text-sm leading-relaxed mb-2">
+              Llevamos la <strong className="font-bold text-slate-900">solidez del banco</strong> a cada rincón del país. A través de nuestras agencias móviles, garantizamos <strong className="font-bold text-slate-900">atención financiera inmediata</strong>, conectando comunidades y descentralizando nuestros servicios con <strong className="font-bold text-[#FE5000]">tecnología de vanguardia</strong> en tiempo real.
+            </p>
+          )}
 
           {/* Micro-Tarjeta Próximo Destino (Real de BD) */}
           {nextEvent ? (
-            <div ref={kpiProximaParadaRef} id="kpi-proxima-parada" className="group relative bg-slate-900 rounded-xl p-4 shadow-lg flex flex-col justify-center border border-slate-800 mb-4 transition-all duration-300">
+            <div ref={kpiProximaParadaRef} id="kpi-proxima-parada" className="group relative bg-slate-900 rounded-xl p-3.5 shadow-lg flex flex-col justify-center border border-slate-800 mb-2 transition-all duration-300">
               <button
                 onClick={() => downloadImage(kpiProximaParadaRef, 'Proxima_Parada_Unidad_Movil', '#0f172a')}
                 className="ignore-export absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-white/10 hover:bg-[#FE5000] text-white p-1.5 rounded-md backdrop-blur-sm shadow-md z-50"
@@ -335,22 +343,22 @@ export default function RutasUnidadMovil({ selectedMonths = [] }: { selectedMont
               </button>
               <div className="flex items-center gap-3">
                 <div className="shrink-0">
-                  <MapPin className="w-6 h-6 text-orange-500" />
+                  <MapPin className="w-5 h-5 text-orange-500" />
                 </div>
-                <div className="flex flex-col">
-                  <span className="text-slate-400 text-xs tracking-widest uppercase font-bold mb-0.5">Próxima Parada Programada</span>
-                  <strong className="text-white text-base md:text-lg font-bold">{nextEvent.eventName || (nextEvent.estadoOperativo || nextEvent.state)} - {new Date(nextEvent.startDate).toLocaleDateString('es-ES', { timeZone: 'UTC' })}</strong>
+                <div className="flex flex-col min-w-0">
+                  <span className="text-slate-400 text-[10px] tracking-widest uppercase font-bold mb-0.5">Próxima Parada Programada</span>
+                  <strong className="text-white text-sm md:text-base font-bold truncate">{nextEvent.eventName || (nextEvent.estadoOperativo || nextEvent.state)} - {new Date(nextEvent.startDate).toLocaleDateString('es-ES', { timeZone: 'UTC' })}</strong>
                 </div>
               </div>
             </div>
           ) : (
-            <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 text-xs shadow-sm mb-4 flex items-center justify-center text-slate-500 font-medium">
+            <div className="bg-white/80 border border-slate-200 rounded-xl p-3 text-xs shadow-sm mb-2 flex items-center justify-center text-slate-500 font-medium">
               Sin paradas programadas próximamente
             </div>
           )}
 
           {/* Foto Institucional (Con Badge en Vivo) */}
-          <div className="w-full h-[260px] xl:h-[340px] rounded-2xl overflow-hidden shadow-2xl shadow-slate-900/50 border border-white/10 group bg-slate-950/40 relative z-20 transition-all duration-500">
+          <div className={`w-full ${isPresentation ? 'h-[250px] lg:h-[275px] xl:h-[300px] 2xl:h-[320px]' : 'h-[230px] lg:h-[240px] xl:h-[265px]'} rounded-2xl overflow-hidden shadow-xl shadow-slate-900/30 border border-slate-200 group bg-slate-950/40 relative z-20 transition-all duration-500`}>
             <div className="absolute inset-0 flex items-center justify-center text-white/20">
               <Camera className="w-8 h-8" />
             </div>
@@ -365,22 +373,22 @@ export default function RutasUnidadMovil({ selectedMonths = [] }: { selectedMont
             />
             
             {/* Badge Animado en Vivo */}
-            <div className="absolute top-4 right-4 z-30 bg-slate-900/80 backdrop-blur-md border border-white/20 rounded-full px-3 py-1.5 flex items-center gap-2 shadow-lg">
+            <div className="absolute top-3 right-3 z-30 bg-slate-900/80 backdrop-blur-md border border-white/20 rounded-full px-3 py-1 flex items-center gap-2 shadow-lg">
               <div className={`w-2 h-2 rounded-full ${isCurrentlyDeployed ? 'bg-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.8)]' : 'bg-slate-400'}`} />
               <span className="text-[10px] font-bold uppercase tracking-wider text-white">
                 {isCurrentlyDeployed ? 'ESTADO: DESPLEGADA' : 'ESTADO: EN BASE'}
               </span>
             </div>
             
-            <div className="absolute bottom-0 left-0 w-full p-6 bg-gradient-to-t from-black/90 via-black/40 to-transparent z-20">
-              <span className="text-white text-sm md:text-base font-bold uppercase tracking-widest drop-shadow-md flex items-center gap-2">
-                <Truck className="w-5 h-5" /> Unidad Móvil Oficial
+            <div className="absolute bottom-0 left-0 w-full p-4 bg-gradient-to-t from-black/90 via-black/40 to-transparent z-20">
+              <span className="text-white text-xs md:text-sm font-bold uppercase tracking-widest drop-shadow-md flex items-center gap-2">
+                <Truck className="w-4 h-4" /> Unidad Móvil Oficial
               </span>
             </div>
           </div>
 
           {/* Galería Dinámica */}
-          <div className="w-full h-[260px] xl:h-[340px] rounded-2xl overflow-hidden shadow-[0_15px_40px_rgba(0,32,91,0.1)] border border-slate-200 bg-white/40 backdrop-blur-sm pointer-events-auto transform scale-100 hover:scale-[1.01] transition-transform duration-500">
+          <div className={`w-full ${isPresentation ? 'h-[250px] lg:h-[275px] xl:h-[300px] 2xl:h-[320px]' : 'h-[230px] lg:h-[240px] xl:h-[265px]'} rounded-2xl overflow-hidden shadow-[0_10px_30px_rgba(0,32,91,0.08)] border border-slate-200 bg-white/70 backdrop-blur-sm pointer-events-auto transform scale-100 hover:scale-[1.01] transition-transform duration-500`}>
             <PremiumCarousel photos={displayedPhotos} />
           </div>
 
@@ -390,13 +398,13 @@ export default function RutasUnidadMovil({ selectedMonths = [] }: { selectedMont
         <div className="flex flex-col relative w-full h-full min-w-0">
           
           {/* Fila Única de KPIs */}
-          <div className="flex items-center gap-4 mb-4 relative z-20">
-            <h3 className="text-lg md:text-xl font-black text-slate-900 uppercase tracking-widest m-0">Indicadores Operativos - Unidad Móvil</h3>
-            <div className="flex-grow h-px bg-slate-200"></div>
+          <div className="flex items-center justify-between mb-2 relative z-20">
+            <h3 className="text-sm md:text-base font-black text-slate-900 uppercase tracking-widest m-0">Indicadores Operativos - Unidad Móvil</h3>
+            <span className="text-slate-400 text-[9px] font-medium hidden sm:inline">Última sinc: hace 5 min</span>
           </div>
-          <div className="flex flex-nowrap gap-2 md:gap-4 w-full relative z-20">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 md:gap-3 w-full relative z-20">
             {/* KPI 2: Clientes Atendidos */}
-            <div ref={kpiCiudadanosRef} id="kpi-ciudadanos-atendidos-unidad" className="flex-1 min-w-[140px] max-w-[220px] h-[76px] group flex flex-col justify-between backdrop-blur-md bg-white/90 p-2.5 xl:p-3 rounded-xl shadow-xl shadow-slate-200/50 border border-slate-200 hover:shadow-[0_15px_40px_rgba(254,80,0,0.12)] transition-all duration-500 relative overflow-hidden">
+            <div ref={kpiCiudadanosRef} id="kpi-ciudadanos-atendidos-unidad" className={`w-full ${isPresentation ? 'h-[78px] xl:h-[82px]' : 'h-[76px] xl:h-[80px]'} group flex flex-col justify-between backdrop-blur-md bg-white/90 p-2 xl:p-2.5 rounded-xl shadow-md border border-slate-200 hover:shadow-lg hover:border-[#FE5000]/40 transition-all duration-300 relative overflow-hidden`}>
               <button
                 onClick={() => downloadImage(kpiCiudadanosRef, 'KPI_Ciudadanos_Atendidos')}
                 className="ignore-export absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-slate-100 hover:bg-[#FE5000] hover:text-white text-slate-400 p-1.5 rounded-md shadow-sm z-50"
@@ -409,21 +417,21 @@ export default function RutasUnidadMovil({ selectedMonths = [] }: { selectedMont
               <p className="text-[9px] text-slate-500 font-bold uppercase tracking-wider flex items-center gap-1.5">
                 <Users className="w-3.5 h-3.5 text-[#FE5000]" /> Clientes Atendidos
               </p>
-              <div className="flex flex-wrap items-end gap-2 justify-between">
-                <div className="flex flex-col">
-                  <p className="text-xl lg:text-2xl font-black text-[#00205B] tracking-tight">
+              <div className="flex items-end gap-2 justify-between">
+                <div className="flex flex-col min-w-0">
+                  <p className="text-xl lg:text-2xl font-black text-[#00205B] tracking-tight leading-none">
                     <AnimatedCounter end={kpis.beneficiados} />
                   </p>
-                  <span className="text-[10px] font-bold text-gray-400 tracking-wider">
+                  <span className="text-[9px] xl:text-[10px] font-bold text-slate-400 tracking-wider mt-1 uppercase leading-none">
                     CUENTAS ABIERTAS
                   </span>
                 </div>
-                <span className="text-[10px] font-bold text-[#009639] bg-green-50 px-1.5 py-0.5 rounded-md mb-1">📈 +12%</span>
+                <span className="text-[10px] font-bold text-[#009639] bg-green-50 px-1.5 py-0.5 rounded-md mb-0.5 shrink-0">📈 +12%</span>
               </div>
             </div>
 
             {/* KPI: Puntos de Despliegue */}
-            <div ref={kpiJornadasRef} id="kpi-jornadas-desplegadas-unidad" className="flex-1 min-w-[140px] max-w-[220px] h-[76px] group flex flex-col justify-between backdrop-blur-md bg-white/90 p-2.5 xl:p-3 rounded-xl shadow-xl shadow-slate-200/50 border border-slate-200 hover:shadow-[0_15px_40px_rgba(0,150,57,0.12)] transition-all duration-500 relative overflow-hidden">
+            <div ref={kpiJornadasRef} id="kpi-jornadas-desplegadas-unidad" className={`w-full ${isPresentation ? 'h-[78px] xl:h-[82px]' : 'h-[76px] xl:h-[80px]'} group flex flex-col justify-between backdrop-blur-md bg-white/90 p-2 xl:p-2.5 rounded-xl shadow-md border border-slate-200 hover:shadow-lg hover:border-[#009639]/40 transition-all duration-300 relative overflow-hidden`}>
               <button
                 onClick={() => downloadImage(kpiJornadasRef, 'KPI_Jornadas_Desplegadas')}
                 className="ignore-export absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-slate-100 hover:bg-[#009639] hover:text-white text-slate-400 p-1.5 rounded-md shadow-sm z-50"
@@ -436,16 +444,16 @@ export default function RutasUnidadMovil({ selectedMonths = [] }: { selectedMont
               <p className="text-[9px] text-slate-500 font-bold uppercase tracking-wider flex items-center gap-1.5">
                 <MapPin className="w-3.5 h-3.5 text-[#009639]" /> Jornadas Desplegadas
               </p>
-              <div className="flex flex-wrap items-end gap-2 justify-between">
-                <p className="text-xl lg:text-2xl font-black text-[#00205B] tracking-tight">
+              <div className="flex items-end gap-2 justify-between">
+                <p className="text-xl lg:text-2xl font-black text-[#00205B] tracking-tight leading-none">
                   <AnimatedCounter end={kpis.eventos} />
                 </p>
-                <span className="text-[10px] font-bold text-[#009639] bg-green-50 px-1.5 py-0.5 rounded-md mb-1">📈 +8%</span>
+                <span className="text-[10px] font-bold text-[#009639] bg-green-50 px-1.5 py-0.5 rounded-md mb-0.5 shrink-0">📈 +8%</span>
               </div>
             </div>
 
             {/* KPI: Cobertura Nacional */}
-            <div ref={kpiEstadosRef} id="kpi-estados-visitados-unidad" className="flex-1 min-w-[140px] max-w-[220px] h-[76px] group flex flex-col justify-between backdrop-blur-md bg-white/90 p-2.5 xl:p-3 rounded-xl shadow-xl shadow-slate-200/50 border border-slate-200 hover:shadow-[0_15px_40px_rgba(0,32,91,0.12)] transition-all duration-500 relative overflow-hidden">
+            <div ref={kpiEstadosRef} id="kpi-estados-visitados-unidad" className={`w-full ${isPresentation ? 'h-[78px] xl:h-[82px]' : 'h-[76px] xl:h-[80px]'} group flex flex-col justify-between backdrop-blur-md bg-white/90 p-2 xl:p-2.5 rounded-xl shadow-md border border-slate-200 hover:shadow-lg hover:border-[#00205B]/40 transition-all duration-300 relative overflow-hidden`}>
               <button
                 onClick={() => downloadImage(kpiEstadosRef, 'KPI_Estados_Visitados')}
                 className="ignore-export absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-slate-100 hover:bg-[#00205B] hover:text-white text-slate-400 p-1.5 rounded-md shadow-sm z-50"
@@ -458,16 +466,16 @@ export default function RutasUnidadMovil({ selectedMonths = [] }: { selectedMont
               <p className="text-[9px] text-slate-500 font-bold uppercase tracking-wider flex items-center gap-1.5">
                 <Truck className="w-3.5 h-3.5 text-[#00205B]" /> Estados Visitados
               </p>
-              <div className="flex flex-wrap items-end gap-2 justify-between">
-                <p className="text-xl lg:text-2xl font-black text-[#00205B] tracking-tight">
+              <div className="flex items-end gap-2 justify-between">
+                <p className="text-xl lg:text-2xl font-black text-[#00205B] tracking-tight leading-none">
                   <AnimatedCounter end={kpis.estados} />
                 </p>
-                <span className="text-[10px] font-bold text-[#009639] bg-green-50 px-1.5 py-0.5 rounded-md mb-1">📈 +15%</span>
+                <span className="text-[10px] font-bold text-[#009639] bg-green-50 px-1.5 py-0.5 rounded-md mb-0.5 shrink-0">📈 +15%</span>
               </div>
             </div>
 
             {/* KPI 5: Kilómetros Recorridos */}
-            <div ref={kpiLogisticaRef} id="kpi-logistica-recorrida-unidad" className="flex-1 min-w-[140px] max-w-[220px] h-[76px] group flex flex-col justify-between backdrop-blur-md bg-white/90 p-2.5 xl:p-3 rounded-xl shadow-xl shadow-slate-200/50 border border-slate-200 hover:shadow-[0_15px_40px_rgba(100,116,139,0.12)] transition-all duration-500 relative overflow-hidden">
+            <div ref={kpiLogisticaRef} id="kpi-logistica-recorrida-unidad" className={`w-full ${isPresentation ? 'h-[78px] xl:h-[82px]' : 'h-[76px] xl:h-[80px]'} group flex flex-col justify-between backdrop-blur-md bg-white/90 p-2 xl:p-2.5 rounded-xl shadow-md border border-slate-200 hover:shadow-lg hover:border-slate-400 transition-all duration-300 relative overflow-hidden`}>
               <button
                 onClick={() => downloadImage(kpiLogisticaRef, 'KPI_Logistica_Recorrida')}
                 className="ignore-export absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-slate-100 hover:bg-slate-500 hover:text-white text-slate-400 p-1.5 rounded-md shadow-sm z-50"
@@ -480,27 +488,22 @@ export default function RutasUnidadMovil({ selectedMonths = [] }: { selectedMont
               <p className="text-[9px] text-slate-500 font-bold uppercase tracking-wider flex items-center gap-1.5">
                 <Navigation className="w-3.5 h-3.5 text-slate-500" /> Kilómetros Recorridos
               </p>
-              <div className="flex flex-wrap items-end gap-2 justify-between relative z-10">
-                <p className="text-xl lg:text-2xl font-black text-[#00205B] tracking-tight flex items-center gap-2">
+              <div className="flex items-end gap-2 justify-between relative z-10">
+                <p className="text-xl lg:text-2xl font-black text-[#00205B] tracking-tight leading-none flex items-center gap-1.5">
                   {loadingKm ? (
                     <Loader2 className="w-5 h-5 animate-spin text-[#00205B]" />
                   ) : (
                     <AnimatedCounter end={drilldownState || drilldownEventId ? kpis.kilometros : (dbTotalKm || kpis.kilometros)} /> 
                   )}
-                  <span className="text-sm text-slate-400">Km</span>
+                  <span className="text-xs text-slate-400 font-semibold">Km</span>
                 </p>
-                <span className="text-[10px] font-bold text-[#009639] bg-green-50 px-1.5 py-0.5 rounded-md mb-1">📈 +5%</span>
+                <span className="text-[10px] font-bold text-[#009639] bg-green-50 px-1.5 py-0.5 rounded-md mb-0.5 shrink-0">📈 +5%</span>
               </div>
             </div>
           </div>
 
-          {/* Etiqueta de Actualización */}
-          <div className="w-full text-right mt-2 mb-4">
-            <span className="text-slate-500 text-[10px] font-medium">Última sincronización de datos: hace 5 minutos</span>
-          </div>
-
           {/* Mapa 3D Protagonista */}
-          <div ref={mapaRef} id="mapa-unidad-movil" className="group w-full max-w-full overflow-visible flex items-center justify-center min-h-[600px] lg:min-h-[700px] relative mt-16 z-10">
+          <div ref={mapaRef} id="mapa-unidad-movil" className={`group w-full max-w-full overflow-visible flex items-center justify-center ${isPresentation ? 'min-h-[460px] lg:min-h-[500px] xl:min-h-[540px] 2xl:min-h-[580px] my-1' : 'min-h-[380px] lg:min-h-[440px] mt-1'} relative z-10`}>
             <button
               onClick={() => downloadImage(mapaRef, 'Mapa_Unidad_Movil')}
               className="ignore-export absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-white/80 hover:bg-[#FE5000] hover:text-white text-slate-500 p-2 rounded-lg shadow-lg z-50 backdrop-blur-sm"
@@ -572,7 +575,7 @@ export default function RutasUnidadMovil({ selectedMonths = [] }: { selectedMont
               center: [-66.5, 6.8]
             }}
             viewBox="0 0 1000 750"
-            className="w-[95%] mx-auto h-auto origin-center transition-transform duration-1000"
+            className="w-full max-w-[840px] mx-auto origin-center transition-transform duration-1000"
             style={{ 
               overflow: 'visible', 
               filter: 'drop-shadow(0 25px 35px rgba(0, 0, 0, 0.5))'
@@ -693,19 +696,65 @@ export default function RutasUnidadMovil({ selectedMonths = [] }: { selectedMont
             )})}
           </ComposableMap>
         </div>
+
+        {/* Últimos Despliegues - Formato Horizontal (Uno al lado del otro) */}
+        <div className={`w-full ${isPresentation ? 'mt-2 lg:mt-3' : 'mt-1 lg:mt-2'} relative z-20`}>
+          <div className="flex items-center gap-2 mb-1.5 px-1">
+            <Activity className="w-3.5 h-3.5 text-[#00205B]" />
+            <h4 className="text-[11px] font-bold uppercase tracking-wider text-[#00205B]">Últimos Despliegues</h4>
+            <div className="ml-auto flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-green-100/60 border border-green-200">
+              <div className="w-1.5 h-1.5 rounded-full bg-[#009639] animate-pulse" />
+              <span className="text-[9px] font-bold text-[#009639] uppercase tracking-wider">Live</span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full">
+            {[...events]
+              .filter(e => new Date(e.startDate || 0).getTime() <= new Date().getTime())
+              .sort((a, b) => new Date(b.startDate || 0).getTime() - new Date(a.startDate || 0).getTime())
+              .slice(0, 3).map((event, idx) => (
+              <div 
+                key={event.id || idx}
+                className={`bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-xl ${isPresentation ? 'p-2.5 sm:p-3' : 'p-2.5'} shadow-xs hover:shadow-md hover:border-[#FE5000]/40 transition-all flex flex-col justify-between relative overflow-hidden group`}
+              >
+                <div className="absolute top-0 left-0 w-1 h-full bg-[#FE5000]" />
+                <div className="pl-1.5">
+                  <p className="text-xs font-bold text-slate-800 truncate leading-snug group-hover:text-[#00205B]" title={event.eventName || 'Operativo Especial'}>
+                    {event.eventName || 'Operativo Especial'}
+                  </p>
+                  <div className="flex items-center justify-between mt-1 text-[10px] text-slate-500">
+                    <span className="flex items-center gap-1">
+                      <Calendar className="w-3 h-3 text-slate-400" />
+                      {event.startDate ? new Date(event.startDate).toLocaleDateString('es-ES', { timeZone: 'UTC' }) : 'N/A'}
+                    </span>
+                    <span className="font-bold text-[#00205B] bg-blue-50 px-1.5 py-0.5 rounded text-[9px] uppercase border border-blue-100">
+                      {event.estadoOperativo || event.state}
+                    </span>
+                  </div>
+                </div>
+                {((event.cifras?.cuentasAbiertas || 0) + (event.cifras?.atendidos || 0)) > 0 && (
+                  <div className="mt-1.5 pl-1.5 flex items-center justify-between pt-1 border-t border-slate-100 text-[10px] text-emerald-700 font-bold">
+                    <span>👥 {((event.cifras?.cuentasAbiertas || 0) + (event.cifras?.atendidos || 0)).toLocaleString('es-VE')}</span>
+                    <span className="text-[9px] text-slate-400 font-normal">Atendidos</span>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
         
         </div>
 
-        {/* Columna Derecha: Panel de Video & Timeline */}
-        <div className="flex flex-col relative w-full h-full pr-4 xl:pr-6 min-w-0">
-          <div className="sticky top-24 flex flex-col gap-6 lg:mt-[4.5rem]">
+        {/* Columna Derecha: Panel de Video */}
+        <div className="flex flex-col relative w-full h-full pr-2 xl:pr-4 min-w-0">
+          <div className="sticky top-20 flex flex-col gap-4">
             
             {/* Video Institucional */}
-            <div className="w-full h-auto rounded-2xl overflow-hidden shadow-[0_15px_40px_rgba(0,32,91,0.1)] border border-slate-200 bg-slate-900 group pointer-events-auto relative">
+            <div className={`w-full ${isPresentation ? 'h-auto max-h-[640px] xl:max-h-[700px]' : 'h-auto'} rounded-2xl overflow-hidden shadow-[0_15px_40px_rgba(0,32,91,0.1)] border border-slate-200 bg-slate-900 group pointer-events-auto relative`}>
               {playlist.length > 0 && (
                 <video 
                   key={playlist[currentVideoIndex]}
-                  className="w-full h-auto block object-cover relative z-10"
+                  className={`w-full ${isPresentation ? 'h-auto max-h-[640px] xl:max-h-[700px]' : 'h-auto'} block object-cover relative z-10`}
                   autoPlay
                   muted
                   loop={playlist.length === 1}
@@ -723,43 +772,6 @@ export default function RutasUnidadMovil({ selectedMonths = [] }: { selectedMont
                  <span className="text-[9px] font-bold uppercase tracking-wider text-white">
                    Institucional {playlist.length > 1 ? `(${currentVideoIndex + 1}/${playlist.length})` : ''}
                  </span>
-              </div>
-            </div>
-
-            {/* Live Timeline Vertical */}
-            <div className="flex flex-col backdrop-blur-md bg-white/70 p-5 rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-200 relative overflow-hidden pointer-events-auto">
-              <div className="flex items-center gap-2 mb-4">
-                <Activity className="w-4 h-4 text-[#00205B]" />
-                <h3 className="text-xs font-bold uppercase tracking-wider text-[#00205B]">Últimos Despliegues</h3>
-                <div className="ml-auto flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-green-100/50 border border-green-200">
-                  <div className="w-1.5 h-1.5 rounded-full bg-[#009639] animate-pulse" />
-                  <span className="text-[9px] font-bold text-[#009639] uppercase tracking-wider">Live</span>
-                </div>
-              </div>
-              
-              <div className="flex flex-col gap-4 relative border-l-2 border-slate-200 ml-2 pl-4 mt-2">
-                {[...events]
-                  .filter(e => new Date(e.startDate || 0).getTime() <= new Date().getTime())
-                  .sort((a, b) => new Date(b.startDate || 0).getTime() - new Date(a.startDate || 0).getTime())
-                  .slice(0, 3).map((event, idx) => (
-                  <div key={event.id || idx} className="relative flex flex-col z-10 pb-2">
-                    <div className="absolute -left-[23px] top-1 w-3.5 h-3.5 rounded-full bg-[#FE5000] border-2 border-white shadow-sm z-10" />
-                    <div className="flex flex-col w-full">
-                      <div className="flex flex-col">
-                        <p className="text-[13px] font-bold text-slate-700 leading-tight">{event.eventName || 'Operativo Especial'}</p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className="text-[10px] text-slate-500 flex items-center gap-1"><Calendar className="w-3 h-3" /> {event.startDate ? new Date(event.startDate).toLocaleDateString('es-ES', { timeZone: 'UTC' }) : 'N/A'}</span>
-                          <span className="text-[9px] font-bold text-[#00205B] bg-blue-50 px-1.5 py-0.5 rounded uppercase tracking-wider border border-blue-100">{event.estadoOperativo || event.state}</span>
-                        </div>
-                      </div>
-                      {((event.cifras?.cuentasAbiertas || 0) + (event.cifras?.atendidos || 0)) > 0 && (
-                        <div className="bg-green-50 text-green-700 px-2 py-0.5 rounded-md text-[10px] font-bold shadow-sm border border-green-100 w-fit mt-2">
-                          👥 {(event.cifras?.cuentasAbiertas || 0) + (event.cifras?.atendidos || 0)} Atendidos
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
               </div>
             </div>
 

@@ -39,21 +39,30 @@ export default function AdminUsersPage() {
   const fetchUsers = useCallback(async () => {
     try {
       setIsLoading(true);
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
+      let { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        const { data: refreshData } = await supabase.auth.refreshSession();
+        session = refreshData.session;
+      }
+      if (!session) {
+        throw new Error('No hay sesión activa. Por favor, inicie sesión nuevamente.');
+      }
 
       const res = await fetch('/api/admin/users', {
         headers: {
           'Authorization': `Bearer ${session.access_token}`
         }
       });
-      if (!res.ok) throw new Error('Error al obtener usuarios');
       
       const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Error al obtener usuarios');
+      }
+      
       setUsers(data.users || []);
     } catch (e: any) {
       console.error(e);
-      showToast('No se pudieron cargar los usuarios', 'error');
+      showToast(e.message || 'No se pudieron cargar los usuarios', 'error');
     } finally {
       setIsLoading(false);
     }
@@ -168,7 +177,6 @@ export default function AdminUsersPage() {
               <tr>
                 <th className="px-6 py-4 font-bold">Correo Electrónico</th>
                 <th className="px-6 py-4 font-bold">Rol</th>
-                <th className="px-6 py-4 font-bold">Fecha de Registro</th>
                 <th className="px-6 py-4 font-bold">Fecha de Registro</th>
                 <th className="px-6 py-4 font-bold">Último Acceso</th>
                 <th className="px-6 py-4 font-bold text-center">Actividad</th>

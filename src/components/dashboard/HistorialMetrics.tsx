@@ -100,8 +100,8 @@ export default function HistorialMetrics({ events, mode = 'all' }: HistorialMetr
                   contentStyle={{ backgroundColor: '#00205B', borderRadius: '10px', color: '#FFF', border: 'none' }}
                 />
                 <Legend verticalAlign="top" wrapperStyle={{ paddingBottom: '10px', fontSize: '16px' }} />
-                <Bar dataKey="cuentas" name="Apertura de Cuentas" fill="#00205C" radius={[4, 4, 0, 0]} barSize={40} />
-                <Bar dataKey="tdd" name="Entregas TDD" fill="#426095" radius={[4, 4, 0, 0]} barSize={40} />
+                <Bar dataKey="cuentas" name="Apertura de Cuentas" fill="#00205B" radius={[4, 4, 0, 0]} barSize={38} />
+                <Bar dataKey="tdd" name="Entregas TDD" fill="#FE5000" radius={[4, 4, 0, 0]} barSize={38} />
               </BarChart>
             </ResponsiveContainer>
           ) : (

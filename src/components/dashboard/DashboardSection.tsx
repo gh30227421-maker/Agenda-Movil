@@ -20,6 +20,7 @@ import RentabilidadVsCostosChart from './RentabilidadVsCostosChart';
 import RankingEventosOperativoChart from './RankingEventosOperativoChart';
 import AtmOperacionesChart from './AtmOperacionesChart';
 import GastoMensualJornadaChart from './GastoMensualJornadaChart';
+import EficienciaOperativaCard from './EficienciaOperativaCard';
 
 const isEventInPeriod = (evStartDate: string | undefined, periods: string[]) => {
   if (periods.length === 0 || periods.includes('todos')) return true;
@@ -226,20 +227,6 @@ export default function DashboardSection() {
     });
   }, [events, agencies, selectedEventTypes, selectedEventIds, selectedMonths, selectedRegionFilters, selectedStateFilters, activeTab]);
 
-  // Eventos para la gráfica mensual fija de gastos (mantiene la línea de tiempo completa por meses)
-  const monthlyFixedEvents = useMemo(() => {
-    return events.filter(ev => {
-      if (ev.type === 'Red de Agencias') return false;
-      if (!isTypeMatch(ev.type)) return false;
-      if (selectedRegionFilters.length > 0) {
-        const agencyMatch = agencies.find(a => a.state === ev.state);
-        if (!agencyMatch || !selectedRegionFilters.includes(agencyMatch.region)) return false;
-      }
-      if (selectedStateFilters.length > 0 && !selectedStateFilters.includes(ev.state || '')) return false;
-      return true;
-    });
-  }, [events, agencies, selectedEventTypes, selectedRegionFilters, selectedStateFilters]);
-
   const formatNumber = (num: number) => num.toLocaleString('es-VE');
 
   const totalOperaciones = filteredEvents.reduce((acc, ev) => {
@@ -278,11 +265,11 @@ export default function DashboardSection() {
   }, [availableRegions, selectedRegionFilters]);
 
   return (
-    <div className="space-y-6 w-full px-4 sm:px-8 mx-auto pb-10">
+    <div className="space-y-4 sm:space-y-5 w-full px-4 sm:px-8 mx-auto pb-10">
       {/* Cabecera Principal y Barra de Filtros Dinámicos */}
-      <div className="bg-white rounded-2xl p-4 sm:p-5 border border-gray-100 shadow-sm flex flex-col gap-4">
+      <div className="bg-white rounded-xl p-3.5 sm:p-4 border border-slate-200/90 shadow-xs flex flex-col gap-3.5">
         {/* Fila 1: Cabecera Unificada (Título, Pestañas, KPIs) */}
-        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
+        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3.5">
           <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
             <div>
               <h1 className="text-xl sm:text-2xl font-bold text-[#00205B] leading-tight">Panel Operativo Financiero</h1>
@@ -496,6 +483,7 @@ export default function DashboardSection() {
               <AtmOperacionesChart events={filteredEvents} />
               <HistorialMetrics events={filteredEvents} mode="operativo" />
               <RankingEventosOperativoChart events={filteredEvents} />
+              <EficienciaOperativaCard events={filteredEvents} />
             </div>
           </div>
         </div>
@@ -516,7 +504,7 @@ export default function DashboardSection() {
           <div className="pt-2">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <HistorialMetrics events={filteredEvents} mode="financiero" />
-              <GastoMensualJornadaChart events={monthlyFixedEvents} />
+              <GastoMensualJornadaChart events={filteredEvents} selectedMonths={selectedMonths} />
             </div>
           </div>
 

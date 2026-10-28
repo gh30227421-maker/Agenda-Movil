@@ -116,13 +116,13 @@ export default function CostosParticipacionUnidadChart({ events }: CostosPartici
                 dataKey="value"
                 stroke="none"
               >
-                <Cell fill="#426095" />
+                <Cell fill="#FE5000" />
                 <Cell fill="#E5E7EB" />
               </Pie>
             </PieChart>
           </ResponsiveContainer>
           <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
-            <span className="text-3xl font-black text-[#426095]">{stats.pct}%</span>
+            <span className="text-3xl font-black text-[#FE5000]">{stats.pct}%</span>
             <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider -mt-0.5">Participación</span>
           </div>
         </div>
@@ -130,7 +130,7 @@ export default function CostosParticipacionUnidadChart({ events }: CostosPartici
         {/* Total Acumulado */}
         <div className="mt-3 text-center">
           <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">Total Acumulado</p>
-          <p className="text-xl font-black text-[#426095]">
+          <p className="text-xl font-black text-[#FE5000]">
             ${stats.total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </p>
         </div>
@@ -186,13 +186,13 @@ export default function CostosParticipacionUnidadChart({ events }: CostosPartici
                       dataKey="value"
                       stroke="none"
                     >
-                      <Cell fill="#426095" />
+                      <Cell fill="#FE5000" />
                       <Cell fill="#E5E7EB" />
                     </Pie>
                   </PieChart>
                 </ResponsiveContainer>
                 <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
-                  <span className="text-6xl font-black text-[#426095]">{stats.pct}%</span>
+                  <span className="text-6xl font-black text-[#FE5000]">{stats.pct}%</span>
                   <span className="text-sm text-gray-500 font-bold uppercase tracking-widest mt-1">Participación</span>
                 </div>
               </div>
@@ -200,7 +200,7 @@ export default function CostosParticipacionUnidadChart({ events }: CostosPartici
               <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-lg">
                 <div className="text-center bg-gray-50 px-6 py-4 rounded-2xl border border-gray-100">
                   <p className="text-sm text-gray-500 font-medium">Monto Total Acumulado</p>
-                  <p className="font-black text-2xl text-[#426095] mt-1">
+                  <p className="font-black text-2xl text-[#FE5000] mt-1">
                     ${stats.total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </p>
                 </div>

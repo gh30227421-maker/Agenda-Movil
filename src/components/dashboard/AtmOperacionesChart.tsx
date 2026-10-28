@@ -5,6 +5,7 @@ import ChartModalWrapper from './ChartModalWrapper';
 import { 
   PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer 
 } from 'recharts';
+import { CreditCard, Clock } from 'lucide-react';
 
 interface AtmOperacionesChartProps {
   events: any[];
@@ -137,8 +138,20 @@ export default function AtmOperacionesChart({ events }: AtmOperacionesChartProps
           </div>
         </div>
       ) : (
-        <div className="h-64 w-full flex items-center justify-center">
-          <p className="text-sm font-medium text-slate-400">No hay datos de operaciones ATM</p>
+        <div className="h-64 sm:h-72 w-full flex flex-col items-center justify-center p-6 text-center">
+          <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400 mb-3 border border-slate-200/80 shadow-xs">
+            <CreditCard className="w-7 h-7 text-slate-400" />
+          </div>
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 border border-slate-200 text-slate-600 text-xs font-bold uppercase tracking-wider mb-2">
+            <Clock className="w-3.5 h-3.5 text-[#FE5000]" />
+            Módulo ATM en Standby
+          </div>
+          <p className="text-xs sm:text-sm font-semibold text-slate-600 max-w-sm">
+            Sin operaciones de cajero registradas en el período
+          </p>
+          <p className="text-[11px] text-slate-400 max-w-xs mt-1">
+            Se sincroniza automáticamente al registrar consultas o retiros en unidades con ATM activo.
+          </p>
         </div>
       )}
     </ChartModalWrapper>

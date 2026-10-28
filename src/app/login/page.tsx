@@ -169,14 +169,14 @@ export default function LoginPage() {
             <img 
               src="/bnc-logo.png" 
               alt="BNC" 
-              className="h-10 sm:h-12 w-auto object-contain drop-shadow-xs" 
+              className="h-14 sm:h-16 lg:h-18 w-auto object-contain drop-shadow-xs" 
             />
-            <div className="h-8 w-[1.5px] bg-slate-200 mx-3 sm:mx-4" />
+            <div className="h-11 sm:h-12 w-[1.5px] bg-slate-200 mx-3.5 sm:mx-4.5" />
             <div className="flex flex-col">
-              <span className="text-[11px] sm:text-xs font-black tracking-widest text-[#00205B] leading-tight uppercase">
+              <span className="text-sm sm:text-base lg:text-lg font-black tracking-wider text-[#00205B] leading-tight uppercase">
                 OFICINA
               </span>
-              <span className="text-[11px] sm:text-xs font-black tracking-widest text-[#00205B] leading-tight uppercase">
+              <span className="text-sm sm:text-base lg:text-lg font-normal tracking-wider text-[#00205B] leading-tight uppercase">
                 MÓVIL
               </span>
             </div>
@@ -184,10 +184,10 @@ export default function LoginPage() {
 
           {/* Subtítulos Organizacionales a la Derecha */}
           <div className="text-right">
-            <span className="block text-[10px] sm:text-[11px] font-extrabold tracking-wider text-[#00205B] uppercase leading-tight">
+            <span className="block text-xs sm:text-sm lg:text-[14px] font-extrabold tracking-wider text-[#00205B] uppercase leading-tight">
               VPE. BANCA COMERCIAL
             </span>
-            <span className="block text-[8px] sm:text-[9.5px] font-bold text-slate-400 tracking-wider uppercase leading-tight mt-0.5">
+            <span className="block text-[10px] sm:text-xs lg:text-[11.5px] font-bold text-slate-500 tracking-wider uppercase leading-tight mt-0.5">
               VP. ADMINISTRACIÓN DE AGENCIAS
             </span>
           </div>

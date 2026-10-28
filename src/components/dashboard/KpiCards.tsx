@@ -88,199 +88,199 @@ export default function KpiCards({ events, mode = 'all' }: KpiCardsProps) {
   const gridColsClass = 'xl:grid-cols-6';
 
   return (
-    <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 ${gridColsClass} gap-4 xl:gap-5`}>
+    <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 ${gridColsClass} gap-3 xl:gap-3.5`}>
       {/* Cuentas Abiertas */}
       {(mode === 'all' || mode === 'operativo') && (
-      <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex items-center justify-between">
+      <div className="bg-white rounded-xl p-3.5 xl:p-4 border border-slate-200/90 shadow-xs flex items-center justify-between hover:shadow-sm transition-shadow">
         <div>
-          <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Cuentas Abiertas</p>
-          <h3 className="text-2xl font-bold text-[#00205B] mt-1">{totalCuentas.toLocaleString('de-DE')}</h3>
-          <p className="text-xs text-gray-400 mt-1">Nuevas aperturas</p>
+          <p className="text-[10px] xl:text-[11px] font-bold text-slate-500 uppercase tracking-wider">Cuentas Abiertas</p>
+          <h3 className="text-xl xl:text-2xl font-black text-[#00205B] mt-0.5">{totalCuentas.toLocaleString('de-DE')}</h3>
+          <p className="text-[10px] text-slate-500 mt-0.5 font-semibold">Nuevas aperturas</p>
         </div>
-        <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-[#00205B]">
-          <Users className="w-6 h-6" />
+        <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center text-[#00205B] shrink-0">
+          <Users className="w-5 h-5" />
         </div>
       </div>
       )}
 
       {/* TDDs Entregadas */}
       {(mode === 'all' || mode === 'operativo') && (
-      <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex items-center justify-between">
+      <div className="bg-white rounded-xl p-3.5 xl:p-4 border border-slate-200/90 shadow-xs flex items-center justify-between hover:shadow-sm transition-shadow">
         <div>
-          <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">TDDs Entregadas</p>
-          <h3 className="text-2xl font-bold text-[#00205B] mt-1">{totalTdd.toLocaleString('de-DE')}</h3>
-          <p className="text-xs text-gray-400 mt-1">Tarjetas físicas</p>
+          <p className="text-[10px] xl:text-[11px] font-bold text-slate-500 uppercase tracking-wider">TDDs Entregadas</p>
+          <h3 className="text-xl xl:text-2xl font-black text-[#00205B] mt-0.5">{totalTdd.toLocaleString('de-DE')}</h3>
+          <p className="text-[10px] text-slate-500 mt-0.5 font-semibold">Tarjetas físicas</p>
         </div>
-        <div className="w-12 h-12 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600">
-          <CreditCard className="w-6 h-6" />
+        <div className="w-10 h-10 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600 shrink-0">
+          <CreditCard className="w-5 h-5" />
         </div>
       </div>
       )}
 
       {/* Otras Operaciones */}
       {(mode === 'all' || mode === 'operativo') && (
-      <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex items-center justify-between">
+      <div className="bg-white rounded-xl p-3.5 xl:p-4 border border-slate-200/90 shadow-xs flex items-center justify-between hover:shadow-sm transition-shadow">
         <div>
-          <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Otras Operaciones</p>
-          <h3 className="text-2xl font-bold text-[#00205B] mt-1">{totalOtrasOps.toLocaleString('de-DE')}</h3>
-          <p className="text-xs text-gray-400 mt-1">Gestiones secundarias</p>
+          <p className="text-[10px] xl:text-[11px] font-bold text-slate-500 uppercase tracking-wider">Otras Operaciones</p>
+          <h3 className="text-xl xl:text-2xl font-black text-[#00205B] mt-0.5">{totalOtrasOps.toLocaleString('de-DE')}</h3>
+          <p className="text-[10px] text-slate-500 mt-0.5 font-semibold">Gestiones secundarias</p>
         </div>
-        <div className="w-12 h-12 rounded-xl bg-purple-50 flex items-center justify-center text-purple-600">
-          <FileText className="w-6 h-6" />
+        <div className="w-10 h-10 rounded-lg bg-purple-50 flex items-center justify-center text-purple-600 shrink-0">
+          <FileText className="w-5 h-5" />
         </div>
       </div>
       )}
 
       {/* Promedios por Jornada */}
       {(mode === 'all' || mode === 'operativo') && (
-      <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex items-center justify-between">
+      <div className="bg-white rounded-xl p-3.5 xl:p-4 border border-slate-200/90 shadow-xs flex items-center justify-between hover:shadow-sm transition-shadow">
         <div>
-          <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Promedios por Jornada</p>
-          <h3 className="text-2xl font-bold text-[#00205B] mt-1">
-            {promedioCuentas} <span className="text-sm font-normal text-gray-400">Ctas</span> / {promedioTdd} <span className="text-sm font-normal text-gray-400">TDDs</span>
+          <p className="text-[10px] xl:text-[11px] font-bold text-slate-500 uppercase tracking-wider">Promedios por Jornada</p>
+          <h3 className="text-lg xl:text-xl font-black text-[#00205B] mt-0.5">
+            {promedioCuentas} <span className="text-xs font-normal text-slate-400">Ctas</span> / {promedioTdd} <span className="text-xs font-normal text-slate-400">TDDs</span>
           </h3>
-          <p className="text-xs text-gray-400 mt-1">Aperturas y entregas</p>
+          <p className="text-[10px] text-slate-500 mt-0.5 font-semibold">Aperturas y entregas</p>
         </div>
-        <div className="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600">
-          <BarChart2 className="w-6 h-6" />
+        <div className="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center text-amber-600 shrink-0">
+          <BarChart2 className="w-5 h-5" />
         </div>
       </div>
       )}
 
       {/* Operaciones ATM */}
       {(mode === 'all' || mode === 'operativo') && (
-      <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex items-center justify-between">
+      <div className="bg-white rounded-xl p-3.5 xl:p-4 border border-slate-200/90 shadow-xs flex items-center justify-between hover:shadow-sm transition-shadow">
         <div>
-          <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Operaciones ATM</p>
-          <h3 className="text-2xl font-bold text-[#00205B] mt-1">{totalAtm.toLocaleString('de-DE')}</h3>
-          <p className="text-xs text-gray-400 mt-1 font-medium">Operaciones procesadas</p>
+          <p className="text-[10px] xl:text-[11px] font-bold text-slate-500 uppercase tracking-wider">Operaciones ATM</p>
+          <h3 className="text-xl xl:text-2xl font-black text-[#00205B] mt-0.5">{totalAtm.toLocaleString('de-DE')}</h3>
+          <p className="text-[10px] text-slate-500 mt-0.5 font-semibold">Operaciones procesadas</p>
         </div>
-        <div className="w-12 h-12 rounded-xl bg-orange-50 flex items-center justify-center text-[#FE5000]">
-          <CreditCard className="w-6 h-6" />
+        <div className="w-10 h-10 rounded-lg bg-orange-50 flex items-center justify-center text-[#FE5000] shrink-0">
+          <CreditCard className="w-5 h-5" />
         </div>
       </div>
       )}
 
       {/* Venta de POS */}
       {(mode === 'all' || mode === 'operativo') && (
-      <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex items-center justify-between">
+      <div className="bg-white rounded-xl p-3.5 xl:p-4 border border-slate-200/90 shadow-xs flex items-center justify-between hover:shadow-sm transition-shadow">
         <div>
-          <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Venta de POS</p>
-          <h3 className="text-2xl font-bold text-[#00205B] mt-1">{totalVentaPos.toLocaleString('de-DE')}</h3>
-          <p className="text-xs text-gray-400 mt-1 font-medium">Equipos comercializados</p>
+          <p className="text-[10px] xl:text-[11px] font-bold text-slate-500 uppercase tracking-wider">Venta de POS</p>
+          <h3 className="text-xl xl:text-2xl font-black text-[#00205B] mt-0.5">{totalVentaPos.toLocaleString('de-DE')}</h3>
+          <p className="text-[10px] text-slate-500 mt-0.5 font-semibold">Equipos comercializados</p>
         </div>
-        <div className="w-12 h-12 rounded-xl bg-teal-50 flex items-center justify-center text-teal-600">
-          <DollarSign className="w-6 h-6" />
+        <div className="w-10 h-10 rounded-lg bg-teal-50 flex items-center justify-center text-teal-600 shrink-0">
+          <DollarSign className="w-5 h-5" />
         </div>
       </div>
       )}
 
       {/* 1. Saldo Total Captado (USD) */}
       {(mode === 'all' || mode === 'financiero') && (
-      <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex items-center justify-between">
+      <div className="bg-white rounded-xl p-3.5 xl:p-4 border border-slate-200/90 shadow-xs flex items-center justify-between hover:shadow-sm transition-shadow">
         <div>
-          <p className="text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap truncate" title="Total Saldos al Cierre">
+          <p className="text-[10px] xl:text-[11px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap truncate" title="Total Saldos al Cierre">
             Total Saldos al Cierre
           </p>
-          <h3 className="text-2xl font-bold text-emerald-600 mt-1">
+          <h3 className="text-xl xl:text-2xl font-black text-emerald-600 mt-0.5">
             ${totalSaldoUsd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </h3>
-          <p className="text-xs text-gray-400 mt-1">Convertido Tasa Prom. BCV</p>
+          <p className="text-[10px] text-slate-500 mt-0.5 font-semibold">Convertido Tasa Prom. BCV</p>
         </div>
-        <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600">
-          <DollarSign className="w-6 h-6" />
+        <div className="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600 shrink-0">
+          <DollarSign className="w-5 h-5" />
         </div>
       </div>
       )}
 
       {/* 2. Saldo Promedio por Cuenta (USD) */}
       {(mode === 'all' || mode === 'financiero') && (
-      <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex items-center justify-between">
+      <div className="bg-white rounded-xl p-3.5 xl:p-4 border border-slate-200/90 shadow-xs flex items-center justify-between hover:shadow-sm transition-shadow">
         <div>
-          <p className="text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap truncate" title="Saldo Prom. Cuenta">
+          <p className="text-[10px] xl:text-[11px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap truncate" title="Saldo Prom. Cuenta">
             Saldo Prom. Cuenta
           </p>
-          <h3 className="text-2xl font-bold text-emerald-600 mt-1">
+          <h3 className="text-xl xl:text-2xl font-black text-emerald-600 mt-0.5">
             ${promedioSaldoCuenta.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </h3>
-          <p className="text-xs text-gray-400 mt-1">Total Saldo / Cuentas</p>
+          <p className="text-[10px] text-slate-500 mt-0.5 font-semibold">Total Saldo / Cuentas</p>
         </div>
-        <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600">
-          <TrendingUp className="w-6 h-6" />
+        <div className="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600 shrink-0">
+          <TrendingUp className="w-5 h-5" />
         </div>
       </div>
       )}
 
       {/* 3. Costo Operativo Total (USD) */}
       {(mode === 'all' || mode === 'financiero') && (
-      <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex items-center justify-between">
+      <div className="bg-white rounded-xl p-3.5 xl:p-4 border border-slate-200/90 shadow-xs flex items-center justify-between hover:shadow-sm transition-shadow">
         <div>
-          <p className="text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap truncate" title="Gastos Operativos">
+          <p className="text-[10px] xl:text-[11px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap truncate" title="Gastos Operativos">
             Gastos Operativos
           </p>
-          <h3 className="text-2xl font-bold text-[#00205B] mt-1">
+          <h3 className="text-xl xl:text-2xl font-black text-[#00205B] mt-0.5">
             ${totalCostosUsd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </h3>
-          <p className="text-xs text-gray-400 mt-1">Viáticos & Gastos Esp.</p>
+          <p className="text-[10px] text-slate-500 mt-0.5 font-semibold">Viáticos & Gastos Esp.</p>
         </div>
-        <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-[#00205B]">
-          <CreditCard className="w-6 h-6" />
+        <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center text-[#00205B] shrink-0">
+          <CreditCard className="w-5 h-5" />
         </div>
       </div>
       )}
 
       {/* 4. Gasto Promedio Mensual (USD) */}
       {(mode === 'all' || mode === 'financiero') && (
-      <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex items-center justify-between">
+      <div className="bg-white rounded-xl p-3.5 xl:p-4 border border-slate-200/90 shadow-xs flex items-center justify-between hover:shadow-sm transition-shadow">
         <div>
-          <p className="text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap truncate" title="Gasto Prom. Mensual">
+          <p className="text-[10px] xl:text-[11px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap truncate" title="Gasto Prom. Mensual">
             Gasto Prom. Mensual
           </p>
-          <h3 className="text-2xl font-bold text-[#00205B] mt-1">
+          <h3 className="text-xl xl:text-2xl font-black text-[#00205B] mt-0.5">
             ${promedioGastoMensual.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </h3>
-          <p className="text-xs text-gray-400 mt-1">&nbsp;</p>
+          <p className="text-[10px] text-slate-500 mt-0.5 font-semibold">&nbsp;</p>
         </div>
-        <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-[#00205B]">
-          <CalendarDays className="w-6 h-6" />
+        <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center text-[#00205B] shrink-0">
+          <CalendarDays className="w-5 h-5" />
         </div>
       </div>
       )}
 
       {/* 5. Gasto Promedio por Jornada (USD) */}
       {(mode === 'all' || mode === 'financiero') && (
-      <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex items-center justify-between">
+      <div className="bg-white rounded-xl p-3.5 xl:p-4 border border-slate-200/90 shadow-xs flex items-center justify-between hover:shadow-sm transition-shadow">
         <div>
-          <p className="text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap truncate" title="Gasto Prom. Jornada">
+          <p className="text-[10px] xl:text-[11px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap truncate" title="Gasto Prom. Jornada">
             Gasto Prom. Jornada
           </p>
-          <h3 className="text-2xl font-bold text-[#00205B] mt-1">
+          <h3 className="text-xl xl:text-2xl font-black text-[#00205B] mt-0.5">
             ${promedioGastoJornada.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </h3>
-          <p className="text-xs text-gray-400 mt-1">Viáticos por jornada móvil</p>
+          <p className="text-[10px] text-slate-500 mt-0.5 font-semibold">Viáticos por jornada móvil</p>
         </div>
-        <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-[#00205B]">
-          <Receipt className="w-6 h-6" />
+        <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center text-[#00205B] shrink-0">
+          <Receipt className="w-5 h-5" />
         </div>
       </div>
       )}
 
       {/* 6. Margen Operativo Global (USD) - Cierre Ejecutivo */}
       {(mode === 'all' || mode === 'financiero') && (
-      <div className="bg-[#00205B] rounded-2xl p-5 text-white shadow-sm flex items-center justify-between">
+      <div className="bg-[#00205B] rounded-xl p-3.5 xl:p-4 text-white shadow-xs flex items-center justify-between">
         <div>
-          <p className="text-xs font-medium text-blue-200 uppercase tracking-wider whitespace-nowrap truncate" title="Margen Est. (USD)">
+          <p className="text-[10px] xl:text-[11px] font-bold text-blue-200 uppercase tracking-wider whitespace-nowrap truncate" title="Margen Est. (USD)">
             Margen Est. (USD)
           </p>
-          <h3 className="text-2xl font-bold text-white mt-1">
+          <h3 className="text-xl xl:text-2xl font-black text-white mt-0.5">
             ${totalMargenUsd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </h3>
-          <p className="text-xs text-blue-300 mt-1">
+          <p className="text-[10px] text-blue-300 mt-0.5 font-medium">
             Saldo Total - Gastos
           </p>
         </div>
-        <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center text-white">
-          <DollarSign className="w-6 h-6 text-[#FE5000]" />
+        <div className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center text-white shrink-0">
+          <DollarSign className="w-5 h-5 text-[#FE5000]" />
         </div>
       </div>
       )}

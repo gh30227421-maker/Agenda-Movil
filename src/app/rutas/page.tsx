@@ -1,19 +1,18 @@
 import React from 'react';
 import { Radar } from 'lucide-react';
-import PresentationMode from '@/components/ui/PresentationMode';
 import SystemStatus from '@/components/ui/SystemStatus';
 import RutasDashboardClient from '@/components/rutas/RutasDashboardClient';
 
 export const metadata = {
-  title: 'Monitoreo Territorial | Impacto Corporativo',
+  title: 'Monitoreo Móvil | Impacto Corporativo',
 };
 
 export default function RutasPage() {
   return (
-    <div className="relative z-10 flex flex-col w-full h-full text-[#00205B] overflow-visible [.presentation-mode-active_&]:pb-0 pb-20">
+    <div className="relative z-10 flex flex-col w-full h-full text-[#00205B] overflow-visible pb-12">
       
       {/* Fondo Gradiente + Malla de Puntos Financiera */}
-      <div className="absolute inset-0 bg-gradient-to-b from-gray-50 via-slate-100 to-white" />
+      <div className="absolute inset-0 bg-gradient-to-b from-slate-100 via-slate-100/80 to-slate-200/50" />
       <div 
         className="absolute inset-0 opacity-[0.35]"
         style={{
@@ -22,18 +21,18 @@ export default function RutasPage() {
         }}
       />
       
-      {/* Hero Section Rediseñada (Centro de Comando) */}
-      <div className="relative w-full mb-6 animate-in fade-in slide-in-from-top-4 duration-1000 z-50 [.presentation-mode-active_&]:fixed [.presentation-mode-active_&]:top-28 [.presentation-mode-active_&]:left-0 [.presentation-mode-active_&]:w-full [.presentation-mode-active_&]:bg-white/95 [.presentation-mode-active_&]:backdrop-blur-md [.presentation-mode-active_&]:border-slate-100 [.presentation-mode-active_&]:py-4 [.presentation-mode-active_&]:px-6 [.presentation-mode-active_&]:mb-0">
-        <div className="flex flex-col md:flex-row md:items-center gap-4 max-w-[1920px] mx-auto">
-          <div className="flex items-center gap-3">
-            <Radar className="w-10 h-10 md:w-12 md:h-12 text-[#00205B]" />
-            <h1 className="text-4xl md:text-5xl font-black tracking-tight">
-              <span className="text-[#00205B]">Monitoreo</span> <span className="text-[#FE5000]">Territorial</span>
+      {/* Hero Section Compacta y Ejecutiva (Centro de Comando) */}
+      <div className="relative w-full mb-2.5 max-w-[1920px] mx-auto px-4 sm:px-6 md:px-8 z-30">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2.5">
+            <Radar className="w-6 h-6 sm:w-8 sm:h-8 text-[#00205B]" />
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight leading-none">
+              <span className="text-[#00205B]">Monitoreo</span> <span className="text-[#FE5000]">Móvil</span>
             </h1>
           </div>
           
-          <div className="md:ml-auto flex items-center gap-4">
-            <div className="bg-slate-900/5 rounded-full px-4 py-1.5 flex items-center gap-2 border border-slate-200/50 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="bg-white/80 backdrop-blur-md rounded-full px-3.5 py-1 flex items-center gap-2 border border-slate-200/70 shadow-xs">
               <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.8)]" />
               <SystemStatus />
             </div>
@@ -41,14 +40,10 @@ export default function RutasPage() {
         </div>
       </div>
       
-      {/* Secciones Continuas e Interactivas (Client Wrapper) */}
-      <div 
-        id="tv-scroll-container" 
-        className="w-full flex flex-col relative z-10"
-      >
+      {/* Secciones Continuas e Interactivas (Client Wrapper con Modo Presentación Integrado) */}
+      <div className="w-full flex flex-col relative z-10">
         <RutasDashboardClient />
       </div>
-      <PresentationMode />
     </div>
   );
 }

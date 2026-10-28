@@ -165,40 +165,62 @@ export default function RentabilidadRegionChart({ events, agencies = [] }: Renta
             >
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F3F4F6" />
               
-              {/* Eje X: Regiones */}
+              {/* Eje X: Regiones con Tick Dual (Nombre de Región + Efectividad Neta debajo) */}
               <XAxis 
                 dataKey="region" 
-                tick={{ fontSize: 11, fontWeight: 700, fill: '#1F2937' }} 
+                height={55}
                 interval={0}
-                angle={-30}
-                textAnchor="end"
-                height={80}
-                dy={10}
                 tickLine={false}
                 axisLine={{ stroke: '#E5E7EB' }}
+                tick={(props: any) => {
+                  const { x, y, payload } = props;
+                  const item = data.find(d => d.region === payload.value);
+                  const rentabilidad = item?.rentabilidadUsd ?? 0;
+                  const prefix = rentabilidad >= 0 ? '+' : '';
+                  const formattedVal = `${prefix}$${Math.round(rentabilidad).toLocaleString('en-US')}`;
+                  const isNegative = rentabilidad < 0;
+
+                  return (
+                    <g transform={`translate(${x},${y})`}>
+                      <text
+                        x={0}
+                        y={14}
+                        textAnchor="middle"
+                        fontSize={11}
+                        fontWeight="bold"
+                        fill="#374151"
+                      >
+                        {payload.value}
+                      </text>
+                      <text
+                        x={0}
+                        y={29}
+                        textAnchor="middle"
+                        fontSize={11}
+                        fontWeight="800"
+                        fill={isNegative ? '#DC2626' : '#00205C'}
+                      >
+                        {formattedVal}
+                      </text>
+                    </g>
+                  );
+                }}
               />
 
-              {/* Eje Y Izquierdo: Rentabilidad Neta en USD */}
+              {/* Ejes Y ocultos en ambos lados para eliminar confusión de escalas (los montos se leen claros en el eje X y los operativos en los círculos naranjas) */}
               <YAxis 
                 yAxisId="left"
                 type="number" 
+                hide={true}
                 domain={[minRentabilidad, maxRentabilidad]}
-                tick={{ fontSize: 12, fill: '#6B7280' }} 
-                tickFormatter={(val) => `$${val >= 1000 ? `${(val / 1000).toFixed(0)}k` : val <= -1000 ? `${(val / 1000).toFixed(0)}k` : val}`}
-                axisLine={false}
-                tickLine={false}
               />
 
-              {/* Eje Y Derecho: Número de Operativos */}
               <YAxis 
                 yAxisId="right"
                 orientation="right"
                 type="number" 
+                hide={true}
                 domain={[0, maxOperativos]}
-                allowDecimals={false}
-                tick={{ fontSize: 12, fill: '#FE5000', fontWeight: 600 }} 
-                axisLine={false}
-                tickLine={false}
               />
 
               <Tooltip 
@@ -218,6 +240,16 @@ export default function RentabilidadRegionChart({ events, agencies = [] }: Renta
                             <span className="text-gray-300">Gasto Total:</span> 
                             <span className="font-bold text-[#FFA07A] text-[13px]">${p.gastoUsd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                           </div>
+                          <div className="flex justify-between items-center gap-4 pt-1.5 border-t border-white/10">
+                            <span className="text-blue-200">Efectividad Neta:</span> 
+                            <span className="font-black text-white text-[13px]">
+                              {p.rentabilidadUsd >= 0 ? '+' : ''}${p.rentabilidadUsd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center gap-4">
+                            <span className="text-orange-300 font-semibold">Operativos:</span> 
+                            <span className="font-black text-[#FE5000] text-[13px]">{p.eventCount} operativos</span>
+                          </div>
                         </div>
                       </div>
                     );
@@ -232,7 +264,7 @@ export default function RentabilidadRegionChart({ events, agencies = [] }: Renta
                 wrapperStyle={{ fontSize: '12px', paddingBottom: '15px' }} 
               />
 
-              {/* Columnas: Rentabilidad Neta (Azul BNC) */}
+              {/* Columnas: Rentabilidad Neta sólidas y limpias sin texto repetido en la cima */}
               <Bar 
                 yAxisId="left"
                 dataKey="rentabilidadUsd" 
@@ -240,21 +272,7 @@ export default function RentabilidadRegionChart({ events, agencies = [] }: Renta
                 fill="#00205C" 
                 radius={[6, 6, 0, 0]} 
                 barSize={44}
-              >
-                <LabelList 
-                  dataKey="rentabilidadUsd" 
-                  position="top" 
-                  offset={10}
-                  formatter={(val: any) => {
-                    const num = Number(val);
-                    const prefix = num >= 0 ? '+' : '';
-                    return `${prefix}$${num.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
-                  }} 
-                  fill="#00205C" 
-                  fontSize={12} 
-                  fontWeight="bold" 
-                />
-              </Bar>
+              />
 
               {/* Línea Superpuesta: Número de Operativos con Puntos Naranjas Destacados */}
               <Line 

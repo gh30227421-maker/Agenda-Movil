@@ -96,7 +96,7 @@ export default function CostosCategoriasChart({ events }: CostosCategoriasChartP
                 return <text x={x + width / 2} y={y + height / 2 + 4} fill="#FFFFFF" fontSize={14} fontWeight="bold" textAnchor="middle">{textVal}</text>;
               }} />
             </Bar>
-            <Bar dataKey="Unidad Móvil" stackId="a" fill="#426095" radius={[0, 4, 4, 0]} barSize={24}>
+            <Bar dataKey="Unidad Móvil" stackId="a" fill="#FE5000" radius={[0, 4, 4, 0]} barSize={24}>
               <LabelList dataKey="Unidad Móvil" content={(props: any) => {
                 const { x, y, width, height, value } = props;
                 if (!value || value === 0) return null;
