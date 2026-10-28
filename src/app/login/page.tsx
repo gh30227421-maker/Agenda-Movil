@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
-import { Lock, Mail, ArrowRight, Truck, Wifi, Unlock, AlertCircle, X } from 'lucide-react';
+import { Lock, Mail, ArrowRight, ShieldCheck, Eye, EyeOff, AlertCircle, X } from 'lucide-react';
 import { Plus_Jakarta_Sans } from 'next/font/google';
 import Loader from '@/components/ui/Loader';
 
@@ -15,6 +15,8 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
+  const [showSupportModal, setShowSupportModal] = useState(false);
   const [isSuccessTransition, setIsSuccessTransition] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -29,11 +31,28 @@ export default function LoginPage() {
       router.push('/');
     }
 
+    // Cargar correo recordado si existe
+    if (typeof window !== 'undefined') {
+      const savedEmail = localStorage.getItem('bnc_remembered_email');
+      if (savedEmail) {
+        setEmail(savedEmail);
+        setRememberMe(true);
+      }
+    }
+
     const hour = new Date().getHours();
     if (hour < 12) setGreeting('Buenos días');
     else if (hour < 19) setGreeting('Buenas tardes');
     else setGreeting('Buenas noches');
   }, [user, router]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setShowSupportModal(false);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,13 +75,19 @@ export default function LoginPage() {
       }
 
       if (data.user) {
-        // ACTUALIZACIÓN AUTOMÁTICA DEL ÚLTIMO ACCESO
+        // Guardar o limpiar preferencia de recordar correo
+        if (typeof window !== 'undefined') {
+          if (rememberMe) {
+            localStorage.setItem('bnc_remembered_email', email);
+          } else {
+            localStorage.removeItem('bnc_remembered_email');
+          }
+        }
+
+        // 1. Actualización automática de último acceso
         await supabase.auth.updateUser({
           data: { ultimo_acceso: new Date().toISOString() }
         });
-
-        // El control de sesión única (user_sessions) ahora es delegado a AuthContext
-        // para evitar condiciones de carrera.
 
         // 2. Registrar la actividad de login
         await supabase.from('user_activity_logs').insert({
@@ -72,19 +97,17 @@ export default function LoginPage() {
           device_info: typeof window !== 'undefined' ? navigator.userAgent : 'Desconocido'
         });
 
-        // El éxito se puede mantener en el toast normal ya que es una transición positiva
         showToast('Inicio de sesión exitoso', 'success');
         
         setIsSuccessTransition(true);
         setTimeout(() => {
           router.push('/');
-        }, 2500);
+        }, 2200);
       }
     } catch (error: any) {
       console.error('Error logging in:', error);
       
       let msg = error.message;
-      // Mapeo de errores de Supabase al español
       if (msg === 'Invalid login credentials') {
         msg = 'Correo o contraseña incorrectos.';
       } else if (msg === 'Email not confirmed') {
@@ -105,7 +128,6 @@ export default function LoginPage() {
     }
   };
 
-  // Si ya hay usuario, no mostramos el login (evita destello mientras redirige)
   if (user) return null;
 
   if (isSuccessTransition) {
@@ -117,93 +139,101 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#001A45] p-4 sm:p-8">
+    <div className={`fixed inset-0 z-50 w-full h-full flex flex-col lg:flex-row bg-white overflow-y-auto lg:overflow-hidden ${plusJakarta.className}`}>
       
       {/* Mensaje de Error Centralizado Flotante */}
       {errorMessage && (
-        <div className="fixed top-8 left-1/2 -translate-x-1/2 z-[100] w-[90%] max-w-md animate-in fade-in slide-in-from-top-4 duration-300">
-          <div className="bg-red-500/95 backdrop-blur-md text-white px-6 py-4 rounded-2xl shadow-2xl shadow-red-500/20 border border-red-400/50 flex items-center gap-4">
-            <AlertCircle className="w-6 h-6 shrink-0 text-white" />
-            <p className="font-bold text-sm flex-1 tracking-wide leading-tight">{errorMessage}</p>
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[100] w-[90%] max-w-md animate-in fade-in slide-in-from-top-4 duration-300">
+          <div className="bg-red-500/95 backdrop-blur-md text-white px-5 py-3.5 rounded-2xl shadow-2xl shadow-red-500/25 border border-red-400/50 flex items-center gap-3">
+            <AlertCircle className="w-5 h-5 shrink-0 text-white" />
+            <p className="font-bold text-xs sm:text-sm flex-1 tracking-wide leading-tight">{errorMessage}</p>
             <button 
               type="button"
               onClick={() => setErrorMessage('')}
               className="p-1 hover:bg-red-600/80 rounded-full transition-colors shrink-0"
               title="Cerrar mensaje"
             >
-              <X className="w-5 h-5 text-white/90" />
+              <X className="w-4 h-4 text-white/90" />
             </button>
           </div>
         </div>
       )}
 
-      <div className={`w-full max-w-[500px] bg-[#001A45] md:bg-[#00205B] rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-white/5 overflow-hidden relative z-10 flex flex-col ${plusJakarta.className}`}>
-          
-          {/* Header Decorativo */}
-          <div className="bg-[#00205B] pt-14 pb-10 px-8 md:px-10 text-center relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-3xl translate-x-10 -translate-y-10"></div>
-            <div className="absolute bottom-0 left-0 w-24 h-24 bg-[#FE5000]/10 rounded-full blur-2xl -translate-x-5 translate-y-5"></div>
-            
-            <div className="relative z-10 flex flex-col items-center">
-              <div className="relative flex items-center justify-center w-full h-40 flex-shrink-0 mb-6">
-                <img src="/unidad movil.png" alt="Unidad Móvil" className="w-56 h-auto object-contain drop-shadow-[0_15px_25px_rgba(0,0,0,0.4)] hover:scale-105 transition-transform duration-500 relative z-20" />
-              </div>
-              <div className="flex flex-col text-center relative z-20">
-                <h1 className="text-4xl md:text-5xl font-extrabold tracking-wide text-white font-[family-name:var(--font-montserrat)] uppercase leading-tight drop-shadow-md whitespace-nowrap mb-2">
-                  Agenda Móvil
-                </h1>
-                <h2 className="text-xl md:text-2xl font-semibold text-white/90">
-                  Inicio de sesión
-                </h2>
-                <div className="mt-2 text-sm md:text-base text-white font-medium">
-                  {greeting ? (
-                    <>
-                      <span className="block mb-1 text-white/90">¡{greeting}, <strong className="text-white font-bold">Bienvenido</strong>!</span>
-                      <span className="block text-blue-200/60 text-sm font-normal mt-1">Ingrese sus credenciales</span>
-                    </>
-                  ) : (
-                    <span className="block text-blue-200/60 text-sm font-normal mt-1">Ingrese sus credenciales</span>
-                  )}
-                </div>
-              </div>
+      {/* Lado Izquierdo: Formulario de Login */}
+      <div className="w-full lg:w-1/2 min-h-screen flex flex-col justify-between p-6 sm:p-10 lg:p-14 xl:p-16 bg-white z-10">
+        
+        {/* Cabecera Superior */}
+        <div className="flex items-center justify-between pb-6 border-b border-slate-100">
+          {/* Logo BNC + Separador + Oficina Móvil */}
+          <div className="flex items-center">
+            <img 
+              src="/bnc-logo.png" 
+              alt="BNC" 
+              className="h-10 sm:h-12 w-auto object-contain drop-shadow-xs" 
+            />
+            <div className="h-8 w-[1.5px] bg-slate-200 mx-3 sm:mx-4" />
+            <div className="flex flex-col">
+              <span className="text-[11px] sm:text-xs font-black tracking-widest text-[#00205B] leading-tight uppercase">
+                OFICINA
+              </span>
+              <span className="text-[11px] sm:text-xs font-black tracking-widest text-[#00205B] leading-tight uppercase">
+                MÓVIL
+              </span>
             </div>
           </div>
 
-          {/* Formulario */}
-          <div className="p-8 md:px-10 bg-[#001A45] md:bg-[#00205B]">
-          <form onSubmit={handleLogin} className="space-y-6">
+          {/* Subtítulos Organizacionales a la Derecha */}
+          <div className="text-right">
+            <span className="block text-[10px] sm:text-[11px] font-extrabold tracking-wider text-[#00205B] uppercase leading-tight">
+              VPE. BANCA COMERCIAL
+            </span>
+            <span className="block text-[8px] sm:text-[9.5px] font-bold text-slate-400 tracking-wider uppercase leading-tight mt-0.5">
+              VP. ADMINISTRACIÓN DE AGENCIAS
+            </span>
+          </div>
+        </div>
+
+        {/* Formulario Central */}
+        <div className="w-full max-w-[430px] mx-auto my-auto py-8 lg:py-10">
+          <div className="mb-8">
+            <h1 className="text-3xl sm:text-4xl font-black text-[#00205B] tracking-tight mb-2">
+              Agenda Móvil
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-500 font-medium">
+              ¡{greeting || 'Bienvenido'}, <strong className="text-slate-800 font-bold">Bienvenido</strong>! Ingrese sus credenciales para acceder.
+            </p>
+          </div>
+
+          <form onSubmit={handleLogin} className="space-y-5">
+            {/* Campo Correo */}
             <div>
-              <label className="block text-sm font-semibold text-blue-100 mb-2">Correo Electrónico</label>
+              <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-2">
+                CORREO ELECTRÓNICO
+              </label>
               <div className="relative">
-                <div className="absolute inset-y-0 start-0 flex items-center ps-3.5 pointer-events-none">
-                  <Mail className="w-5 h-5 text-blue-300/70" />
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                  <Mail className="w-4 h-4 text-slate-400" />
                 </div>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="bg-[#00153B] border border-white/10 text-white text-sm rounded-xl focus:ring-[#FE5000] focus:border-[#FE5000] block w-full ps-11 p-3.5 transition-colors placeholder-blue-300/40"
-                  placeholder="usuario@gmail.com"
+                  className="w-full bg-[#F8FAFC] border border-slate-200 focus:border-[#FE5000] focus:bg-white focus:ring-4 focus:ring-[#FE5000]/10 rounded-xl py-3 pl-10 pr-4 text-xs sm:text-sm text-slate-800 placeholder:text-slate-400 transition-all outline-none font-medium"
+                  placeholder="usuario@bnc.com.ve"
                   required
                 />
               </div>
             </div>
 
+            {/* Campo Contraseña */}
             <div>
-              <label className="block text-sm font-semibold text-blue-100 mb-2">Contraseña</label>
+              <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-2">
+                CONTRASEÑA
+              </label>
               <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 start-0 flex items-center ps-3.5 cursor-pointer group z-10"
-                  title={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
-                >
-                  {showPassword ? (
-                    <Unlock className="w-5 h-5 text-blue-300/70 group-hover:text-[#FE5000] transition-colors" />
-                  ) : (
-                    <Lock className="w-5 h-5 text-blue-300/70 group-hover:text-[#FE5000] transition-colors" />
-                  )}
-                </button>
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                  <Lock className="w-4 h-4 text-slate-400" />
+                </div>
                 <input
                   type={showPassword ? "text" : "password"}
                   value={password}
@@ -211,39 +241,213 @@ export default function LoginPage() {
                     setPassword(e.target.value);
                     if (errorMessage) setErrorMessage('');
                   }}
-                  className="bg-[#00153B] border border-white/10 text-white text-sm rounded-xl focus:ring-[#FE5000] focus:border-[#FE5000] block w-full ps-11 p-3.5 transition-colors placeholder-blue-300/40"
+                  className="w-full bg-[#F8FAFC] border border-slate-200 focus:border-[#FE5000] focus:bg-white focus:ring-4 focus:ring-[#FE5000]/10 rounded-xl py-3 pl-10 pr-10 text-xs sm:text-sm text-slate-800 placeholder:text-slate-400 transition-all outline-none font-medium"
                   placeholder="••••••••"
                   required
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 cursor-pointer transition-colors"
+                  title={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
             </div>
 
+            {/* Fila Recordar Usuario y Acceso SSL */}
+            <div className="flex items-center justify-between pt-0.5">
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="w-4 h-4 rounded border-slate-300 text-[#FE5000] focus:ring-[#FE5000] cursor-pointer accent-[#FE5000]"
+                />
+                <span className="text-xs text-slate-600 font-medium">Recordar usuario</span>
+              </label>
+
+              <div className="flex items-center gap-1 text-xs text-[#009639] font-bold">
+                <ShieldCheck className="w-4 h-4 text-[#009639]" />
+                <span>Acceso Seguro SSL</span>
+              </div>
+            </div>
+
+            {/* Botón de Iniciar Sesión Naranja BNC */}
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full flex items-center justify-center gap-2 text-white bg-[#FE5000] hover:bg-[#e04700] focus:ring-4 focus:outline-none focus:ring-[#FE5000]/30 font-bold rounded-xl text-sm px-5 py-3.5 text-center shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed group"
+              className="w-full bg-[#FE5000] hover:bg-[#E04700] active:scale-[0.99] text-white font-extrabold py-3.5 px-6 rounded-xl shadow-lg shadow-[#FE5000]/25 flex items-center justify-center gap-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer group mt-2"
             >
               {isSubmitting ? (
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
               ) : (
                 <>
-                  Iniciar Sesión
+                  <span className="text-sm">Iniciar Sesión</span>
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </>
               )}
             </button>
           </form>
 
-          <div className="mt-8 text-center border-t border-white/10 pt-6 flex flex-col gap-2">
-            <p className="text-xs text-blue-200/60 font-medium">
-              Uso exclusivo para personal autorizado.
-            </p>
-            <p className="text-[11px] text-blue-200/40 font-medium tracking-wide">
-              © 2026 Agenda Móvil - Todos los derechos reservados.
-            </p>
+          {/* Enlace Soporte */}
+          <div className="text-center pt-5">
+            <button 
+              type="button"
+              onClick={() => setShowSupportModal(true)}
+              className="text-xs text-slate-500 hover:text-[#00205B] font-semibold transition-colors cursor-pointer"
+            >
+              ¿Problemas para acceder? Contactar a Soporte
+            </button>
           </div>
         </div>
+
+        {/* Pie de Página */}
+        <div className="pt-6 border-t border-slate-100 text-center space-y-1">
+          <p className="text-[11px] text-slate-500 font-medium">
+            Uso exclusivo y confidencial de la VP. Administración de Agencias.
+          </p>
+          <p className="text-[10px] text-slate-400 font-normal">
+            © 2026 Agenda Móvil - Todos los derechos reservados.
+          </p>
+        </div>
+
       </div>
+
+      {/* Lado Derecho: Showcase Visual de la Unidad Móvil */}
+      <div className="hidden lg:flex lg:w-1/2 min-h-screen bg-gradient-to-br from-[#F8FAFC] via-[#F1F5F9] to-[#E2E8F0]/40 border-l border-slate-200/80 flex-col items-center justify-center p-12 xl:p-16 relative overflow-hidden">
+        
+        {/* Marca de Agua BNC de Fondo */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none overflow-hidden opacity-[0.035]">
+          <img 
+            src="/bnc-logo.png" 
+            alt="" 
+            className="w-[125%] max-w-[680px] grayscale object-contain" 
+          />
+        </div>
+
+        {/* Resplandores Ambientales Suaves */}
+        <div className="absolute top-1/4 right-1/4 w-80 h-80 bg-[#00205B]/5 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-1/4 left-1/4 w-80 h-80 bg-[#FE5000]/5 rounded-full blur-3xl pointer-events-none" />
+
+        {/* Showcase Central */}
+        <div className="relative z-10 flex flex-col items-center text-center max-w-lg w-full">
+          
+          {/* Imagen de la Unidad Móvil con Sombra y Efecto Flotante */}
+          <div className="relative mb-10 group">
+            <div className="absolute -inset-6 bg-gradient-to-tr from-[#00205B]/15 via-transparent to-[#FE5000]/15 rounded-full blur-3xl opacity-70 group-hover:opacity-100 transition-opacity duration-700" />
+            <img
+              src="/unidad movil.png"
+              alt="Unidad Móvil BNC"
+              className="relative z-10 w-80 sm:w-96 lg:w-[440px] xl:w-[480px] h-auto object-contain drop-shadow-[0_25px_40px_rgba(0,32,91,0.22)] transition-transform duration-700 hover:scale-[1.03]"
+            />
+          </div>
+          
+          <h3 className="text-2xl sm:text-3xl font-black text-[#00205B] tracking-tight">
+            Despliegue Operativo BNC
+          </h3>
+          <p className="text-xs sm:text-sm text-slate-500 font-medium mt-2.5 max-w-md leading-relaxed">
+            Monitoreo, control de rutas y gestión integral de operaciones móviles a nivel nacional.
+          </p>
+
+          <div className="mt-8 flex items-center gap-2.5 px-4 py-2 bg-white/90 backdrop-blur-md border border-slate-200/80 rounded-full shadow-xs">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#009639] animate-pulse" />
+            <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+              Sistema Operativo en Línea
+            </span>
+          </div>
+
+        </div>
+
+      </div>
+
+      {/* Modal Flotante de Soporte */}
+      {showSupportModal && (
+        <div 
+          className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-in fade-in duration-200"
+          onClick={() => setShowSupportModal(false)}
+        >
+          <div 
+            className="bg-white rounded-3xl p-6 sm:p-7 shadow-2xl max-w-sm w-full border border-slate-100 relative animate-in zoom-in-95 duration-200 select-none"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header del Modal */}
+            <div className="flex items-start justify-between mb-1">
+              <div>
+                <h3 className="text-xl font-extrabold text-[#00205B] tracking-tight">
+                  Soporte
+                </h3>
+                <p className="text-xs text-slate-500 font-medium mt-1">
+                  Seleccione el canal de su preferencia:
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowSupportModal(false)}
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-full hover:bg-slate-100 transition-colors cursor-pointer"
+                title="Cerrar"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Opciones de Contacto */}
+            <div className="mt-5 space-y-3">
+              {/* Opción 1: WhatsApp Directo */}
+              <a
+                href="https://wa.me/584123992401?text=Hola%2C%20necesito%20soporte%20para%20el%20acceso%20a%20la%20Agenda%20M%C3%B3vil%20BNC"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full flex items-center justify-between p-3.5 rounded-2xl border border-emerald-200/80 bg-emerald-50/30 hover:bg-emerald-50/80 hover:border-emerald-300 transition-all duration-200 group shadow-2xs cursor-pointer"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-full bg-[#00D757] flex items-center justify-center text-white shadow-xs shrink-0 group-hover:scale-105 transition-transform">
+                    <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24">
+                      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.889-9.885 9.889m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+                    </svg>
+                  </div>
+                  <div className="text-left">
+                    <h4 className="text-sm font-bold text-slate-800 group-hover:text-emerald-700 transition-colors">
+                      WhatsApp Directo
+                    </h4>
+                    <span className="text-xs text-slate-500 font-medium">
+                      +58 412-3992401
+                    </span>
+                  </div>
+                </div>
+                <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                  Rápido
+                </span>
+              </a>
+
+              {/* Opción 2: Correo Electrónico */}
+              <a
+                href="mailto:gh30227421@gmail.com?subject=Soporte%20Acceso%20-%20Agenda%20M%C3%B3vil%20BNC"
+                className="w-full flex items-center justify-between p-3.5 rounded-2xl border border-blue-200/80 bg-blue-50/20 hover:bg-blue-50/70 hover:border-blue-300 transition-all duration-200 group shadow-2xs cursor-pointer"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-full bg-[#00205B] flex items-center justify-center text-white shadow-xs shrink-0 group-hover:scale-105 transition-transform">
+                    <Mail className="w-5 h-5 text-white" />
+                  </div>
+                  <div className="text-left">
+                    <h4 className="text-sm font-bold text-slate-800 group-hover:text-[#00205B] transition-colors">
+                      Correo Electrónico
+                    </h4>
+                    <span className="text-xs text-slate-500 font-medium">
+                      gh30227421@gmail.com
+                    </span>
+                  </div>
+                </div>
+                <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800">
+                  Formal
+                </span>
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
