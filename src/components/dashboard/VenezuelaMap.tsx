@@ -28,6 +28,31 @@ const normalizeStateName = (name: string) => {
   return normalized;
 };
 
+// Helper para normalizar nombres de regiones
+const normalizeRegionName = (reg: string): string => {
+  if (!reg) return '';
+  const clean = reg.toUpperCase().replace(/^REGI[OÓ]N\s+/i, '').trim();
+  if (['OCCIDENTE', 'OCCIDENTAL', 'ANDES', 'LOS ANDES', 'OCCIDENTE - ANDES'].includes(clean)) {
+    return 'OCCIDENTE - ANDES';
+  }
+  if (['ORIENTE', 'ORIENTAL'].includes(clean)) {
+    return 'ORIENTE';
+  }
+  if (['CAPITAL', 'METROPOLITANA'].includes(clean)) {
+    return 'CAPITAL';
+  }
+  if (['ARAGUA - LOS LLANOS', 'LOS LLANOS', 'LLANOS', 'ARAGUA'].includes(clean)) {
+    return 'ARAGUA - LOS LLANOS';
+  }
+  if (['CENTRO OCCIDENTE', 'CENTRO-OCCIDENTE', 'CENTRO OCCIDENTAL', 'CENTRAL', 'CENTRO'].includes(clean)) {
+    return 'CENTRO OCCIDENTE';
+  }
+  if (['GUAYANA', 'SUR'].includes(clean)) {
+    return 'ORIENTE'; // En la referencia visual, Bolívar comparte el color grafito de Oriente
+  }
+  return clean;
+};
+
 // Diccionario de asignación de estados a macro-regiones
 const STATE_REGION_MAP: Record<string, string> = {
   'distrito capital': 'CAPITAL',
@@ -58,18 +83,21 @@ const STATE_REGION_MAP: Record<string, string> = {
   'nueva esparta': 'ORIENTE',
   'delta amacuro': 'ORIENTE',
 
-  'bolivar': 'GUAYANA',
+  'bolivar': 'ORIENTE', // En el mapa de referencia Bolívar comparte el color grafito de Oriente
   'amazonas': 'GUAYANA',
 };
 
-// Paleta corporativa BNC estricta: Naranja institucional y escala descendente de azules corporativos
+// Paleta visual corporativa por macro-regiones (según la referencia visual exacta)
 const REGION_COLORS: Record<string, string> = {
-  'CAPITAL': '#FFB703', // Amarillo / Oro
-  'CENTRO OCCIDENTE': '#009639', // Verde Institucional BNC
-  'OCCIDENTE - ANDES': '#DC2626', // Rojo
-  'ORIENTE': '#00205B', // Azul Institucional BNC
+  'CAPITAL': '#2EAB66',             // Verde Corporativo
+  'OCCIDENTE - ANDES': '#00205B',   // Azul Marino Oscuro BNC
+  'OCCIDENTE': '#00205B',           // Variante
+  'ORIENTE': '#3D3D3D',             // Gris Grafito / Carbón Oscuro
+  'ORIENTAL': '#3D3D3D',            // Variante
   'ARAGUA - LOS LLANOS': '#FE5000', // Naranja Institucional BNC
-  'GUAYANA': '#64748B', // Gris Pizarra
+  'LOS LLANOS': '#FE5000',          // Variante
+  'CENTRO OCCIDENTE': '#7B9CC4',    // Azul Acero / Celeste Suave
+  'GUAYANA': '#3D3D3D',             // Gris Grafito
 };
 
 export default function VenezuelaMap({ events, agencies = [], selectedState = 'todos', onStateClick }: VenezuelaMapProps) {
@@ -87,10 +115,10 @@ export default function VenezuelaMap({ events, agencies = [], selectedState = 't
     const norm = normalizeStateName(stateName);
     // 1. Buscar en eventos coincidentes
     const ev = events.find(e => normalizeStateName(e.estadoOperativo || e.state || '') === norm && e.region);
-    if (ev && ev.region) return ev.region.toUpperCase().replace(/^REGI[OÓ]N\s+/i, '').trim();
+    if (ev && ev.region) return normalizeRegionName(ev.region);
     // 2. Buscar en agencias
     const ag = agencies.find(a => normalizeStateName(a.state || '') === norm && a.region);
-    if (ag && ag.region) return ag.region.toUpperCase().replace(/^REGI[OÓ]N\s+/i, '').trim();
+    if (ag && ag.region) return normalizeRegionName(ag.region);
     // 3. Fallback en diccionario
     return STATE_REGION_MAP[norm] || 'OTRAS REGIONES';
   };
@@ -343,13 +371,13 @@ export default function VenezuelaMap({ events, agencies = [], selectedState = 't
                         fillColor = '#00205B';
                       }
                     } else {
-                      // Modo Regiones: Escala cromática corporativa BNC exacta
+                      // Modo Regiones: Paleta de referencia visual exacta
                       const regionIndex = regionData.ranking.findIndex(r => r.name === regionName);
                       if (regionIndex >= 0) {
                         fillColor = REGION_COLORS[regionName] || '#9CA3AF';
                         if (regionIndex === 0) isHighlighted = true;
                       } else if (isActive) {
-                        fillColor = '#85A0CE';
+                        fillColor = REGION_COLORS[regionName] || '#85A0CE';
                       }
                     }
 
@@ -407,9 +435,12 @@ export default function VenezuelaMap({ events, agencies = [], selectedState = 't
                             outline: 'none',
                           },
                           hover: {
-                            fill: isHighlighted ? '#E04700' : isActive ? '#3B82F6' : '#CBD5E1',
+                            fill: viewMode === 'estados'
+                              ? (isHighlighted ? '#E04700' : isActive ? '#3B82F6' : '#CBD5E1')
+                              : (isActive ? (fillColor !== '#D1D5DB' ? fillColor : '#CBD5E1') : '#CBD5E1'),
                             stroke: '#FFFFFF',
-                            strokeWidth: 1.2,
+                            strokeWidth: 1.4,
+                            filter: viewMode === 'regiones' && isActive ? 'brightness(1.15)' : 'none',
                             outline: 'none',
                             cursor: isActive ? 'pointer' : 'default'
                           },

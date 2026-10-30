@@ -69,7 +69,13 @@ export default function RentabilidadRegionChart({ events, agencies = [] }: Renta
       }
 
       // Normalizar nombre
-      let regName = reg.toUpperCase().replace(/^REGI[OÓ]N\s+/i, '');
+      let clean = reg.toUpperCase().replace(/^REGI[OÓ]N\s+/i, '').trim();
+      if (['OCCIDENTE', 'OCCIDENTAL', 'ANDES', 'LOS ANDES', 'OCCIDENTE - ANDES'].includes(clean)) clean = 'OCCIDENTE - ANDES';
+      else if (['ORIENTE', 'ORIENTAL', 'GUAYANA', 'SUR'].includes(clean)) clean = 'ORIENTE';
+      else if (['CAPITAL', 'METROPOLITANA'].includes(clean)) clean = 'CAPITAL';
+      else if (['ARAGUA - LOS LLANOS', 'LOS LLANOS', 'LLANOS', 'ARAGUA'].includes(clean)) clean = 'ARAGUA - LOS LLANOS';
+      else if (['CENTRO OCCIDENTE', 'CENTRO-OCCIDENTE', 'CENTRO OCCIDENTAL', 'CENTRAL', 'CENTRO'].includes(clean)) clean = 'CENTRO OCCIDENTE';
+      let regName = clean;
 
       // 2. Extracción segura de cifras monetarias
       const tasaBcv = Number(ev?.gastos?.tasaBcv) || 1;
